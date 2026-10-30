@@ -70,6 +70,7 @@ label{display:block;font-size:14px;font-weight:700;margin:15px 0 6px;color:#2441
     // Questi sono i dati pubblici del progetto: non inserire mai qui una service_role/secret key.
     const SUPABASE_URL = "https://mmkdibdomjaxwqfryqcw.supabase.co";
     const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_QPArC4ARilfFLqxnNsV72A_UBzZN-5g";
+    const APP_URL = "https://nanoshift.pages.dev";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const form = document.getElementById("authForm");
@@ -152,7 +153,7 @@ label{display:block;font-size:14px;font-weight:700;margin:15px 0 6px;color:#2441
           if (password.length < 8) throw new Error("La password deve contenere almeno 8 caratteri.");
           const { data, error } = await supabase.auth.signUp({
             email, password,
-            options: { data: { display_name: displayName }, emailRedirectTo: window.location.origin + "/accesso.html" }
+            options: { data: { display_name: displayName }, emailRedirectTo: APP_URL + "/accesso.html" }
           });
           if (error) throw error;
           if (data.session) {
@@ -199,7 +200,7 @@ label{display:block;font-size:14px;font-weight:700;margin:15px 0 6px;color:#2441
       }
       try {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin + window.location.pathname
+          redirectTo: APP_URL + "/accesso.html"
         });
         if (error) throw error;
         showMessage("Se l'indirizzo è registrato, riceverai un'email con le istruzioni per reimpostare la password.");
