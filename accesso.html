@@ -122,7 +122,7 @@
         if (error) throw error;
         if (data.session || hashParams.has("access_token")) {
           showMessage("Email confermata correttamente! Ora puoi accedere con la tua email e password. Il profilo resta in attesa di approvazione da parte dell’amministratrice.");
-          history.replaceState({}, document.title, window.location.pathname);
+          history.replaceState({}, document.title, window.location.pathname + (inviteToken ? "?invite=" + encodeURIComponent(inviteToken) : ""));
         } else {
           showMessage("Il link è stato aperto, ma non è stato possibile completare la conferma. Torna alla registrazione e richiedi una nuova email di conferma.", "error");
         }
