@@ -101,6 +101,8 @@
     const forgotLink = document.getElementById("forgotLink");
     const backToLogin = document.getElementById("backToLogin");
     let mode = "login";
+    const inviteToken = new URLSearchParams(window.location.search).get("invite");
+    const dashboardUrl = "dashboard.html" + (inviteToken ? "?invite=" + encodeURIComponent(inviteToken) : "");
 
     // Gestisce il ritorno dal link di conferma Supabase, evitando una pagina senza messaggi.
     (async function handleAuthRedirect() {
@@ -120,7 +122,7 @@
         if (error) throw error;
         if (data.session || hashParams.has("access_token")) {
           showMessage("Email confermata correttamente! Ora puoi accedere con la tua email e password. Il profilo resta in attesa di approvazione da parte dell’amministratrice.");
-          history.replaceState({}, document.title, window.location.pathname);
+          history.replaceState({}, document.title, window.location.pathname + (inviteToken ? "?invite=" + encodeURIComponent(inviteToken) : ""));
         } else {
           showMessage("Il link è stato aperto, ma non è stato possibile completare la conferma. Torna alla registrazione e richiedi una nuova email di conferma.", "error");
         }
@@ -168,7 +170,7 @@
           if (password.length < 8) throw new Error("La password deve contenere almeno 8 caratteri.");
           const { data, error } = await supabase.auth.signUp({
             email, password,
-            options: { data: { display_name: displayName }, emailRedirectTo: window.location.origin + "/accesso.html" }
+            options: { data: { display_name: displayName }, emailRedirectTo: window.location.origin + "/accesso.html" + (inviteToken ? "?invite=" + encodeURIComponent(inviteToken) : "") }
           });
           if (error) throw error;
           if (data.session) {
@@ -190,10 +192,10 @@
             showMessage("Hai effettuato l'accesso, ma il tuo account è ancora in attesa di approvazione o non è abilitato. Puoi uscire in sicurezza; riceverai indicazioni dall'amministratrice.");
             await supabase.auth.signOut();
           } else {
-            if (profile.role === "admin") {
-              window.location.href = "dashboard.html";
+            if (["admin", "nurse"].includes(profile.role)) {
+              window.location.href = dashboardUrl;
             } else {
-              showMessage("Accesso verificato. Il tuo profilo è approvato, ma la dashboard per questo ruolo non è ancora disponibile.");
+              showMessage("Accesso verificato. Il tuo profilo è approvato, ma non dispone dell'accesso alla gestione dei turni.");
             }
           }
         }
