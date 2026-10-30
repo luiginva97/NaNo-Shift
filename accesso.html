@@ -7,42 +7,26 @@
   <meta name="theme-color" content="#f6f5f1">
   <title>Accesso area riservata · NaNo Shift</title>
   <style>
-    :root { color-scheme: light; --ink:#0b2349; --muted:#586a8c; --line:#dbe4f3; --green:#1677e8; --mint:#fff4cc; --paper:#fff; --bg:#f7f9fd; --danger:#a32929; }
-    * { box-sizing:border-box }
-    body { margin:0; min-height:100vh; display:block; padding:0; background:var(--bg); color:var(--ink); font:16px/1.55 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
-    .shell { width:min(100%, 960px); margin:0 auto; padding:0 20px 36px; }\n    .topnav { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:18px 0 22px; }\n    .topnav b { font-size:18px; font-weight:750; }\n    .topnav a { display:inline-block; color:var(--green); background:var(--mint); border-radius:99px; padding:8px 13px; font-size:14px; font-weight:650; text-decoration:none; white-space:nowrap; }
-    .brand { text-align:left; margin:10px 0 24px; padding:30px 28px; border:1px solid var(--line); border-radius:22px; background:var(--paper); }
-    .brand-logo { display:block; width:56px; height:56px; margin:0 0 12px; }
-    h1 { font-size:clamp(28px,5vw,40px); line-height:1.2; margin:0 0 7px; letter-spacing:-.8px; }
-    .sub { color:var(--muted); margin:0; }
-    .card { background:var(--paper); border:1px solid var(--line); border-radius:18px; padding:26px; box-shadow:0 8px 28px #12305a0a; }
-    .tabs { display:grid; grid-template-columns:1fr 1fr; gap:6px; background:#f0f3ef; padding:5px; border-radius:12px; margin-bottom:22px; }
-    .tab { border:0; border-radius:9px; padding:11px; background:transparent; color:var(--muted); font:inherit; cursor:pointer; }
-    .tab[aria-selected="true"] { background:white; color:var(--ink); box-shadow:0 1px 4px #20312d18; font-weight:650; }
-    label { display:block; font-size:14px; font-weight:650; margin:15px 0 6px; }
-    input { display:block; width:100%; padding:13px 14px; border:1px solid #cbd6ce; border-radius:11px; background:#fff; color:var(--ink); font:inherit; }
-    input:focus { outline:3px solid #315f5020; border-color:var(--green); }
-    .hint { color:var(--muted); font-size:12px; margin:6px 0 0; }
-    .primary { width:100%; border:0; border-radius:12px; padding:13px 16px; background:var(--green); color:white; font:inherit; font-weight:750; cursor:pointer; margin-top:20px; }
-    .primary:disabled { opacity:.6; cursor:wait; }
-    .message { display:none; border-radius:11px; padding:12px 14px; margin-top:16px; font-size:14px; overflow-wrap:anywhere; }
-    .message.show { display:block; }
-    .message.info { background:#edf3ef; color:#244d3d; }
-    .message.error { background:#fff0f0; color:var(--danger); }
-    .links { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:15px; font-size:13px; }
-    a, .linkbtn { color:var(--green); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
-    .foot { text-align:center; color:var(--muted); font-size:12px; margin:18px 8px 0; }
-    .privacy { border-top:1px solid var(--line); margin-top:22px; padding-top:15px; color:var(--muted); font-size:12px; }
-    [hidden] { display:none !important; }
-    @media (max-width:560px) { .shell { padding:0 16px 28px; } .topnav { align-items:flex-start; flex-direction:column; } .brand { padding:24px 20px; } .card { padding:20px; } }
-  </style>
+:root{color-scheme:light;--navy:#0b3470;--blue:#0878df;--yellow:#ffc21c;--ink:#142b49;--muted:#687d99;--line:#e1eaf5;--paper:#fff;--bg:#f4f8fd;--danger:#a32929}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:28px 18px;background:radial-gradient(circle at 12% 8%,#e5f4ff 0,transparent 30%),radial-gradient(circle at 90% 92%,#fff4cb 0,transparent 26%),var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+.shell{width:min(100%,520px);margin:0 auto;padding:0 0 30px}.brand{text-align:center;margin:14px 0 20px;padding:25px 20px 20px;border:1px solid #e7eef8;border-radius:24px;background:rgba(255,255,255,.88);box-shadow:0 14px 40px #173b6710}
+.brand-logo{display:block;width:82px;height:82px;margin:0 auto 10px;filter:drop-shadow(0 5px 9px #0b34701a)}h1{font-size:clamp(25px,5vw,34px);line-height:1.18;margin:7px 0;letter-spacing:-1px;color:var(--navy)}
+.brand-word{font-weight:850;letter-spacing:-1.5px;font-size:30px;line-height:1.15;color:var(--navy)}.brand-word span{color:var(--yellow)}.sub{color:var(--muted);margin:8px 0 0;font-size:14px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 16px 42px #12305a12}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#f0f5fb;padding:5px;border-radius:13px;margin-bottom:22px}.tab{border:0;border-radius:10px;padding:11px;background:transparent;color:var(--muted);font:inherit;cursor:pointer;transition:.18s}.tab[aria-selected=true]{background:white;color:var(--navy);box-shadow:0 2px 8px #203a5b16;font-weight:750}
+label{display:block;font-size:14px;font-weight:700;margin:15px 0 6px;color:#24415f}input{display:block;width:100%;padding:13px 14px;border:1px solid #d2deed;border-radius:12px;background:#fff;color:var(--ink);font:inherit;transition:border-color .15s,box-shadow .15s}input:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 4px #1688e51c}
+.hint{color:var(--muted);font-size:12px;margin:6px 0 0}.primary{width:100%;border:0;border-radius:12px;padding:14px 16px;background:linear-gradient(100deg,var(--blue),#0866c8);color:white;font:inherit;font-weight:800;cursor:pointer;margin-top:22px;box-shadow:0 7px 16px #0878df30;transition:transform .15s,box-shadow .15s}.primary:hover{transform:translateY(-1px);box-shadow:0 10px 20px #0878df38}.primary:disabled{opacity:.6;cursor:wait;transform:none}
+.message{display:none;border-radius:12px;padding:13px 15px;margin-top:17px;font-size:14px;overflow-wrap:anywhere}.message.show{display:block}.message.info{background:#edf6ff;color:#164c83;border:1px solid #d5eaff}.message.error{background:#fff0f0;color:var(--danger);border:1px solid #f3d6d6}
+.links{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;font-size:13px}a,.linkbtn{color:var(--blue);text-decoration:none;font-weight:650;cursor:pointer}a:hover{text-decoration:underline}.foot{text-align:center;color:var(--muted);font-size:12px;margin:18px 8px 0}.privacy{border-top:1px solid var(--line);margin-top:22px;padding-top:15px;color:var(--muted);font-size:12px;line-height:1.6}[hidden]{display:none!important}
+@media(max-width:560px){body{padding:12px 14px}.brand{padding:22px 16px 18px;margin:8px 0 14px}.card{padding:20px}.brand-logo{width:72px;height:72px}}
+</style>
 </head>
 <body>
   <main class="shell">
     <header class="brand">
       <svg class="brand-logo" viewBox="0 0 72 72" role="img" aria-label="Logo NaNo Shift" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="12" width="43" height="47" rx="9" fill="#1677e8"/><path d="M8 22h43v-1a9 9 0 0 0-9-9H17a9 9 0 0 0-9 9z" fill="#ffcc33"/><rect x="17" y="4" width="6" height="16" rx="3" fill="#ffcc33"/><rect x="36" y="4" width="6" height="16" rx="3" fill="#ffcc33"/><rect x="16" y="29" width="9" height="8" rx="2" fill="#dcecff"/><rect x="29" y="29" width="9" height="8" rx="2" fill="#ffcc33"/><rect x="16" y="41" width="9" height="8" rx="2" fill="#dcecff"/><circle cx="48" cy="47" r="17" fill="#fff" stroke="#ffcc33" stroke-width="4"/><path d="M48 37v11l8-6" fill="none" stroke="#1677e8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M54 17c-4-7-14-3-13 4 1 6 13 13 13 13s12-7 13-13c1-7-9-11-13-4z" fill="#ffcc33" stroke="#1677e8" stroke-width="2"/></svg>
-      <h1>NaNo Shift · Gestione dei turni</h1>
-      <p class="sub">Area riservata ai professionisti sanitari</p>
+      <div class="brand-word">NaNo<span>Shift</span></div><h1>Gestione dei turni</h1>
+      <p class="sub">I tuoi turni, sempre con te</p>
     </header>
 
     <section class="card" aria-label="Accesso all'area riservata">
