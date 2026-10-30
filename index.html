@@ -1,213 +1,47 @@
 <!doctype html>
-<html lang="it">
-<head>
-  <meta charset="utf-8">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f6f5f1">
-  <title>Accesso area riservata · NaNo Shift</title>
-  <style>
-:root{color-scheme:light;--navy:#0b3470;--blue:#0878df;--yellow:#ffc21c;--ink:#142b49;--muted:#687d99;--line:#e1eaf5;--paper:#fff;--bg:#f4f8fd;--danger:#a32929}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:28px 18px;background:radial-gradient(circle at 12% 8%,#e5f4ff 0,transparent 30%),radial-gradient(circle at 90% 92%,#fff4cb 0,transparent 26%),var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-.shell{width:min(100%,520px);margin:0 auto;padding:0 0 30px}.brand{text-align:center;margin:14px 0 20px;padding:25px 20px 20px;border:1px solid #e7eef8;border-radius:24px;background:rgba(255,255,255,.88);box-shadow:0 14px 40px #173b6710}
-.brand-logo{display:block;width:82px;height:82px;margin:0 auto 10px;filter:drop-shadow(0 5px 9px #0b34701a)}h1{font-size:clamp(25px,5vw,34px);line-height:1.18;margin:7px 0;letter-spacing:-1px;color:var(--navy)}
-.brand-word{font-weight:850;letter-spacing:-1.5px;font-size:30px;line-height:1.15;color:var(--navy)}.brand-word span{color:var(--yellow)}.sub{color:var(--muted);margin:8px 0 0;font-size:14px}
-.card{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 16px 42px #12305a12}
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#f0f5fb;padding:5px;border-radius:13px;margin-bottom:22px}.tab{border:0;border-radius:10px;padding:11px;background:transparent;color:var(--muted);font:inherit;cursor:pointer;transition:.18s}.tab[aria-selected=true]{background:white;color:var(--navy);box-shadow:0 2px 8px #203a5b16;font-weight:750}
-label{display:block;font-size:14px;font-weight:700;margin:15px 0 6px;color:#24415f}input{display:block;width:100%;padding:13px 14px;border:1px solid #d2deed;border-radius:12px;background:#fff;color:var(--ink);font:inherit;transition:border-color .15s,box-shadow .15s}input:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 4px #1688e51c}
-.hint{color:var(--muted);font-size:12px;margin:6px 0 0}.primary{width:100%;border:0;border-radius:12px;padding:14px 16px;background:linear-gradient(100deg,var(--blue),#0866c8);color:white;font:inherit;font-weight:800;cursor:pointer;margin-top:22px;box-shadow:0 7px 16px #0878df30;transition:transform .15s,box-shadow .15s}.primary:hover{transform:translateY(-1px);box-shadow:0 10px 20px #0878df38}.primary:disabled{opacity:.6;cursor:wait;transform:none}
-.message{display:none;border-radius:12px;padding:13px 15px;margin-top:17px;font-size:14px;overflow-wrap:anywhere}.message.show{display:block}.message.info{background:#edf6ff;color:#164c83;border:1px solid #d5eaff}.message.error{background:#fff0f0;color:var(--danger);border:1px solid #f3d6d6}
-.links{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;font-size:13px}a,.linkbtn{color:var(--blue);text-decoration:none;font-weight:650;cursor:pointer}a:hover{text-decoration:underline}.foot{text-align:center;color:var(--muted);font-size:12px;margin:18px 8px 0}.privacy{border-top:1px solid var(--line);margin-top:22px;padding-top:15px;color:var(--muted);font-size:12px;line-height:1.6}[hidden]{display:none!important}
-@media(max-width:560px){body{padding:12px 14px}.brand{padding:22px 16px 18px;margin:8px 0 14px}.card{padding:20px}.brand-logo{width:72px;height:72px}}
-</style>
-</head>
-<body>
-  <main class="shell">
-    <header class="brand">
-      <svg class="brand-logo" viewBox="0 0 72 72" role="img" aria-label="Logo NaNo Shift" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="12" width="43" height="47" rx="9" fill="#1677e8"/><path d="M8 22h43v-1a9 9 0 0 0-9-9H17a9 9 0 0 0-9 9z" fill="#ffcc33"/><rect x="17" y="4" width="6" height="16" rx="3" fill="#ffcc33"/><rect x="36" y="4" width="6" height="16" rx="3" fill="#ffcc33"/><rect x="16" y="29" width="9" height="8" rx="2" fill="#dcecff"/><rect x="29" y="29" width="9" height="8" rx="2" fill="#ffcc33"/><rect x="16" y="41" width="9" height="8" rx="2" fill="#dcecff"/><circle cx="48" cy="47" r="17" fill="#fff" stroke="#ffcc33" stroke-width="4"/><path d="M48 37v11l8-6" fill="none" stroke="#1677e8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M54 17c-4-7-14-3-13 4 1 6 13 13 13 13s12-7 13-13c1-7-9-11-13-4z" fill="#ffcc33" stroke="#1677e8" stroke-width="2"/></svg>
-      <div class="brand-word">NaNo<span>Shift</span></div><h1>Gestione dei turni</h1>
-      <p class="sub">I tuoi turni, sempre con te</p>
-    </header>
-
-    <section class="card" aria-label="Accesso all'area riservata">
-      <div class="tabs" role="tablist" aria-label="Scegli l'operazione">
-        <button class="tab" id="loginTab" type="button" role="tab" aria-selected="true">Accedi</button>
-        <button class="tab" id="signupTab" type="button" role="tab" aria-selected="false">Crea account</button>
-      </div>
-
-      <form id="authForm">
-        <div id="nameWrap" hidden>
-          <label for="displayName">Nome e cognome</label>
-          <input id="displayName" name="displayName" autocomplete="name" maxlength="100" placeholder="Come ti chiami?">
-        </div>
-
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="nome@esempio.it">
-
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" required minlength="8" maxlength="128" placeholder="Almeno 8 caratteri">
-        <p class="hint" id="passwordHint" hidden>Usa almeno 8 caratteri. Non riutilizzare la password di altri servizi.</p>
-
-        <button class="primary" id="submitBtn" type="submit">Accedi</button>
-      </form>
-
-      <div class="links">
-        <a href="#" id="forgotLink">Password dimenticata?</a>
-        <a href="#" id="backToLogin" hidden>Torna all'accesso</a>
-      </div>
-
-      <div id="message" class="message" role="status" aria-live="polite"></div>
-
-      <div class="privacy">
-        La creazione dell'account non dà accesso immediato ai dati riservati. Ogni profilo deve essere approvato dall'amministratore dell'app. Non inserire qui dati clinici dei pazienti.
-      </div>
-    </section>
-    
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-  <script>
-    // Questi sono i dati pubblici del progetto: non inserire mai qui una service_role/secret key.
-    const SUPABASE_URL = "https://mmkdibdomjaxwqfryqcw.supabase.co";
-    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_QPArC4ARilfFLqxnNsV72A_UBzZN-5g";
-    const APP_URL = "https://nanoshift.pages.dev";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-
-    const form = document.getElementById("authForm");
-    const loginTab = document.getElementById("loginTab");
-    const signupTab = document.getElementById("signupTab");
-    const nameWrap = document.getElementById("nameWrap");
-    const nameInput = document.getElementById("displayName");
-    const emailInput = document.getElementById("email");
-    const passwordInput = document.getElementById("password");
-    const passwordHint = document.getElementById("passwordHint");
-    const submitBtn = document.getElementById("submitBtn");
-    const message = document.getElementById("message");
-    const forgotLink = document.getElementById("forgotLink");
-    const backToLogin = document.getElementById("backToLogin");
-    let mode = "login";
-
-    // Gestisce il ritorno dal link di conferma Supabase, evitando una pagina senza messaggi.
-    (async function handleAuthRedirect() {
-      const params = new URLSearchParams(window.location.search);
-      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-      const authError = params.get("error_description") || params.get("error") ||
-        hashParams.get("error_description") || hashParams.get("error");
-      if (authError) {
-        showMessage("La conferma email non è andata a buon fine: " + authError.replace(/\\+/g, " "), "error");
-        return;
-      }
-      const isAuthReturn = params.has("code") || hashParams.has("access_token") ||
-        hashParams.get("type") === "signup" || hashParams.get("type") === "email";
-      if (!isAuthReturn) return;
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        if (data.session || hashParams.has("access_token")) {
-          showMessage("Email confermata correttamente! Ora puoi accedere con la tua email e password. Il profilo resta in attesa di approvazione da parte dell’amministratrice.");
-          history.replaceState({}, document.title, window.location.pathname);
-        } else {
-          showMessage("Il link è stato aperto, ma non è stato possibile completare la conferma. Torna alla registrazione e richiedi una nuova email di conferma.", "error");
-        }
-      } catch (err) {
-        showMessage("Errore durante la conferma email. Richiedi una nuova email di conferma e riprova. " + (err.message || ""), "error");
-      }
-    })();
-
-    function showMessage(text, type = "info") {
-      message.textContent = text;
-      message.className = "message show " + type;
-    }
-    function clearMessage() {
-      message.textContent = "";
-      message.className = "message";
-    }
-    function setMode(next) {
-      mode = next;
-      const isSignup = mode === "signup";
-      loginTab.setAttribute("aria-selected", String(!isSignup));
-      signupTab.setAttribute("aria-selected", String(isSignup));
-      nameWrap.hidden = !isSignup;
-      nameInput.required = isSignup;
-      passwordHint.hidden = !isSignup;
-      passwordInput.autocomplete = isSignup ? "new-password" : "current-password";
-      submitBtn.textContent = isSignup ? "Crea account" : "Accedi";
-      forgotLink.hidden = isSignup;
-      backToLogin.hidden = !isSignup;
-      clearMessage();
-    }
-    loginTab.addEventListener("click", () => setMode("login"));
-    signupTab.addEventListener("click", () => setMode("signup"));
-    backToLogin.addEventListener("click", e => { e.preventDefault(); setMode("login"); });
-
-    form.addEventListener("submit", async e => {
-      e.preventDefault();
-      clearMessage();
-      submitBtn.disabled = true;
-      try {
-        const email = emailInput.value.trim().toLowerCase();
-        const password = passwordInput.value;
-        if (mode === "signup") {
-          const displayName = nameInput.value.trim();
-          if (!displayName) throw new Error("Inserisci nome e cognome.");
-          if (password.length < 8) throw new Error("La password deve contenere almeno 8 caratteri.");
-          const { data, error } = await supabase.auth.signUp({
-            email, password,
-            options: { data: { display_name: displayName }, emailRedirectTo: APP_URL + "/accesso.html" }
-          });
-          if (error) throw error;
-          if (data.session) {
-            showMessage("Account creato. Il profilo è in attesa di approvazione: non potrai accedere alle aree riservate finché l'amministratrice non lo approva.");
-          } else {
-            showMessage("Richiesta di registrazione inviata. Se la conferma email è attiva, controlla la posta e conferma l'indirizzo. Il profilo resterà in attesa di approvazione.");
-          }
-        } else {
-          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-          if (error) throw error;
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("display_name, role, approval_status")
-            .eq("id", data.user.id)
-            .single();
-          if (profileError) {
-            showMessage("Accesso effettuato, ma non riesco a leggere il profilo. Contatta l'amministratrice. Dettaglio: " + profileError.message, "error");
-          } else if (profile.approval_status !== "approved" || !["admin","nurse","client"].includes(profile.role)) {
-            showMessage("Hai effettuato l'accesso, ma il tuo account è ancora in attesa di approvazione o non è abilitato. Puoi uscire in sicurezza; riceverai indicazioni dall'amministratrice.");
-            await supabase.auth.signOut();
-          } else {
-            if (profile.role === "admin") {
-              window.location.href = "dashboard.html";
-            } else {
-              showMessage("Accesso verificato. Il tuo profilo è approvato, ma la dashboard per questo ruolo non è ancora disponibile.");
-            }
-          }
-        }
-      } catch (err) {
-        showMessage(err.message || "Si è verificato un errore. Riprova.", "error");
-      } finally {
-        submitBtn.disabled = false;
-      }
-    });
-
-    forgotLink.addEventListener("click", async e => {
-      e.preventDefault();
-      clearMessage();
-      const email = emailInput.value.trim().toLowerCase();
-      if (!email) {
-        showMessage("Inserisci prima la tua email nel campo Email, poi premi di nuovo «Password dimenticata?».", "error");
-        emailInput.focus();
-        return;
-      }
-      try {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: APP_URL + "/accesso.html"
-        });
-        if (error) throw error;
-        showMessage("Se l'indirizzo è registrato, riceverai un'email con le istruzioni per reimpostare la password.");
-      } catch (err) {
-        showMessage(err.message || "Non è stato possibile richiedere il ripristino.", "error");
-      }
-    });
-  </script>
-</body>
-</html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f4f7fb"><title>NaNoShift · Accedi</title><link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+:root{color-scheme:light;--navy:#102b4e;--blue:#1769c2;--gold:#f2bd36;--ink:#19324e;--muted:#718198;--line:#dce5ef;--bg:#f3f6fa;--red:#b42318;--green:#16845b}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:30px 16px;background:linear-gradient(145deg,#edf4fb,#f8f9fb 55%,#fff8e8);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);display:grid;place-items:center}
+.shell{width:min(100%,480px)}.brand{text-align:center;margin-bottom:20px}.mark{width:58px;height:58px;margin:0 auto 9px;border-radius:17px;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:900;font-size:23px;letter-spacing:-2px;box-shadow:0 8px 22px #102b4e25}.brand-name{font-size:29px;font-weight:900;letter-spacing:-1.5px;color:var(--navy)}.brand-name span{color:var(--gold)}.tagline{margin:3px 0 0;color:var(--muted);font-size:13px}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:27px;box-shadow:0 18px 55px #17324f12}.tabs{display:grid;grid-template-columns:1fr 1fr;padding:4px;gap:5px;background:#f0f4f8;border-radius:12px;margin-bottom:23px}.tab{border:0;background:transparent;border-radius:9px;padding:11px;color:var(--muted);font:inherit;font-weight:700;cursor:pointer}.tab[aria-selected=true]{background:#fff;color:var(--navy);box-shadow:0 2px 8px #1c355014}
+.field{margin-top:15px}.field label{display:block;font-weight:700;font-size:13px;margin-bottom:6px}.field input{width:100%;height:46px;padding:10px 12px;border:1px solid #cfdbe8;border-radius:10px;font:inherit;color:var(--ink);background:#fff}.field input:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 3px #1769c21a}.password-wrap{position:relative}.password-wrap input{padding-right:49px}.eye{position:absolute;right:7px;top:6px;width:34px;height:34px;border:0;border-radius:8px;background:transparent;color:#64758b;display:grid;place-items:center;cursor:pointer}.eye:hover{background:#f0f4f8;color:var(--navy)}.eye svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hint{font-size:12px;color:var(--muted);margin:7px 0 0}.requirements{display:grid;gap:5px;margin:10px 0 0;padding:11px 12px;border:1px solid #e5ebf2;border-radius:10px;background:#fafbfd}.req{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}.req::before{content:"";width:7px;height:7px;border:1.5px solid #9aa8b8;border-radius:50%;flex:none}.req.ok{color:var(--green)}.req.ok::before{background:var(--green);border-color:var(--green)}.match{font-size:12px;margin:6px 0 0;color:var(--muted)}.match.ok{color:var(--green)}.match.bad{color:var(--red)}
+.primary{width:100%;margin-top:22px;border:0;border-radius:11px;padding:13px 16px;background:var(--navy);color:#fff;font:inherit;font-weight:800;cursor:pointer}.primary:hover{background:#17416f}.primary:disabled{opacity:.6;cursor:wait}.links{display:flex;justify-content:flex-end;margin-top:15px;font-size:13px}.link{border:0;background:none;color:var(--blue);font:inherit;font-weight:700;cursor:pointer;padding:0}.link:hover{text-decoration:underline}.message{display:none;padding:12px 13px;border-radius:10px;margin-top:16px;font-size:13px;overflow-wrap:anywhere}.message.show{display:block}.message.info{background:#edf5ff;color:#174c7d;border:1px solid #d7e8fa}.message.error{background:#fff1f0;color:var(--red);border:1px solid #f3d5d2}.foot{text-align:center;color:var(--muted);font-size:11px;margin:16px 8px 0}[hidden]{display:none!important}
+@media(max-width:520px){body{padding:18px 12px}.card{padding:21px}.brand{margin-bottom:15px}}
+</style></head><body><main class="shell">
+<header class="brand"><div class="mark" aria-hidden="true">N<span style="color:var(--gold)">S</span></div><div class="brand-name">NaNo<span>Shift</span></div><p class="tagline">I tuoi turni, sempre con te</p></header>
+<section class="card" aria-label="Accesso e registrazione">
+<div class="tabs" role="tablist"><button class="tab" id="loginTab" type="button" role="tab" aria-selected="true">Accedi</button><button class="tab" id="signupTab" type="button" role="tab" aria-selected="false">Crea account</button></div>
+<form id="authForm" novalidate>
+<div class="field" id="nameWrap" hidden><label for="displayName">Nome e cognome</label><input id="displayName" autocomplete="name" maxlength="100" placeholder="Come ti chiami?"></div>
+<div class="field"><label for="email">Indirizzo email</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="nome@esempio.it"></div>
+<div class="field" id="passwordWrap"><label for="password">Password</label><div class="password-wrap"><input id="password" type="password" autocomplete="current-password" required maxlength="128" placeholder="Inserisci la password"><button class="eye" type="button" data-eye="password" aria-label="Mostra password" title="Mostra password"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+<div id="passwordRules" class="requirements" hidden><div class="req" data-rule="length">Almeno 8 caratteri</div><div class="req" data-rule="upper">Una lettera maiuscola</div><div class="req" data-rule="lower">Una lettera minuscola</div><div class="req" data-rule="number">Un numero</div></div>
+<div class="field" id="confirmWrap" hidden><label for="confirmPassword">Conferma password</label><div class="password-wrap"><input id="confirmPassword" type="password" autocomplete="new-password" maxlength="128" placeholder="Ripeti la password"><button class="eye" type="button" data-eye="confirmPassword" aria-label="Mostra conferma password" title="Mostra password"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div><p id="matchHint" class="match" aria-live="polite"></p></div>
+<button class="primary" id="submitBtn" type="submit">Accedi</button>
+</form>
+<div class="links"><button class="link" id="forgotLink" type="button">Hai dimenticato la password?</button><button class="link" id="backToLogin" type="button" hidden>Torna all'accesso</button></div>
+<div id="message" class="message" role="status" aria-live="polite"></div>
+</section><p class="foot">Accesso riservato · Non inserire dati clinici dei pazienti</p></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script><script>
+const SUPABASE_URL="https://mmkdibdomjaxwqfryqcw.supabase.co",SUPABASE_KEY="sb_publishable_QPArC4ARilfFLqxnNsV72A_UBzZN-5g",APP_URL="https://nanoshift.pages.dev";
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id),form=$("authForm"),email=$("email"),password=$("password"),confirmPassword=$("confirmPassword"),submit=$("submitBtn"),message=$("message");
+let mode="login",recoveryMode=false;
+function msg(t,type="info"){message.textContent=t;message.className="message show "+type}
+function clearMsg(){message.textContent="";message.className="message"}
+function passwordChecks(v){return {length:v.length>=8,upper:/[A-Z]/.test(v),lower:/[a-z]/.test(v),number:/[0-9]/.test(v)}}
+function updateRules(){const c=passwordChecks(password.value);Object.entries(c).forEach(([k,ok])=>document.querySelector('[data-rule="'+k+'"]').classList.toggle("ok",ok));const same=confirmPassword.value===password.value&&confirmPassword.value.length>0;$("matchHint").textContent=confirmPassword.value?(same?"Le password coincidono.":"Le password non coincidono."):"";$("matchHint").className="match "+(same?"ok":"bad")}
+function setMode(next){mode=next;recoveryMode=false;$("loginTab").hidden=false;$("signupTab").hidden=false;$("loginTab").setAttribute("aria-selected",String(next==="login"));$("signupTab").setAttribute("aria-selected",String(next==="signup"));$("nameWrap").hidden=next!=="signup";$("confirmWrap").hidden=next!=="signup";$("passwordRules").hidden=next!=="signup";$("nameWrap").querySelector("input").required=next==="signup";confirmPassword.required=next==="signup";$("forgotLink").hidden=next!=="login";$("backToLogin").hidden=next!=="signup";$("submitBtn").textContent=next==="signup"?"Crea account":"Accedi";password.autocomplete=next==="signup"?"new-password":"current-password";clearMsg()}
+document.querySelectorAll("[data-eye]").forEach(b=>b.addEventListener("click",()=>{const el=$(b.dataset.eye),show=el.type==="password";el.type=show?"text":"password";b.setAttribute("aria-label",show?"Nascondi password":"Mostra password");b.title=show?"Nascondi password":"Mostra password"}));
+password.addEventListener("input",updateRules);confirmPassword.addEventListener("input",updateRules);
+$("loginTab").onclick=()=>setMode("login");$("signupTab").onclick=()=>setMode("signup");$("backToLogin").onclick=()=>setMode("login");
+$("forgotLink").onclick=async()=>{clearMsg();const address=email.value.trim().toLowerCase();if(!address){msg("Inserisci prima il tuo indirizzo email.","error");email.focus();return}try{const {error}=await sb.auth.resetPasswordForEmail(address,{redirectTo:APP_URL+"/accesso.html"});if(error)throw error;msg("Se l'indirizzo è registrato, riceverai un'email con il link per reimpostare la password.")}catch(e){msg(e.message||"Non è stato possibile inviare l'email.","error")}};
+form.addEventListener("submit",async e=>{e.preventDefault();clearMsg();submit.disabled=true;try{
+const address=email.value.trim().toLowerCase(),pass=password.value;
+if(recoveryMode){if(!Object.values(passwordChecks(pass)).every(Boolean))throw Error("La nuova password non rispetta tutti i requisiti.");if(pass!==confirmPassword.value)throw Error("Le password non coincidono.");const {error}=await sb.auth.updateUser({password:pass});if(error)throw error;msg("Password aggiornata. Ora puoi accedere.");setMode("login");password.value="";confirmPassword.value="";return}
+if(mode==="signup"){if(!$("displayName").value.trim())throw Error("Inserisci nome e cognome.");if(!Object.values(passwordChecks(pass)).every(Boolean))throw Error("Completa tutti i requisiti della password.");if(pass!==confirmPassword.value)throw Error("Le password non coincidono.");const {data,error}=await sb.auth.signUp({email:address,password:pass,options:{data:{display_name:$("displayName").value.trim()},emailRedirectTo:APP_URL+"/accesso.html"}});if(error)throw error;if(data.session){msg("Account creato. Accesso in corso…");setTimeout(()=>location.href="dashboard.html",900)}else msg("Registrazione completata. Controlla la posta e conferma l'indirizzo email: dopo la conferma potrai accedere direttamente a NaNoShift.")}else{const {data,error}=await sb.auth.signInWithPassword({email:address,password:pass});if(error)throw error;const {data:p,error:pe}=await sb.from("profiles").select("display_name,role").eq("id",data.user.id).single();if(pe||!p||!["admin","nurse"].includes(p.role)){await sb.auth.signOut();throw Error("Il profilo non è ancora configurato. Contatta l'amministratrice.")}location.href="dashboard.html"+(new URLSearchParams(location.search).has("invite")?"?invite="+encodeURIComponent(new URLSearchParams(location.search).get("invite")):"")}}
+catch(e){msg(e.message||"Si è verificato un errore. Riprova.","error")}finally{submit.disabled=false}});
+(async()=>{const params=new URLSearchParams(location.search),hash=new URLSearchParams(location.hash.replace(/^#/,""));if(params.get("error_description")||hash.get("error_description")){msg("Il link non è valido o è scaduto. Richiedi una nuova email.","error");return}if(hash.get("type")==="recovery"){recoveryMode=true;setMode("signup");$("loginTab").hidden=true;$("signupTab").hidden=true;$("nameWrap").hidden=true;$("passwordRules").hidden=false;$("confirmWrap").hidden=false;$("forgotLink").hidden=true;$("backToLogin").hidden=false;$("submitBtn").textContent="Salva nuova password";msg("Scegli una nuova password per il tuo account.");return}if(params.has("code")||hash.has("access_token")){const {data}=await sb.auth.getSession();if(data.session){msg("Indirizzo email confermato. Accesso in corso…");setTimeout(()=>location.href="dashboard.html",1000)}else msg("Indirizzo email confermato. Ora accedi con la tua email e password.")}})();
+</script></body></html>
