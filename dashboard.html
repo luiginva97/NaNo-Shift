@@ -48,7 +48,7 @@ async function init(){
  const {data:{session},error:sessionErr}=await sb.auth.getSession();
  if(sessionErr||!session){location.href="accesso.html";return}
  user=session.user;
- const {data:p,error}=await sb.from("profiles").select("display_name,role,approval_status").eq("id",user.id).single();
+ const {data:p,error}=await sb.from("profiles").select("display_name,role").eq("id",user.id).single();
  if(error||!p||!["admin","nurse"].includes(p.role)){await sb.auth.signOut();location.href="accesso.html";return}
  profile=p;$("userLabel").textContent=(p.display_name||user.email)+(p.role==="admin"?" · Amministratrice":" · Collaboratrice");
  const inviteToken=new URLSearchParams(location.search).get("invite");
