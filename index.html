@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f5f1">
+  <title>Accesso area riservata · NaNo Shift</title>
+  <style>
+    :root { color-scheme: light; --ink:#0b2349; --muted:#586a8c; --line:#dbe4f3; --green:#1677e8; --mint:#fff4cc; --paper:#fff; --bg:#f7f9fd; --danger:#a32929; }
+    * { box-sizing:border-box }
+    body { margin:0; min-height:100vh; display:block; padding:0; background:var(--bg); color:var(--ink); font:16px/1.55 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+    .shell { width:min(100%, 960px); margin:0 auto; padding:0 20px 36px; }\n    .topnav { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:18px 0 22px; }\n    .topnav b { font-size:18px; font-weight:750; }\n    .topnav a { display:inline-block; color:var(--green); background:var(--mint); border-radius:99px; padding:8px 13px; font-size:14px; font-weight:650; text-decoration:none; white-space:nowrap; }
+    .brand { text-align:left; margin:10px 0 24px; padding:30px 28px; border:1px solid var(--line); border-radius:22px; background:var(--paper); }
+    .brand-logo { display:block; width:56px; height:56px; margin:0 0 12px; }
+    h1 { font-size:clamp(28px,5vw,40px); line-height:1.2; margin:0 0 7px; letter-spacing:-.8px; }
+    .sub { color:var(--muted); margin:0; }
+    .card { background:var(--paper); border:1px solid var(--line); border-radius:18px; padding:26px; box-shadow:0 8px 28px #12305a0a; }
+    .tabs { display:grid; grid-template-columns:1fr 1fr; gap:6px; background:#f0f3ef; padding:5px; border-radius:12px; margin-bottom:22px; }
+    .tab { border:0; border-radius:9px; padding:11px; background:transparent; color:var(--muted); font:inherit; cursor:pointer; }
+    .tab[aria-selected="true"] { background:white; color:var(--ink); box-shadow:0 1px 4px #20312d18; font-weight:650; }
+    label { display:block; font-size:14px; font-weight:650; margin:15px 0 6px; }
+    input { display:block; width:100%; padding:13px 14px; border:1px solid #cbd6ce; border-radius:11px; background:#fff; color:var(--ink); font:inherit; }
+    input:focus { outline:3px solid #315f5020; border-color:var(--green); }
+    .hint { color:var(--muted); font-size:12px; margin:6px 0 0; }
+    .primary { width:100%; border:0; border-radius:12px; padding:13px 16px; background:var(--green); color:white; font:inherit; font-weight:750; cursor:pointer; margin-top:20px; }
+    .primary:disabled { opacity:.6; cursor:wait; }
+    .message { display:none; border-radius:11px; padding:12px 14px; margin-top:16px; font-size:14px; overflow-wrap:anywhere; }
+    .message.show { display:block; }
+    .message.info { background:#edf3ef; color:#244d3d; }
+    .message.error { background:#fff0f0; color:var(--danger); }
+    .links { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:15px; font-size:13px; }
+    a, .linkbtn { color:var(--green); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+    .foot { text-align:center; color:var(--muted); font-size:12px; margin:18px 8px 0; }
+    .privacy { border-top:1px solid var(--line); margin-top:22px; padding-top:15px; color:var(--muted); font-size:12px; }
+    [hidden] { display:none !important; }
+    @media (max-width:560px) { .shell { padding:0 16px 28px; } .topnav { align-items:flex-start; flex-direction:column; } .brand { padding:24px 20px; } .card { padding:20px; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="brand">
+      <svg class="brand-logo" viewBox="0 0 72 72" role="img" aria-label="Logo NaNo Shift" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="12" width="43" height="47" rx="9" fill="#1677e8"/><path d="M8 22h43v-1a9 9 0 0 0-9-9H17a9 9 0 0 0-9 9z" fill="#ffcc33"/><rect x="17" y="4" width="6" height="16" rx="3" fill="#ffcc33"/><rect x="36" y="4" width="6" height="16" rx="3" fill="#ffcc33"/><rect x="16" y="29" width="9" height="8" rx="2" fill="#dcecff"/><rect x="29" y="29" width="9" height="8" rx="2" fill="#ffcc33"/><rect x="16" y="41" width="9" height="8" rx="2" fill="#dcecff"/><circle cx="48" cy="47" r="17" fill="#fff" stroke="#ffcc33" stroke-width="4"/><path d="M48 37v11l8-6" fill="none" stroke="#1677e8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M54 17c-4-7-14-3-13 4 1 6 13 13 13 13s12-7 13-13c1-7-9-11-13-4z" fill="#ffcc33" stroke="#1677e8" stroke-width="2"/></svg>
+      <h1>NaNo Shift · Gestione dei turni</h1>
+      <p class="sub">Area riservata ai professionisti sanitari</p>
+    </header>
+
+    <section class="card" aria-label="Accesso all'area riservata">
+      <div class="tabs" role="tablist" aria-label="Scegli l'operazione">
+        <button class="tab" id="loginTab" type="button" role="tab" aria-selected="true">Accedi</button>
+        <button class="tab" id="signupTab" type="button" role="tab" aria-selected="false">Crea account</button>
+      </div>
+
+      <form id="authForm">
+        <div id="nameWrap" hidden>
+          <label for="displayName">Nome e cognome</label>
+          <input id="displayName" name="displayName" autocomplete="name" maxlength="100" placeholder="Come ti chiami?">
+        </div>
+
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="nome@esempio.it">
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required minlength="8" maxlength="128" placeholder="Almeno 8 caratteri">
+        <p class="hint" id="passwordHint" hidden>Usa almeno 8 caratteri. Non riutilizzare la password di altri servizi.</p>
+
+        <button class="primary" id="submitBtn" type="submit">Accedi</button>
+      </form>
+
+      <div class="links">
+        <a href="#" id="forgotLink">Password dimenticata?</a>
+        <a href="#" id="backToLogin" hidden>Torna all'accesso</a>
+      </div>
+
+      <div id="message" class="message" role="status" aria-live="polite"></div>
+
+      <div class="privacy">
+        La creazione dell'account non dà accesso immediato ai dati riservati. Ogni profilo deve essere approvato dall'amministratore dell'app. Non inserire qui dati clinici dei pazienti.
+      </div>
+    </section>
+    
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
+  <script>
+    // Questi sono i dati pubblici del progetto: non inserire mai qui una service_role/secret key.
+    const SUPABASE_URL = "https://mmkdibdomjaxwqfryqcw.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_QPArC4ARilfFLqxnNsV72A_UBzZN-5g";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+    const form = document.getElementById("authForm");
+    const loginTab = document.getElementById("loginTab");
+    const signupTab = document.getElementById("signupTab");
+    const nameWrap = document.getElementById("nameWrap");
+    const nameInput = document.getElementById("displayName");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const passwordHint = document.getElementById("passwordHint");
+    const submitBtn = document.getElementById("submitBtn");
+    const message = document.getElementById("message");
+    const forgotLink = document.getElementById("forgotLink");
+    const backToLogin = document.getElementById("backToLogin");
+    let mode = "login";
+
+    // Gestisce il ritorno dal link di conferma Supabase, evitando una pagina senza messaggi.
+    (async function handleAuthRedirect() {
+      const params = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const authError = params.get("error_description") || params.get("error") ||
+        hashParams.get("error_description") || hashParams.get("error");
+      if (authError) {
+        showMessage("La conferma email non è andata a buon fine: " + authError.replace(/\\+/g, " "), "error");
+        return;
+      }
+      const isAuthReturn = params.has("code") || hashParams.has("access_token") ||
+        hashParams.get("type") === "signup" || hashParams.get("type") === "email";
+      if (!isAuthReturn) return;
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        if (data.session || hashParams.has("access_token")) {
+          showMessage("Email confermata correttamente! Ora puoi accedere con la tua email e password. Il profilo resta in attesa di approvazione da parte dell’amministratrice.");
+          history.replaceState({}, document.title, window.location.pathname);
+        } else {
+          showMessage("Il link è stato aperto, ma non è stato possibile completare la conferma. Torna alla registrazione e richiedi una nuova email di conferma.", "error");
+        }
+      } catch (err) {
+        showMessage("Errore durante la conferma email. Richiedi una nuova email di conferma e riprova. " + (err.message || ""), "error");
+      }
+    })();
+
+    function showMessage(text, type = "info") {
+      message.textContent = text;
+      message.className = "message show " + type;
+    }
+    function clearMessage() {
+      message.textContent = "";
+      message.className = "message";
+    }
+    function setMode(next) {
+      mode = next;
+      const isSignup = mode === "signup";
+      loginTab.setAttribute("aria-selected", String(!isSignup));
+      signupTab.setAttribute("aria-selected", String(isSignup));
+      nameWrap.hidden = !isSignup;
+      nameInput.required = isSignup;
+      passwordHint.hidden = !isSignup;
+      passwordInput.autocomplete = isSignup ? "new-password" : "current-password";
+      submitBtn.textContent = isSignup ? "Crea account" : "Accedi";
+      forgotLink.hidden = isSignup;
+      backToLogin.hidden = !isSignup;
+      clearMessage();
+    }
+    loginTab.addEventListener("click", () => setMode("login"));
+    signupTab.addEventListener("click", () => setMode("signup"));
+    backToLogin.addEventListener("click", e => { e.preventDefault(); setMode("login"); });
+
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      clearMessage();
+      submitBtn.disabled = true;
+      try {
+        const email = emailInput.value.trim().toLowerCase();
+        const password = passwordInput.value;
+        if (mode === "signup") {
+          const displayName = nameInput.value.trim();
+          if (!displayName) throw new Error("Inserisci nome e cognome.");
+          if (password.length < 8) throw new Error("La password deve contenere almeno 8 caratteri.");
+          const { data, error } = await supabase.auth.signUp({
+            email, password,
+            options: { data: { display_name: displayName }, emailRedirectTo: window.location.origin + "/accesso.html" }
+          });
+          if (error) throw error;
+          if (data.session) {
+            showMessage("Account creato. Il profilo è in attesa di approvazione: non potrai accedere alle aree riservate finché l'amministratrice non lo approva.");
+          } else {
+            showMessage("Richiesta di registrazione inviata. Se la conferma email è attiva, controlla la posta e conferma l'indirizzo. Il profilo resterà in attesa di approvazione.");
+          }
+        } else {
+          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("display_name, role, approval_status")
+            .eq("id", data.user.id)
+            .single();
+          if (profileError) {
+            showMessage("Accesso effettuato, ma non riesco a leggere il profilo. Contatta l'amministratrice. Dettaglio: " + profileError.message, "error");
+          } else if (profile.approval_status !== "approved" || !["admin","nurse","client"].includes(profile.role)) {
+            showMessage("Hai effettuato l'accesso, ma il tuo account è ancora in attesa di approvazione o non è abilitato. Puoi uscire in sicurezza; riceverai indicazioni dall'amministratrice.");
+            await supabase.auth.signOut();
+          } else {
+            if (profile.role === "admin") {
+              window.location.href = "dashboard.html";
+            } else {
+              showMessage("Accesso verificato. Il tuo profilo è approvato, ma la dashboard per questo ruolo non è ancora disponibile.");
+            }
+          }
+        }
+      } catch (err) {
+        showMessage(err.message || "Si è verificato un errore. Riprova.", "error");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    forgotLink.addEventListener("click", async e => {
+      e.preventDefault();
+      clearMessage();
+      const email = emailInput.value.trim().toLowerCase();
+      if (!email) {
+        showMessage("Inserisci prima la tua email nel campo Email, poi premi di nuovo «Password dimenticata?».", "error");
+        emailInput.focus();
+        return;
+      }
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + window.location.pathname
+        });
+        if (error) throw error;
+        showMessage("Se l'indirizzo è registrato, riceverai un'email con le istruzioni per reimpostare la password.");
+      } catch (err) {
+        showMessage(err.message || "Non è stato possibile richiedere il ripristino.", "error");
+      }
+    });
+  </script>
+</body>
+</html>
