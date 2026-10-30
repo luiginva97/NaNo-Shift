@@ -1,87 +1,75 @@
-# NaNo Shift — template email Supabase (bozza da applicare)
+# NaNoShift — template email per Supabase Auth
 
-Questi template sono pronti da copiare in Supabase Dashboard → Authentication → Email Templates.
-**Prima di attivarli:** aggiungere il logo corretto di NaNo Shift come immagine PNG/JPG pubblica su un URL HTTPS stabile e sostituire il blocco LOGO indicato qui sotto. Non usare il favicon SVG come sostituto del logo ufficiale finché non è stato confermato.
+Questi template vanno incollati manualmente in **Supabase → Authentication → Email Templates**. Il repository non può applicarli automaticamente alle impostazioni Auth del progetto.
 
 ## Conferma email
 
-**Subject:** Conferma il tuo indirizzo email · NaNo Shift
+**Subject:** Conferma il tuo indirizzo email · NaNoShift
 
 **Body (HTML):**
+
 ```html
-<div style="margin:0;padding:32px 12px;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#173052;">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e0e8f2;border-radius:20px;overflow:hidden;">
-    <div style="padding:28px 28px 8px;text-align:center;">
-      <!-- LOGO NaNo Shift: inserire qui <img src="URL_HTTPS_LOGO" alt="NaNo Shift" width="150" style="display:block;width:150px;max-width:100%;height:auto;margin:0 auto 18px;"> -->
-      <div style="font-size:25px;font-weight:700;letter-spacing:-.5px;color:#173052;">NaNo Shift</div>
-      <div style="font-size:13px;color:#667995;margin-top:6px;">Gestione dei turni, con semplicità</div>
-    </div>
-    <div style="padding:22px 30px 32px;">
-      <h1 style="font-size:23px;line-height:1.3;margin:0 0 14px;color:#173052;">Conferma la tua email</h1>
-      <p style="font-size:15px;line-height:1.7;margin:0 0 22px;color:#465a75;">Ciao, grazie per esserti registrato su NaNo Shift. Per completare la creazione del tuo account, conferma che questo indirizzo email appartiene a te.</p>
-      <p style="text-align:center;margin:28px 0;">
-        <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#2463c5;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 24px;border-radius:12px;">Conferma indirizzo email</a>
-      </p>
-      <p style="font-size:13px;line-height:1.7;color:#667995;margin:20px 0 0;">Se il pulsante non funziona, copia questo indirizzo nella barra del browser:<br><a href="{{ .ConfirmationURL }}" style="color:#2463c5;word-break:break-all;">Conferma email</a></p>
-      <div style="border-top:1px solid #e8edf5;margin-top:26px;padding-top:18px;font-size:12px;line-height:1.6;color:#78879c;">Se non hai creato tu un account NaNo Shift, puoi ignorare questa email. Per motivi di sicurezza, non inoltrare questo messaggio.</div>
-    </div>
-  </div>
-</div>
+<!doctype html>
+<html lang="it">
+<body style="margin:0;padding:0;background:#f3f7fc;font-family:Arial,Helvetica,sans-serif;color:#183456;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Conferma il tuo indirizzo email per completare la registrazione a NaNoShift.</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f7fc;padding:34px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:#ffffff;border:1px solid #e1eaf5;border-radius:22px;overflow:hidden;">
+        <tr><td style="height:8px;background:#0878df;font-size:0;line-height:8px;">&nbsp;</td></tr>
+        <tr><td align="center" style="padding:34px 28px 12px;">
+          <div style="font-size:34px;line-height:1;font-weight:800;letter-spacing:-1.5px;color:#0b3470;">NaNo<span style="color:#f4b900;">Shift</span></div>
+          <div style="font-size:13px;letter-spacing:1.3px;text-transform:uppercase;color:#71839a;margin-top:10px;">I tuoi turni, sempre con te</div>
+        </td></tr>
+        <tr><td style="padding:22px 34px 36px;">
+          <div style="width:54px;height:54px;line-height:54px;text-align:center;border-radius:17px;background:#eaf5ff;color:#0878df;font-size:27px;margin:0 0 20px;">✓</div>
+          <h1 style="font-size:25px;line-height:1.25;letter-spacing:-.5px;color:#0b3470;margin:0 0 14px;">Conferma la tua email</h1>
+          <p style="font-size:15px;line-height:1.75;color:#526780;margin:0 0 22px;">Ciao,<br>grazie per esserti registrato a NaNoShift. Per completare la registrazione e verificare il tuo indirizzo, premi il pulsante qui sotto.</p>
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:28px auto;">
+            <tr><td align="center" bgcolor="#0878df" style="border-radius:12px;">
+              <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:15px 28px;border-radius:12px;background:#0878df;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;">Conferma indirizzo email</a>
+            </td></tr>
+          </table>
+          <p style="font-size:13px;line-height:1.7;color:#71839a;margin:22px 0 0;">Se il pulsante non si apre, copia questo link nel browser:<br><a href="{{ .ConfirmationURL }}" style="color:#0878df;word-break:break-all;">{{ .ConfirmationURL }}</a></p>
+          <div style="border-top:1px solid #e8eef6;margin-top:28px;padding-top:18px;font-size:12px;line-height:1.7;color:#8291a5;">Se non hai richiesto tu la registrazione, puoi ignorare questa email. Non condividere il link con altre persone.</div>
+        </td></tr>
+      </table>
+      <p style="font-size:11px;color:#91a0b3;margin:18px 0 0;">NaNoShift · Gestione semplice dei turni</p>
+    </td></tr>
+  </table>
+</body>
+</html>
 ```
 
 ## Reimpostazione password
 
-**Subject:** Reimposta la tua password · NaNo Shift
+**Subject:** Reimposta la tua password · NaNoShift
 
 **Body (HTML):**
+
 ```html
-<div style="margin:0;padding:32px 12px;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#173052;">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e0e8f2;border-radius:20px;overflow:hidden;">
-    <div style="padding:28px 28px 8px;text-align:center;">
-      <!-- LOGO NaNo Shift: inserire qui <img src="URL_HTTPS_LOGO" alt="NaNo Shift" width="150" style="display:block;width:150px;max-width:100%;height:auto;margin:0 auto 18px;"> -->
-      <div style="font-size:25px;font-weight:700;letter-spacing:-.5px;color:#173052;">NaNo Shift</div>
-      <div style="font-size:13px;color:#667995;margin-top:6px;">Gestione dei turni, con semplicità</div>
-    </div>
-    <div style="padding:22px 30px 32px;">
-      <h1 style="font-size:23px;line-height:1.3;margin:0 0 14px;color:#173052;">Reimposta la tua password</h1>
-      <p style="font-size:15px;line-height:1.7;margin:0 0 22px;color:#465a75;">Abbiamo ricevuto una richiesta per modificare la password del tuo account NaNo Shift. Premi il pulsante qui sotto per scegliere una nuova password.</p>
-      <p style="text-align:center;margin:28px 0;">
-        <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#2463c5;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 24px;border-radius:12px;">Crea una nuova password</a>
-      </p>
-      <p style="font-size:13px;line-height:1.7;color:#667995;margin:20px 0 0;">Se il pulsante non funziona, copia questo indirizzo nella barra del browser:<br><a href="{{ .ConfirmationURL }}" style="color:#2463c5;word-break:break-all;">Reimposta password</a></p>
-      <div style="border-top:1px solid #e8edf5;margin-top:26px;padding-top:18px;font-size:12px;line-height:1.6;color:#78879c;">Se non hai richiesto tu il ripristino, ignora questa email: la password non verrà modificata. Non condividere questo link con nessuno.</div>
+<div style="margin:0;padding:34px 12px;background:#f3f7fc;font-family:Arial,Helvetica,sans-serif;color:#183456;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e1eaf5;border-radius:22px;overflow:hidden;">
+    <div style="height:8px;background:#0878df;"></div>
+    <div style="padding:34px 30px 10px;text-align:center;"><div style="font-size:34px;font-weight:800;letter-spacing:-1.5px;color:#0b3470;">NaNo<span style="color:#f4b900;">Shift</span></div><div style="font-size:13px;letter-spacing:1.3px;text-transform:uppercase;color:#71839a;margin-top:10px;">I tuoi turni, sempre con te</div></div>
+    <div style="padding:22px 34px 36px;">
+      <h1 style="font-size:25px;line-height:1.25;color:#0b3470;margin:0 0 14px;">Reimposta la tua password</h1>
+      <p style="font-size:15px;line-height:1.75;color:#526780;">Abbiamo ricevuto una richiesta per modificare la password del tuo account NaNoShift. Premi il pulsante qui sotto per sceglierne una nuova.</p>
+      <p style="text-align:center;margin:28px 0;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:15px 28px;border-radius:12px;background:#0878df;color:#fff;text-decoration:none;font-size:15px;font-weight:bold;">Crea una nuova password</a></p>
+      <p style="font-size:13px;line-height:1.7;color:#71839a;">Se il pulsante non funziona, copia questo link nel browser:<br><a href="{{ .ConfirmationURL }}" style="color:#0878df;word-break:break-all;">{{ .ConfirmationURL }}</a></p>
+      <div style="border-top:1px solid #e8eef6;margin-top:28px;padding-top:18px;font-size:12px;line-height:1.7;color:#8291a5;">Se non hai richiesto tu il ripristino, ignora questa email. La password non verrà modificata.</div>
     </div>
   </div>
 </div>
 ```
 
-## Invito utente Supabase (se usato)
+## Impostazioni Auth da controllare
 
-**Subject:** Hai ricevuto un invito · NaNo Shift
+In **Authentication → URL Configuration**:
+- **Site URL:** https://nanoshift.pages.dev
+- **Redirect URLs:** aggiungere https://nanoshift.pages.dev/accesso.html (e, se si usa anche un dominio personalizzato, il corrispondente URL /accesso.html).
+- Non usare come Site URL il dominio del sito personale o un vecchio URL di anteprima.
 
-**Body (HTML):**
-```html
-<div style="margin:0;padding:32px 12px;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#173052;">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e0e8f2;border-radius:20px;overflow:hidden;">
-    <div style="padding:28px 28px 8px;text-align:center;">
-      <!-- Inserire il logo ufficiale NaNo Shift come immagine HTTPS quando disponibile -->
-      <div style="font-size:25px;font-weight:700;letter-spacing:-.5px;color:#173052;">NaNo Shift</div>
-    </div>
-    <div style="padding:22px 30px 32px;">
-      <h1 style="font-size:23px;line-height:1.3;margin:0 0 14px;color:#173052;">Sei stato invitato</h1>
-      <p style="font-size:15px;line-height:1.7;margin:0 0 22px;color:#465a75;">Hai ricevuto un invito a entrare in NaNo Shift. Usa il pulsante qui sotto per continuare.</p>
-      <p style="text-align:center;margin:28px 0;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#2463c5;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 24px;border-radius:12px;">Accetta invito</a></p>
-      <div style="border-top:1px solid #e8edf5;margin-top:26px;padding-top:18px;font-size:12px;line-height:1.6;color:#78879c;">Se non ti aspettavi questo invito, puoi ignorare questa email.</div>
-    </div>
-  </div>
-</div>
-```
+La pagina di registrazione invia già emailRedirectTo verso /accesso.html sul dominio che ospita l'app. Il link del template usa {{ .ConfirmationURL }}: non sostituire questa variabile con un URL scritto a mano.
 
-## Note di configurazione
-
-- I template si incollano in Supabase Dashboard → Authentication → Email Templates.
-- La conferma e il reset password usano `{{ .ConfirmationURL }}`; non rinominare questa variabile.
-- Verificare gli URL consentiti in Authentication → URL Configuration e impostare il Site URL corretto.
-- Per inviare email a utenti reali, configurare un SMTP personalizzato. Non inserire API key o password SMTP nel frontend o in questo repository.
-- Disabilitare il click tracking del provider per evitare che riscriva i link di autenticazione.
-- La versione con logo non è definitiva finché non viene fornito/confermato il file del logo ufficiale.
+**Nota importante:** il template nel repository è solo una bozza finché non viene incollato e salvato nella dashboard Supabase. Per l'invio affidabile a utenti reali, configurare anche un SMTP personalizzato; non inserire credenziali SMTP o chiavi segrete nel frontend o nel repository.
