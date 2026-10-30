@@ -116,7 +116,7 @@ function render(){
 }
 function buildSectionViews(){
  const app=$("app"),nav=app.querySelector(".side-nav");
- const make=(id,title,ids)=>{const box=document.createElement("section");box.className="view-section";box.id=id;box.setAttribute("aria-label",title);ids.map(x=>$(x)).filter(Boolean).forEach(el=>box.appendChild(el));app.insertBefore(box,app.querySelector("#profileSection"));return box};
+ const make=(id,title,ids)=>{const box=document.createElement("section");box.className="view-section";box.id=id;box.setAttribute("aria-label",title);ids.map(x=>$(x)).filter(Boolean).forEach(el=>box.appendChild(el));app.appendChild(box);return box};
  const overview=make("overviewView","Riepilogo",["monthSummary"]);const welcome=app.querySelector(".welcome");if(welcome)overview.insertBefore(welcome,overview.firstChild);
  make("calendarView","Calendario",["calendarSection"]);make("listView","Elenco turni",["listSection"]);make("groupsView","Gruppi",["groupsSection"]);make("sitesView","Sedi e modelli",["sitesSection"]);make("taxView","Simulatore",["taxSection"]);make("profileView","Dati utente",["profileSection"]);
  function activate(id){app.querySelectorAll(".view-section").forEach(v=>v.hidden=v.id!==id);nav.querySelectorAll("[data-section]").forEach(b=>b.classList.toggle("active",b.dataset.section===id));window.scrollTo({top:0,behavior:"instant"})}
