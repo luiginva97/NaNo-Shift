@@ -7,8 +7,6 @@ self.addEventListener("push", event => {
     icon: "/favicon-192.png",
     badge: "/favicon-192.png",
     data: { url: payload.url || "/dashboard.html" },
-    tag: "nanoshift-update",
-    renotify: true
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
