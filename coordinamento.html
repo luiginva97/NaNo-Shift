@@ -45,7 +45,26 @@ td.a{font-weight:800;font-size:12px}td.a.free{background:#e8f6ef;color:var(--gre
 dialog{border:0;border-radius:18px;width:min(420px,calc(100% - 24px));padding:20px;box-shadow:0 20px 80px #14294d33}dialog::backdrop{background:#0b1f3d77}
 .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.opts button{padding:12px 4px;border-radius:11px;border:1px solid var(--line);background:#fff;font-weight:800}.opts button.on{border-color:var(--blue);background:var(--pale);color:var(--blue)}
 .printonly{display:none}
-@media print{@page{size:landscape;margin:10mm}body{background:#fff}.top,.tabs,.noprint,.monthnav button,.legend,.warnlist,.notice,#wardBar{display:none!important}.panel{border:0;box-shadow:0;padding:0;margin:0}.scroll{overflow:visible;max-height:none;border:0}table{font-size:12px;width:100%;table-layout:fixed}th,td{min-width:0;width:27px;height:36px;padding:1px;border:1px solid #9aa8bd}th:first-child,td:first-child{width:128px;min-width:128px;position:static;font-size:12px}th.totalcol,td.totalcol{width:58px}th{position:static;font-size:11px}.cell{height:36px}.pill{min-width:0;width:24px;padding:5px 0;font-size:14px;border-radius:6px}.rolechip{display:none!important}th.totalcol,td.totalcol{position:static!important;box-shadow:none!important}td:first-child{white-space:normal;overflow:hidden;line-height:1.15}.panel{box-shadow:none!important}.cell.unav,.cell.rest{background:transparent}.cell.warn{outline:0}.printonly{display:block;margin-bottom:8px}.pill{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media print{
+ @page{size:A4 landscape;margin:6mm}
+ html,body{width:100%;height:auto;background:#fff!important;margin:0!important;padding:0!important}
+ .top,.tabs,.noprint,.monthnav button,.legend,.warnlist,.notice,#wardBar{display:none!important}
+ .wrap{max-width:none!important;width:100%!important;margin:0!important;padding:0!important}
+ .panel{border:0!important;box-shadow:none!important;padding:0!important;margin:0!important}
+ .scroll{overflow:visible!important;max-height:none!important;border:0!important;border-radius:0!important;margin:0!important}
+ table{font-size:10px!important;width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:collapse!important}
+ th,td{min-width:0!important;width:auto!important;height:5.2mm!important;max-height:5.2mm!important;padding:0!important;border:1px solid #8795a8!important;text-align:center!important;overflow:hidden!important}
+ th:first-child,td:first-child{width:31mm!important;min-width:31mm!important;max-width:31mm!important;position:static!important;font-size:10px!important;padding:0 2mm!important;line-height:1.05!important}
+ th.totalcol,td.totalcol{width:19mm!important;min-width:19mm!important;max-width:19mm!important;position:static!important;padding:0 1mm!important;font-size:9px!important}
+ th{position:static!important;font-size:9px!important;font-weight:800!important;background:#f0f3f8!important}
+ .cell{height:5mm!important;min-height:0!important;padding:0!important;font-size:10px!important}
+ .pill{display:inline-block!important;min-width:0!important;width:90%!important;max-width:9mm!important;height:4.3mm!important;line-height:4.3mm!important;padding:0!important;margin:0 auto!important;font-size:10px!important;border-radius:2px!important}
+ .rolechip{display:none!important}
+ td:first-child{white-space:normal!important;overflow-wrap:anywhere!important}
+ .cell.unav,.cell.rest{background:transparent!important}.cell.warn{outline:0!important}
+ .printonly{display:block!important;margin:0 0 2mm!important}
+ .pill{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+}
 
 /* Responsive polish: coordinatore */
 @media(max-width:700px){.top{align-items:flex-start;flex-direction:column;padding:12px}.brand{font-size:15px;flex-wrap:wrap}.brand img{width:124px;max-height:38px}.links{width:100%}.links a{flex:1;text-align:center;font-size:13px;padding:8px 7px}.wrap{padding:12px 10px 36px}.panel{padding:12px;border-radius:13px}.scroll{max-height:65vh}th:first-child,td:first-child{min-width:108px}.monthnav strong{min-width:125px}.opts{grid-template-columns:repeat(2,minmax(0,1fr))}}
