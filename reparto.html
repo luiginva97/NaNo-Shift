@@ -64,7 +64,7 @@ const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"
 const PREFS=[["ANY","Libero","free"],["M","Prefer. M","sp"],["P","Prefer. P","sp"],["G","Prefer. G","sp"],["N","Prefer. N","sp"],["R","Vorrei riposo","rest"],["OFF","Non disponibile","unavailable"]];
 const SHIFT={M:["07:00","14:00"],P:["14:00","19:00"],G:["07:00","19:00"],N:["19:00","07:00"],R:["00:00","00:00"]};
 const WD=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
-let user=null,units=[],unit=null,cursor=new Date(),tab="avail",avail={},orig={},review={},schedule=[],rosterContacts=[],swapRequests=[],msg=null,busy=false;
+let user=null,units=[],unit=null,isActualMember=false,cursor=new Date(),tab="avail",avail={},orig={},review={},schedule=[],rosterContacts=[],swapRequests=[],msg=null,busy=false;
 cursor.setDate(1);
 const ymd=(y,m,d)=>y+"-"+pad(m+1)+"-"+pad(d);
 const dim=()=>new Date(cursor.getFullYear(),cursor.getMonth()+1,0).getDate();
@@ -102,13 +102,19 @@ async function init(){
 }
 async function loadMemberships(){
  const {data,error}=await sb.rpc("get_my_units");
- if(error){note("Non riesco a caricare i reparti: "+error.message,"error");units=[];unit=null;return}
+ if(error){note("Non riesco a caricare i reparti: "+error.message,"error");units=[];unit=null;isActualMember=false;return}
  units=data||[];
+ const {data:mine,error:mineError}=await sb.from("unit_members").select("unit_id").eq("user_id",user.id);
+ isActualMember=!mineError&&(mine||[]).some(m=>m.unit_id===unit?.id);
  const ok=myUnits();
  const jn=window.__joinedUnit?ok.find(m=>m.unit_id===window.__joinedUnit):null;window.__joinedUnit=null;
  if(jn)unit={id:jn.unit_id,name:jn.name};
  else if(!unit||!ok.some(m=>m.unit_id===unit.id))unit=ok[0]?{id:ok[0].unit_id,name:ok[0].name}:null;
- if(unit)await loadMonth();
+ if(unit){
+  const {data:mine,error:mineError}=await sb.from("unit_members").select("unit_id").eq("user_id",user.id).eq("unit_id",unit.id).maybeSingle();
+  isActualMember=!mineError&&!!mine;
+  await loadMonth();
+ }else isActualMember=false;
 }
 async function loadMonth(){
  const [from,to]=range();
@@ -160,7 +166,7 @@ function scheduleView(){
  return '<section class="panel"><h2>I tuoi turni</h2>'+list+(mine.length?'<div class="savebar"><button class="btn" id="importShifts">Importa nel mio calendario</button> <button class="btn danger" id="removeImportedShifts">Rimuovi turni importati</button></div><p class="muted">Puoi rimuovere dal calendario personale solo i turni importati da questo reparto; gli altri turni resteranno invariati.</p>':"")+'</section><section class="panel"><h2>Turni del reparto</h2><div class="scroll"><table>'+head+body+'</table></div></section>';
 }
 function whatsappUrl(phone){const raw=String(phone||"").trim();if(!raw)return "";let n=raw.replace(/[^0-9]/g,"");if(!n)return "";if(raw.startsWith("00"))n=n.slice(2);else if(!raw.startsWith("+")&&!(n.startsWith("39")&&n.length>=11))n="39"+n;return "https://wa.me/"+n}
-function contactsView(){return '<section class="panel"><h2>Contatta i colleghi</h2><p class="muted">Il pulsante WhatsApp compare quando il collega ha inserito il numero nel proprio profilo.</p>'+rosterContacts.filter(m=>m.status==="active"&&m.user_id!==user.id).map(m=>{const url=whatsappUrl(m.phone);return '<div class="item"><span><b>'+safe(m.display_name)+'</b> <small class="muted">'+(m.staff_role==="oss"?"OSS":"Infermiere")+'</small></span>'+(url?'<a class="btn secondary" target="_blank" rel="noopener" href="'+url+'">WhatsApp</a>':'<span class="muted">Numero non inserito</span>')+'</div>'}).join("")+'</section>'}
+function contactsView(){return '<section class="panel"><h2>Contatta i colleghi</h2><p class="muted">Il pulsante WhatsApp compare quando il collega ha inserito il numero nel proprio profilo.</p>'+rosterContacts.filter(m=>m.status==="active"&&m.user_id!==user.id).map(m=>{const url=whatsappUrl(m.phone);return '<div class="item"><span><b>'+safe(m.display_name)+'</b> <small class="muted">'+(m.staff_role==="oss"?"OSS":"Infermiere")+'</small></span>'+(url?'<a class="btn secondary" target="_blank" rel="noopener" href="'+url+'" aria-label="Contatta '+safe(m.display_name)+' su WhatsApp"><svg viewBox="0 0 24 24" role="img" aria-label="WhatsApp" width="17" height="17" style="vertical-align:-3px;margin-right:6px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M20.2 11.7a8.2 8.2 0 0 1-12.1 7.2L3 20l1.1-4.8a8.2 8.2 0 1 1 16.1-3.5Z"/><path d="M8.4 7.8c.3-.6.7-.6 1-.6.2 0 .4 0 .6.5l.8 1.8c.1.3.1.5-.1.7l-.6.7c-.2.2-.2.4 0 .7.6 1 1.5 1.8 2.6 2.3.3.1.5.1.7-.1l.8-1c.2-.2.4-.2.7-.1l1.7.8c.3.1.5.3.5.5 0 .4-.2 1.1-.7 1.5-.5.4-1.2.6-1.8.4-1.2-.3-2.6-1-3.9-2.2-1.1-1-2-2.3-2.3-3.4-.2-.8-.1-1.7.3-2.5Z"/></svg>WhatsApp</a>':'<span class="muted">Numero non inserito</span>')+'</div>'}).join("")+'</section>'}
 
 function swapView(){
  const mine=schedule.filter(s=>s.user_id===user.id);
@@ -185,6 +191,7 @@ function render(){
   h+=joinCard();app.innerHTML=h;bind();return
  }
  h+='<div class="tabs"><button data-tab="avail" class="'+(tab==="avail"?"active":"")+'">Disponibilità</button><button data-tab="sched" class="'+(tab==="sched"?"active":"")+'">Turni pubblicati</button></div>';
+ if(isActualMember)h+='<div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn secondary" id="leaveUnit">Lascia il reparto</button></div>';
  h+='<div class="monthnav"><button data-month="-1" aria-label="Mese precedente">‹</button><strong>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</strong><button data-month="1" aria-label="Mese successivo">›</button></div>';
  h+=tab==="avail"?availView():scheduleView();
  if(tab==="sched")h+=swapView();
@@ -197,6 +204,13 @@ function bind(){
   e.preventDefault();const {error}=await sb.rpc("request_join_unit",{p_code:$("code").value,p_staff_role:$("joinRole").value});
   if(error)note(error.message,"error");else note("Richiesta inviata: attendi l'approvazione della coordinatrice.","");
   await loadMemberships();render();
+ };
+ const leave=$("leaveUnit");if(leave)leave.onclick=async()=>{
+  if(!confirm("Vuoi davvero lasciare questo reparto? Le tue disponibilità e i turni pubblicati del reparto verranno rimossi; i turni già copiati nel calendario personale resteranno invariati."))return;
+  leave.disabled=true;
+  const {error}=await sb.rpc("leave_unit",{p_unit:unit.id});
+  if(error){note(error.message||"Non è stato possibile lasciare il reparto.","error");leave.disabled=false;render();return}
+  unit=null;isActualMember=false;note("Hai lasciato il reparto. Le disponibilità e i turni di reparto sono stati rimossi.","");await loadMemberships();render();
  };
  const ws=$("wardSel");if(ws)ws.onchange=async()=>{const m=units.find(x=>x.unit_id===ws.value);unit={id:m.unit_id,name:m.name};note(null);await loadMonth();render()};
  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
