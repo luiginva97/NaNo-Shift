@@ -4,8 +4,10 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f5f8fc"><meta name="description" content="Esplora NaNoShift con una demo interattiva e dati completamente inventati.">
 <title>Demo interattiva — NaNoShift</title>
+<script src="nav.js"></script>
+<link rel="stylesheet" href="ui.css"><link rel="stylesheet" href="nav.css">
 <style>
-:root{--blue:#0057B7;--yellow:#FFD700;--navy:#102b4e;--ink:#18334f;--muted:#718198;--line:#e2e9f1;--bg:#f4f7fb;--pale:#edf5ff;--green:#16845b;--red:#b42318;--purple:#7254c7}
+:root{--navy:#10284b;--blue:#2463eb;--pale:#edf3ff;--bg:#f5f7fc;--line:#dfe6f1;--muted:#68778f;--ink:#10284b;--yellow:#FFD700;--green:#13845b;--red:#b42318;--purple:#7754c8;--gold:#f2bd36}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select{font:inherit}button{cursor:pointer}
 .demo-banner{background:#fff6cc;color:#665000;border-bottom:1px solid #f1dc7b;padding:9px 16px;text-align:center;font-size:12px;font-weight:800;letter-spacing:.02em}
 header{height:68px;background:white;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:10}.brand{font-size:21px;font-weight:950;color:var(--blue);text-decoration:none;display:flex;gap:9px;align-items:center}.brand span span{color:#d3a900}.brand small{display:block;font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:800;text-transform:uppercase}
@@ -30,36 +32,56 @@ footer{padding:22px;text-align:center;color:var(--muted);font-size:12px}
 @media(max-width:900px){.shell{grid-template-columns:1fr}aside{position:sticky;top:68px;height:auto;padding:8px 12px;border-right:0;border-bottom:1px solid var(--line);display:flex;gap:4px;overflow:auto;z-index:8}.aside-title{display:none}.navbtn{width:auto;white-space:nowrap;margin:0;padding:8px 10px}.navbtn .ico{width:auto}.navbtn span:last-child{font-size:12px}main{padding:18px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){header{padding:0 12px;height:60px}.brand{font-size:18px}.brand small{font-size:8px}.header-actions .btn.alt{display:none}main{padding:13px}.page-head{display:block}.page-head .btn{margin-top:10px}.grid{gap:8px}.stat{padding:11px}.stat strong{font-size:23px}.grid.two,.feature-list{grid-template-columns:1fr}.calendar{gap:3px;grid-template-columns:repeat(7,minmax(36px,1fr))}.datecell{min-height:62px;padding:4px}.datecell .num{font-size:10px}.shift{font-size:9px;padding:2px}.panel{padding:13px}}
 @media print{.demo-banner,header,aside,.noprint,footer,.btn,button,form{display:none!important}body{background:#fff}.shell{display:block;min-height:0}main{padding:0}.panel{box-shadow:none;border:0}.print-area{display:block!important}.print-area .tablewrap{overflow:visible}.print-area table{min-width:0;font-size:9px}.print-area th,.print-area td{padding:4px 3px}}
+/* Demo: stessa cornice e navigazione delle pagine autenticate NaNoShift */
+body.has-nav{min-width:0;overflow-x:hidden;background:var(--bg);color:var(--navy);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.demo-banner{position:relative;z-index:6;background:#fff8df;color:#725600;border-bottom:1px solid #f0dfa0;padding:7px 12px;font-size:11px}
+.top{width:100%;min-height:68px;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px max(16px,calc((100% - 1180px)/2));background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.top .brand{display:flex;align-items:center;gap:9px;color:#0057B7;font-size:17px;font-weight:800;text-decoration:none}
+.top .brand img{width:42px;height:42px;object-fit:contain}
+.brand-text{display:flex;flex-direction:column;line-height:1.1}
+.brand-name{font-size:18px;font-weight:850;color:var(--navy)}
+.brand-shift{color:var(--gold,#f2bd36)}
+.brand-text small{font-size:10px;letter-spacing:.06em;color:var(--muted);font-weight:650;margin-top:4px}
+.top .links{display:flex;gap:8px;flex-wrap:wrap}
+.top .links a{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--navy);text-decoration:none;font-weight:650;font-size:13px}
+.shell{display:block;max-width:1280px;margin:auto;min-height:calc(100vh - 106px)}
+body.has-nav .wrap{max-width:1280px;width:100%;margin:auto;padding:24px 18px 48px}
+main#main{padding:24px 18px 48px;min-width:0}
+.navbtn{width:100%;border:0;background:transparent;text-align:left;color:var(--navy);padding:11px 12px;border-radius:11px;font-weight:650;display:flex;gap:12px;align-items:center;margin:0}
+.navbtn svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.navbtn.active,.navbtn:hover{background:var(--pale);color:var(--blue)}
+.navbtn span:last-child{font-size:14px}
+@media(max-width:999px){body.has-nav{padding-bottom:88px}.top{min-height:58px;padding:10px 12px}.top .brand img{width:36px;height:36px}.top .links a{padding:7px 9px;font-size:12px}body.has-nav .wrap{padding:16px 12px 24px}main#main{padding:16px 12px 24px}}
+@media print{.demo-banner,.top,.side-nav,.noprint,footer,.btn,button,form{display:none!important}body.has-nav{padding:0!important}.shell{display:block;min-height:0}main#main{padding:0}.panel{box-shadow:none;border:0}.print-area{display:block!important}.print-area .tablewrap{overflow:visible}.print-area table{min-width:0;font-size:9px}.print-area th,.print-area td{padding:4px 3px}}
 </style>
 </head>
-<body>
+<body class="has-nav">
 <div class="demo-banner">DEMO INTERATTIVA · DATI DI FANTASIA · NESSUNA INFORMAZIONE VIENE SALVATA O INVIATA</div>
-<header><a class="brand" href="index.html">NaNo<span>Shift</span><small>Esplora il gestionale</small></a><div class="header-actions"><a class="btn alt" href="index.html">← Torna al sito</a><a class="btn yellow" href="accesso.html?registrati=1">Crea account</a></div></header>
-<div class="shell">
-<aside aria-label="Sezioni demo">
-<div class="aside-title">Panoramica</div>
-<button class="navbtn active" data-page="home"><span class="ico">▦</span><span>Riepilogo</span></button>
-<button class="navbtn" data-page="profile"><span class="ico">◉</span><span>Profilo personale</span></button>
-<button class="navbtn" data-page="calendar"><span class="ico">▦</span><span>Calendario personale</span></button>
-<button class="navbtn" data-page="availability"><span class="ico">✓</span><span>Disponibilità</span></button>
-<div class="aside-title">Reparto e coordinamento</div>
-<button class="navbtn" data-page="ward"><span class="ico">⌂</span><span>Area reparto</span></button>
-<button class="navbtn" data-page="coord"><span class="ico">◫</span><span>Coordinamento</span></button>
-<button class="navbtn" data-page="swaps"><span class="ico">⇄</span><span>Cambi turno</span></button>
-<button class="navbtn" data-page="groups"><span class="ico">♧</span><span>Gruppi e inviti</span></button>
-<div class="aside-title">Strumenti</div>
-<button class="navbtn" data-page="sites"><span class="ico">⌖</span><span>Sedi e modelli</span></button>
-<button class="navbtn" data-page="tax"><span class="ico">€</span><span>Simulatore compensi</span></button>
-<button class="navbtn" data-page="docs"><span class="ico">▤</span><span>Documenti</span></button>
-<button class="navbtn" data-page="notifications"><span class="ico">♢</span><span>Notifiche</span></button>
-</aside>
-<main id="main"></main>
-</div>
+<header class="top"><div class="brand"><img src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small>Demo interattiva</small></span></div><div class="links"><a href="index.html">← Torna al sito</a><a href="accesso.html?registrati=1">Crea account</a></div></header>
+<nav class="side-nav" id="demoNav" aria-label="Navigazione demo"></nav>
+<main class="wrap" id="main"></main>
 <footer>NaNoShift · Demo esplorativa. Nomi, turni, importi e richieste sono inventati e non rappresentano dati reali.</footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 (function(){
 "use strict";
+function mountDemoNavigation(){
+ const nav=document.getElementById("demoNav"),items=window.NanoNav.ITEMS;
+ const icon=id=>items.find(x=>x.id===id)?.icon||"";
+ const defs=[
+  ["home","Riepilogo","overview"],["calendar","Calendario","calendar"],["groups","Gruppi","groups"],["ward","Reparto","ward"],
+  ["coord","Coordina","coord"],["availability","Disponibilità","calendar"],["swaps","Cambi turno","list"],["sites","Sedi e modelli","sites"],
+  ["tax","Simulatore","tax"],["docs","Documenti","docs"],["notifications","Notifiche","overview"],["profile","Dati utente","profile"]
+ ];
+ const button=([page,label,id])=>'<button type="button" class="navbtn" data-page="'+page+'">'+icon(id)+'<span>'+label+'</span></button>';
+ nav.innerHTML='<div class="side-brand" role="link" tabindex="0" aria-label="NaNoShift demo"><img src="favicon-192.png" alt="" width="38" height="38"><span class="sb-name">NaNo<span>Shift</span></span></div>'
+  +defs.slice(0,4).map(button).join("")
+  +'<button type="button" class="nav-more-btn" aria-expanded="false" aria-controls="demoNavMore"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg><span>Altro</span></button>'
+  +'<div class="nav-more" id="demoNavMore">'+defs.slice(4).map(button).join("")+'</div>'
+  +'<div class="side-account"><button type="button" class="side-account-btn"><span class="sa-avatar">GD</span><span class="sa-name">Giulia Demo</span></button></div>';
+ nav.querySelectorAll("[data-page]").forEach(b=>b.addEventListener("click",()=>{go(b.dataset.page);nav.classList.remove("more-open");nav.querySelector(".nav-more-btn").setAttribute("aria-expanded","false");}));
+ const more=nav.querySelector(".nav-more-btn");more.addEventListener("click",()=>{const open=nav.classList.toggle("more-open");more.setAttribute("aria-expanded",String(open));});
+}
 const $=id=>document.getElementById(id);
 const people=[
  {id:"p1",name:"Giulia Demo",role:"Infermiera",tag:"Coordinatrice",initials:"GD"},
@@ -155,7 +177,7 @@ function bind(){
  document.querySelectorAll("[data-message]").forEach(b=>b.onclick=()=>toast("Messaggio dimostrativo: nessun contatto reale."));
 }
 function go(p){state.page=p;render();window.scrollTo({top:0,behavior:"smooth"});}
-document.querySelectorAll(".navbtn").forEach(b=>b.onclick=()=>go(b.dataset.page));
+mountDemoNavigation();
 render();
 })();
 </script>
