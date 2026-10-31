@@ -11,15 +11,20 @@
   {id:"list",label:"Elenco turni",section:"listView",pref:"list_view",icon:svg('<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>')},
   {id:"sites",label:"Sedi e modelli",section:"sitesView",pref:"work_sites",icon:svg('<path d="M4 21V6.5L12 3l8 3.5V21M2.5 21h19"/><path d="M9 21v-4.5h6V21M8.5 9.5h1.5M14 9.5h1.5M8.5 13h1.5M14 13h1.5"/>')},
   {id:"tax",label:"Simulatore",section:"taxView",pref:"tax_simulator",notEmployee:true,icon:svg('<rect x="4.5" y="2.5" width="15" height="19" rx="3"/><path d="M8 7h8M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01"/>')},
+  {id:"docs",label:"Documenti",href:"professional.html",icon:svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>')},
+  {id:"cvs",label:"CV condivisi",href:"cv-condivisi.html",coordOnly:true,icon:svg('<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6.5 16c.5-1.5 1.5-2 2.5-2s2 .5 2.5 2M14 10h4M14 14h4"/>')},
+  {id:"users",label:"Utenti",href:"admin.html",adminOnly:true,icon:svg('<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><circle cx="12" cy="10" r="2.2"/><path d="M8.5 16.5c.8-1.6 2-2.3 3.5-2.3s2.7.7 3.5 2.3"/>')},
   {id:"profile",label:"Dati utente",section:"profileView",icon:svg('<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>')}
  ];
- const DEFAULT=["overview","calendar","groups","ward","coord","list","sites","tax","profile"];
- const DEFAULT_COORD=["coord","ward","overview","calendar","groups","list","sites","tax","profile"];
+ const DEFAULT=["overview","calendar","groups","ward","coord","list","sites","tax","docs","cvs","users","profile"];
+ const DEFAULT_COORD=["coord","ward","cvs","overview","calendar","groups","list","sites","tax","docs","users","profile"];
  const PRIMARY=4;
  const byId=Object.fromEntries(ITEMS.map(i=>[i.id,i]));
+ // Pagina corrente → voce di menu evidenziata (le pagine "intere" non sono sezioni della dashboard).
+ const PAGE_IDS={reparto:"ward",coordinamento:"coord",professional:"docs",cvs:"cvs",admin:"users"};
 
  // Una voce è disponibile per questa persona (ruolo e tipo di impiego), indipendentemente dai toggle.
- const available=(it,ctx)=>!(it.coordOnly&&!ctx.isCoord)&&!(it.notEmployee&&ctx.employee);
+ const available=(it,ctx)=>!(it.coordOnly&&!ctx.isCoord)&&!(it.adminOnly&&!ctx.isAdmin)&&!(it.notEmployee&&ctx.employee);
  const enabled=(it,prefs)=>!it.pref||(prefs||{})[it.pref]!==false;
  const visible=(it,prefs,ctx)=>available(it,ctx)&&enabled(it,prefs);
 
@@ -39,7 +44,7 @@
   const nav=o.container,ctx=o.ctx||{},prefs=o.prefs||{},page=o.page;
   document.body.classList.add("has-nav");
   const items=visibleItems(prefs,ctx);
-  const activeId=page==="dashboard"?(items.find(i=>i.section===o.active)||{}).id:(page==="reparto"?"ward":page==="coordinamento"?"coord":null);
+  const activeId=page==="dashboard"?(items.find(i=>i.section===o.active)||{}).id:(PAGE_IDS[page]||null);
   const btn=it=>{
    const target=it.section?(page==="dashboard"?'data-section="'+it.section+'"':'data-href="dashboard.html?area=personale&section='+it.section+'"'):'data-href="'+it.href+'"';
    return '<button type="button" '+target+' class="'+(it.id===activeId?"active":"")+'"'+(it.id===activeId?' aria-current="page"':"")+'>'+it.icon+'<span>'+esc(it.label)+'</span></button>';
@@ -72,11 +77,11 @@
  // Contesto per le pagine che non caricano già il profilo (reparto, coordinamento).
  async function loadContext(sb,user){
   const [p,u]=await Promise.all([
-   sb.from("profiles").select("display_name,first_name,avatar_url,employment_type,feature_preferences").eq("id",user.id).single(),
+   sb.from("profiles").select("display_name,first_name,avatar_url,employment_type,feature_preferences,role").eq("id",user.id).single(),
    sb.rpc("get_my_units")
   ]);
   const profile=p.data||{},units=u.data||[];
-  return {profile,prefs:profile.feature_preferences||{},ctx:{isCoord:units.some(m=>m.unit_role==="coordinator"&&m.status==="active"),employee:profile.employment_type==="employee"}};
+  return {profile,prefs:profile.feature_preferences||{},ctx:{isCoord:units.some(m=>m.unit_role==="coordinator"&&m.status==="active"),isAdmin:profile.role==="admin",employee:profile.employment_type==="employee"}};
  }
 
  // Menu account nell'intestazione (pagine diverse dalla dashboard).
