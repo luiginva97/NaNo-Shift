@@ -69,15 +69,16 @@ Deno.serve(async (req: Request) => {
 
   if (action === "list_users") {
     const [{ data: profiles, error: pErr }, { data: users, error: uErr }] = await Promise.all([
-      admin.from("profiles").select("id,display_name,first_name,last_name,profession,employment_type,role,created_at").order("created_at", { ascending: false }),
+      admin.from("profiles").select("id,role,created_at").order("created_at", { ascending: false }),
       admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
     ]);
-    if (pErr || uErr) return json({ error: "Impossibile caricare l'elenco utenti" }, 500);
+    if (pErr || uErr) return json({ error: "Impossibile caricare l'elenco account" }, 500);
     const authById = new Map((users?.users || []).map((u) => [u.id, u]));
     return json({
       users: (profiles || []).map((p) => {
         const a = authById.get(p.id);
-        return { ...p, email: a?.email || "", last_sign_in_at: a?.last_sign_in_at || null, email_confirmed: !!a?.email_confirmed_at };
+        return { id: p.id, role: p.role, created_at: p.created_at,
+          last_sign_in_at: a?.last_sign_in_at || null, email_confirmed: !!a?.email_confirmed_at };
       })
     });
   }
