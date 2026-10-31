@@ -25,6 +25,7 @@ Deno.serve(async (req: Request) => {
   const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: profile, error: profileError } = await admin.from("profiles").select("role").eq("id", user.id).maybeSingle();
   if (profileError) return json({ error: "Impossibile verificare il profilo" }, 500);
+  const isMaster = profile?.role === "admin" && user.email?.toLowerCase() === "nanoshift01@gmail.com";
 
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return json({ error: "Richiesta non valida" }, 400); }
@@ -44,6 +45,7 @@ Deno.serve(async (req: Request) => {
 
   if (action === "list_visible_cvs") {
     const unitId = String(body.unit_id || "");
+    if (isMaster) return json({ error: "Il Master non può consultare i CV delle strutture" }, 403);
     if (!unitId) return json({ error: "Reparto non specificato" }, 400);
     const { data: coord } = await admin.from("unit_members").select("unit_id").eq("unit_id", unitId).eq("user_id", user.id).eq("unit_role", "coordinator").eq("status", "active").maybeSingle();
     const { data: unit } = await admin.from("units").select("approval_status").eq("id", unitId).maybeSingle();
@@ -62,7 +64,7 @@ Deno.serve(async (req: Request) => {
     return json({ cvs });
   }
 
-  if (profile?.role !== "admin") return json({ error: "Operazione riservata all'amministratore" }, 403);
+  if (!isMaster) return json({ error: "Operazione riservata al Master" }, 403);
 
   if (action === "list_users") {
     const [{ data: profiles, error: pErr }, { data: users, error: uErr }] = await Promise.all([
