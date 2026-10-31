@@ -25,7 +25,8 @@ Deno.serve(async (req: Request) => {
   const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: profile, error: profileError } = await admin.from("profiles").select("role").eq("id", user.id).maybeSingle();
   if (profileError) return json({ error: "Impossibile verificare il profilo" }, 500);
-  const isMaster = profile?.role === "admin" && user.email?.toLowerCase() === "nanoshift01@gmail.com";
+  const { data: masterFlag, error: masterCheckError } = await callerClient.rpc("is_master_account");
+  const isMaster = profile?.role === "admin" && !masterCheckError && masterFlag === true;
 
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return json({ error: "Richiesta non valida" }, 400); }
