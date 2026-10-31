@@ -55,7 +55,7 @@ const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"
 const PREFS=[["ANY","Libero","free"],["M","Prefer. M","sp"],["P","Prefer. P","sp"],["G","Prefer. G","sp"],["N","Prefer. N","sp"],["R","Vorrei riposo","rest"],["OFF","Non disponibile","unavailable"]];
 const SHIFT={M:["07:00","14:00"],P:["14:00","19:00"],G:["07:00","19:00"],N:["19:00","07:00"],R:["00:00","00:00"]};
 const WD=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
-let user=null,units=[],unit=null,cursor=new Date(),tab="avail",avail={},orig={},review={},schedule=[],msg=null,busy=false;
+let user=null,units=[],unit=null,cursor=new Date(),tab="avail",avail={},orig={},review={},schedule=[],rosterContacts=[],swapRequests=[],msg=null,busy=false;
 cursor.setDate(1);
 const ymd=(y,m,d)=>y+"-"+pad(m+1)+"-"+pad(d);
 const dim=()=>new Date(cursor.getFullYear(),cursor.getMonth()+1,0).getDate();
@@ -106,14 +106,15 @@ async function loadMonth(){
  const [a,s,r]=await Promise.all([
   sb.from("unit_availability").select("day,choice,review_status").eq("unit_id",unit.id).eq("user_id",user.id).gte("day",from).lte("day",to),
   sb.from("unit_shifts").select("user_id,shift_date,code").eq("unit_id",unit.id).eq("published",true).gte("shift_date",from).lte("shift_date",to),
-  sb.rpc("get_unit_roster",{p_unit:unit.id})
+  sb.rpc("get_unit_roster_with_phone",{p_unit:unit.id})
  ]);
- const errs=[a.error,s.error,r.error].filter(Boolean).map(e=>e.message);
+ const {data:swapData,error:swapError}=await sb.from("unit_shift_swap_requests").select("*").eq("unit_id",unit.id).order("created_at",{ascending:false}).limit(30);
+ const errs=[a.error,s.error,r.error,swapError].filter(Boolean).map(e=>e.message);
  if(errs.length)note("Errore di caricamento: "+errs.join(" · "),"error");
  avail={};orig={};review={};
  (a.data||[]).forEach(x=>{avail[x.day]=x.choice;orig[x.day]=x.choice;review[x.day]=x.review_status});
- const names={};(r.data||[]).forEach(x=>{names[x.user_id]=x.display_name});
- schedule=(s.data||[]).map(x=>({user_id:x.user_id,day:x.shift_date,code:x.code,display_name:names[x.user_id]||"Collega"}));
+ rosterContacts=r.data||[];const names={};rosterContacts.forEach(x=>{names[x.user_id]=x.display_name});
+ schedule=(s.data||[]).map(x=>({user_id:x.user_id,day:x.shift_date,code:x.code,display_name:names[x.user_id]||"Collega"}));swapRequests=swapData||[];
 }
 function joinCard(){
  const pending=units.filter(m=>m.unit_role==="nurse"&&m.status!=="active").map(m=>'<div class="item"><span><b>'+safe(m.name)+'</b></span><span class="muted">In attesa di approvazione</span></div>').join("");
@@ -148,6 +149,8 @@ function scheduleView(){
  const list='<div class="mysum"><div><b>'+worked+'</b><span>giorni di lavoro</span></div><div><b>'+hours+' h</b><span>ore programmate</span></div><div><b>'+(next?new Date(next.day+"T12:00:00").toLocaleDateString("it-IT",{weekday:"short",day:"numeric",month:"short"})+" · "+next.code:"—")+'</b><span>prossimo turno</span></div></div>'+(mine.length?'<div class="sumchips">'+chips+'</div><div class="mgrid" role="grid" aria-label="I tuoi turni del mese">'+grid+'</div>':'<p class="muted">Nessun turno assegnato a te questo mese.</p>');
  return '<section class="panel"><h2>I tuoi turni</h2>'+list+(mine.length?'<div class="savebar"><button class="btn" id="importShifts">Importa nel mio calendario</button> <button class="btn danger" id="removeImportedShifts">Rimuovi turni importati</button></div><p class="muted">Puoi rimuovere dal calendario personale solo i turni importati da questo reparto; gli altri turni resteranno invariati.</p>':"")+'</section><section class="panel"><h2>Turni del reparto</h2><div class="scroll"><table>'+head+body+'</table></div></section>';
 }
+function whatsappUrl(phone){const n=String(phone||"").replace(/[^0-9]/g,"");return n?"https://wa.me/"+n:""}
+function contactsView(){return '<section class="panel"><h2>Contatta i colleghi</h2><p class="muted">Il pulsante WhatsApp compare quando il collega ha inserito il numero nel proprio profilo.</p>'+rosterContacts.filter(m=>m.status==="active"&&m.user_id!==user.id).map(m=>{const url=whatsappUrl(m.phone);return '<div class="item"><span><b>'+safe(m.display_name)+'</b> <small class="muted">'+(m.staff_role==="oss"?"OSS":"Infermiere")+'</small></span>'+(url?'<a class="btn secondary" target="_blank" rel="noopener" href="'+url+'">WhatsApp</a>':'<span class="muted">Numero non inserito</span>')+'</div>'}).join("")+'</section>'}
 function render(){
  const app=$("app");
  let h='<h1>'+(unit?safe(unit.name):"Reparto")+'</h1><div class="muted">Disponibilità e turni pubblicati dalla coordinatrice.</div>';
@@ -161,6 +164,7 @@ function render(){
  h+='<div class="tabs"><button data-tab="avail" class="'+(tab==="avail"?"active":"")+'">Disponibilità</button><button data-tab="sched" class="'+(tab==="sched"?"active":"")+'">Turni pubblicati</button></div>';
  h+='<div class="monthnav"><button data-month="-1" aria-label="Mese precedente">‹</button><strong>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</strong><button data-month="1" aria-label="Mese successivo">›</button></div>';
  h+=tab==="avail"?availView():scheduleView();
+ h+=contactsView();
  h+=joinCard().replace('<section class="panel"><h2>Entra in un reparto</h2>','<section class="panel"><h2>Entra in un altro reparto</h2>');
  app.innerHTML=h;bind();
 }
