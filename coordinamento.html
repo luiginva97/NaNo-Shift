@@ -107,7 +107,7 @@ async function loadUnits(keepId){
 async function loadData(){
  const [from,to]=range(),prev=new Date(cursor.getFullYear(),cursor.getMonth(),-6);
  const [r,a,s,iv]=await Promise.all([
-  sb.rpc("get_unit_roster",{p_unit:unit.id}),
+  sb.rpc("get_unit_roster_with_phone",{p_unit:unit.id}),
   sb.from("unit_availability").select("user_id,day,choice,review_status").eq("unit_id",unit.id).gte("day",from).lte("day",to),
   sb.from("unit_shifts").select("user_id,shift_date,code,published").eq("unit_id",unit.id).gte("shift_date",keyOf(prev)).lte("shift_date",to),
   sb.from("unit_invitations").select("id,staff_role,label,created_at,expires_at,accepted_at,revoked_at").eq("unit_id",unit.id).order("created_at",{ascending:false}).limit(30)
@@ -163,6 +163,8 @@ function requestsView(){
  const p=pending();
  return '<section class="panel"><h2>Richieste di ingresso</h2>'+(p.map(m=>'<div class="item"><span><b>'+safe(m.display_name)+'</b> '+roleChip(m.staff_role)+'</span><span><button class="btn small" data-approve="'+m.user_id+'">Approva</button> <button class="btn small danger" data-reject="'+m.user_id+'">Rifiuta</button></span></div>').join("")||'<p class="muted">Nessuna richiesta in attesa.</p>')+'</section>';
 }
+function whatsappUrl(phone){const n=String(phone||"").replace(/[^0-9]/g,"");return n?"https://wa.me/"+n:""}
+function whatsappButton(m){const url=whatsappUrl(m.phone);return url?'<a class="btn small secondary" target="_blank" rel="noopener" href="'+url+'">WhatsApp</a>':'<span class="muted">Telefono non disponibile</span>'}
 function inviteStatus(i){return i.accepted_at?"Accettato":i.revoked_at?"Revocato":new Date(i.expires_at)<new Date()?"Scaduto":"In attesa"}
 function inviteCard(){
  const open=invites.filter(i=>inviteStatus(i)==="In attesa");
