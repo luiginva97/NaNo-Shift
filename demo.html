@@ -51,13 +51,14 @@ main#main{padding:24px 18px 48px;min-width:0}
 .navbtn svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .navbtn.active,.navbtn:hover{background:var(--pale);color:var(--blue)}
 .navbtn span:last-child{font-size:14px}
+.demo-role-label{font-size:12px;font-weight:750;color:var(--muted)}#demoRoleSwitch{border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--navy);padding:8px 10px;font-weight:750;max-width:150px}@media(max-width:560px){.demo-role-label{display:none}#demoRoleSwitch{padding:7px 8px;max-width:116px;font-size:12px}.top .links a:last-child{display:none}}
 @media(max-width:999px){body.has-nav{padding-bottom:88px}.top{min-height:58px;padding:10px 12px}.top .brand img{width:36px;height:36px}.top .links a{padding:7px 9px;font-size:12px}body.has-nav .wrap{padding:16px 12px 24px}main#main{padding:16px 12px 24px}}
 @media print{.demo-banner,.top,.side-nav,.noprint,footer,.btn,button,form{display:none!important}body.has-nav{padding:0!important}.shell{display:block;min-height:0}main#main{padding:0}.panel{box-shadow:none;border:0}.print-area{display:block!important}.print-area .tablewrap{overflow:visible}.print-area table{min-width:0;font-size:9px}.print-area th,.print-area td{padding:4px 3px}}
 </style>
 </head>
 <body class="has-nav">
 <div class="demo-banner">DEMO INTERATTIVA · DATI DI FANTASIA · NESSUNA INFORMAZIONE VIENE SALVATA O INVIATA</div>
-<header class="top"><div class="brand"><img src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small>Demo interattiva</small></span></div><div class="links"><a href="index.html">← Torna al sito</a><a href="accesso.html?registrati=1">Crea account</a></div></header>
+<header class="top"><div class="brand"><img src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small>Demo interattiva</small></span></div><div class="links"><label class="demo-role-label" for="demoRoleSwitch">Modalità</label><select id="demoRoleSwitch" aria-label="Scegli il ruolo demo"><option value="operator">Operatrice</option><option value="coordinator">Coordinatrice</option></select><a href="index.html">← Torna al sito</a><a href="accesso.html?registrati=1">Crea account</a></div></header>
 <nav class="side-nav" id="demoNav" aria-label="Navigazione demo"></nav>
 <main class="wrap" id="main"></main>
 <footer>NaNoShift · Demo esplorativa. Nomi, turni, importi e richieste sono inventati e non rappresentano dati reali.</footer>
@@ -74,10 +75,11 @@ function mountDemoNavigation(){
   ["tax","Simulatore","tax"],["docs","Documenti","docs"],["notifications","Notifiche","overview"],["profile","Dati utente","profile"]
  ];
  const button=([page,label,id])=>'<button type="button" class="navbtn" data-page="'+page+'">'+icon(id)+'<span>'+label+'</span></button>';
+ const visibleDefs=defs.filter(d=>state.demoRole==="coordinator"?["home","groups","ward","coord","availability","swaps","sites","docs","notifications","profile"].includes(d[0]):!["coord","sites"].includes(d[0]));
  nav.innerHTML='<div class="side-brand" role="link" tabindex="0" aria-label="NaNoShift demo"><img src="favicon-192.png" alt="" width="38" height="38"><span class="sb-name">NaNo<span>Shift</span></span></div>'
-  +defs.slice(0,4).map(button).join("")
+  +visibleDefs.slice(0,4).map(button).join("")
   +'<button type="button" class="nav-more-btn" aria-expanded="false" aria-controls="demoNavMore"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg><span>Altro</span></button>'
-  +'<div class="nav-more" id="demoNavMore">'+defs.slice(4).map(button).join("")+'</div>'
+  +'<div class="nav-more" id="demoNavMore">'+visibleDefs.slice(4).map(button).join("")+'</div>'
   +'<div class="side-account"><button type="button" class="side-account-btn"><span class="sa-avatar">GD</span><span class="sa-name">Giulia Demo</span></button></div>';
  nav.querySelectorAll("[data-page]").forEach(b=>b.addEventListener("click",()=>{go(b.dataset.page);nav.classList.remove("more-open");nav.querySelector(".nav-more-btn").setAttribute("aria-expanded","false");}));
  const more=nav.querySelector(".nav-more-btn");more.addEventListener("click",()=>{const open=nav.classList.toggle("more-open");more.setAttribute("aria-expanded",String(open));});
@@ -95,7 +97,7 @@ const people=[
 const names=people.map(p=>p.name);
 const codes=["M","P","N","R","G"];
 const descriptions={M:"Mattina · 07:00–14:00",P:"Pomeriggio · 14:00–19:00",G:"Giornata · 07:00–19:00",N:"Notte · 19:00–07:00",R:"Riposo"};
-const state={page:"home",month:new Date(2026,10,1),published:false,cv:true,push:true,availability:{},shifts:{},approvedMembers:[],unitRequest:false,swaps:[
+const state={page:"home",demoRole:"operator",confirmedAvailability:[],month:new Date(2026,10,1),published:false,cv:true,push:true,availability:{},shifts:{},approvedMembers:[],unitRequest:false,swaps:[
  {id:1,who:"Marco Esempio",to:"Sara Fittizia",date:"12/11",from:"N",target:"M",status:"In attesa del collega"},
  {id:2,who:"Luca Campione",to:"Elena Prova",date:"18/11",from:"P",target:"P",status:"Da approvare"}
 ],members:[...people],groups:["Infermieristica","OSS","Notturnisti"],notifications:[{title:"Nuova richiesta di cambio turno",body:"Marco Esempio · 12 novembre",time:"09:42"},{title:"Disponibilità confermate",body:"4 persone hanno completato il mese",time:"Ieri"}],sites:[{name:"Clinica Demo",rate:25.5,model:"M · P · N"},{name:"Centro Esempio",rate:28,model:"M · G · N"}],docs:[{name:"Giulia Demo",type:"BLSD",expiry:"15/12/2026"},{name:"Marco Esempio",type:"Antincendio",expiry:"03/11/2026"},{name:"Sara Fittizia",type:"Iscrizione Ordine",expiry:"20/02/2027"}]};
@@ -158,8 +160,9 @@ panel("CV condivisibile",table(["Documento","Proprietario","Visibilità"],['<tr>
 function notifications(){return pageHead("Centro notifiche","Raccogli gli aggiornamenti del reparto e scegli se attivare le notifiche push sul dispositivo.")+
 panel("Preferenze",'<label class="switch"><input type="checkbox" id="pushswitch" '+(state.push?"checked":"")+'> Notifiche push attive (simulazione)</label><p class="muted">In un account reale il browser richiede il consenso del dispositivo. Qui non viene chiesto alcun permesso.</p>')+
 panel("Notifiche recenti",state.notifications.map(n=>'<div class="item" style="padding:11px 0;border-bottom:1px solid var(--line)"><b>'+n.title+'</b><div class="muted">'+n.body+' · '+n.time+'</div></div>').join("")); }
-function render(){document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.page===state.page));const pages={home,profile,calendar,availability,ward,coord,swaps,groups,sites,tax,docs,notifications};$("main").innerHTML=pages[state.page]();bind();}
+function render(){const roleSwitch=$("demoRoleSwitch");if(roleSwitch)roleSwitch.value=state.demoRole;document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.page===state.page));const pages={home,profile,calendar,availability,ward,coord,swaps,groups,sites,tax,docs,notifications};$("main").innerHTML=pages[state.page]();bind();}
 function bind(){
+ const roleSwitch=$("demoRoleSwitch");if(roleSwitch)roleSwitch.onchange=()=>{state.demoRole=roleSwitch.value;mountDemoNavigation();go(state.demoRole==="coordinator"?"coord":"home");};
  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
  document.querySelectorAll("[data-month]").forEach(b=>b.onclick=()=>{state.month.setMonth(state.month.getMonth()+Number(b.dataset.month));render();});
  document.querySelectorAll("[data-cycle]").forEach(b=>b.onclick=()=>{const d=b.dataset.cycle,cur=getShift("p1",d),idx=codes.indexOf(cur);state.shifts["p1|"+d]=codes[(idx+1)%codes.length];render();});
