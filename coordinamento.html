@@ -86,7 +86,7 @@ const WD=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"],WORK=["M","P","G","N"];
 const PREF_TXT={ANY:"Libero",M:"Preferisce M",P:"Preferisce P",G:"Preferisce G",N:"Preferisce N",R:"Vorrebbe riposo",OFF:"Non disponibile"};
 const PREF_SYM={ANY:"L",M:"M",P:"P",G:"G",N:"N",R:"Ri",OFF:"✕"};
 const PREF_CLS={ANY:"free",M:"M",P:"P",G:"G",N:"N",R:"rest",OFF:"unavailable"};
-let user=null,units=[],unit=null,roster=[],av={},as={},tab="home",cursor=new Date(),msg=null,monthPub=false;
+let user=null,units=[],unit=null,roster=[],av={},as={},swapRequests=[],expiryRows=[],tab="home",cursor=new Date(),msg=null,monthPub=false;
 cursor.setDate(1);
 const ymd=(y,m,d)=>y+"-"+pad(m+1)+"-"+pad(d);
 const keyOf=t=>ymd(t.getFullYear(),t.getMonth(),t.getDate());
@@ -129,14 +129,18 @@ async function loadUnits(keepId){
 }
 async function loadData(){
  const [from,to]=range(),prev=new Date(cursor.getFullYear(),cursor.getMonth(),-6);
- const [r,a,s,iv]=await Promise.all([
+ const [r,a,s,iv,sw,ex]=await Promise.all([
   sb.rpc("get_unit_roster_with_phone",{p_unit:unit.id}),
   sb.from("unit_availability").select("user_id,day,choice,review_status").eq("unit_id",unit.id).gte("day",from).lte("day",to),
   sb.from("unit_shifts").select("user_id,shift_date,code,published").eq("unit_id",unit.id).gte("shift_date",keyOf(prev)).lte("shift_date",to),
-  sb.from("unit_invitations").select("id,staff_role,label,created_at,expires_at,accepted_at,revoked_at").eq("unit_id",unit.id).order("created_at",{ascending:false}).limit(30)
+  sb.from("unit_invitations").select("id,staff_role,label,created_at,expires_at,accepted_at,revoked_at").eq("unit_id",unit.id).order("created_at",{ascending:false}).limit(30),
+  sb.from("unit_shift_swap_requests").select("id,requester_id,target_id,requester_shift_date,target_shift_date,message,status,created_at").eq("unit_id",unit.id).order("created_at",{ascending:false}).limit(50),
+  sb.rpc("get_unit_document_expiries",{p_unit:unit.id})
  ]);
  invites=iv.error?[]:(iv.data||[]);
- const errs=[r.error,a.error,s.error,iv.error].filter(Boolean).map(e=>e.message);
+ swapRequests=sw.error?[]:(sw.data||[]);
+ expiryRows=ex.error?[]:(ex.data||[]);
+ const errs=[r.error,a.error,s.error,iv.error,sw.error,ex.error].filter(Boolean).map(e=>e.message);
  if(errs.length)note("Errore di caricamento: "+errs.join(" · "),"error");
  roster=r.data||[];av={};as={};
  (a.data||[]).forEach(x=>{av[x.user_id+"|"+x.day]={user_id:x.user_id,day:x.day,choice:x.choice,confirmed:x.review_status==="confirmed"}});
@@ -238,6 +242,10 @@ function planView(){
   }).join("");
   return '<tr><td>'+safe(p.display_name)+'<br>'+roleChip(p.staff_role)+'</td>'+cells+'<td class="totalcol summarycell"><b>'+fmtHours(personHours)+'</b></td></tr>';
  }).join("");
+ const availableRows=["M","P","G","N"].map(c=>'<tr class="covrow"><td>'+c+' disponibili</td>'+Array.from({length:n},(_,i)=>{
+  const k=ymd(y,m,i+1),cnt=a.filter(p=>{const v=av[p.user_id+"|"+k];return v?.confirmed&&(v.choice===c||v.choice==="ANY")}).length;
+  return '<td class="cov'+(cnt?"":" zero")+'" title="Disponibilità confermate per '+c+'">'+cnt+"</td>";
+ }).join("")+'<td class="totalcol summarycell">—</td></tr>').join("");
  const cov=["M","P","G","N"].map(c=>'<tr class="covrow"><td>'+c+' coperti</td>'+Array.from({length:n},(_,i)=>{
   const k=ymd(y,m,i+1),cnt=a.filter(p=>as[p.user_id+"|"+k]?.code===c).length;
   return '<td class="cov'+(cnt?"":" zero")+'">'+cnt+"</td>";
@@ -246,7 +254,7 @@ function planView(){
  const hoursRow='<tr class="covrow"><td>Ore assegnate</td>'+dailyHours.map(h=>'<td class="cov'+(h?"":" zero")+'">'+(h||"–")+'</td>').join("")+'<td class="totalcol summarycell"><b>'+fmtHours(dailyHours.reduce((x,h)=>x+h,0))+'</b></td></tr>';
  const wl=Object.keys(w).map(k=>{const [uid,day]=k.split("|"),p=a.find(x=>x.user_id===uid);return '<li>⚠ '+safe(p?p.display_name:"?")+", "+Number(day.slice(8))+"/"+Number(day.slice(5,7))+": "+safe(w[k].join(", "))+"</li>"}).join("");
  const total=Object.keys(as).filter(k=>k.split("|")[1]>=range()[0]).length;
- return '<section class="panel"><div class="printonly"><h2>'+safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2></div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Turni del mese</h2><span><button class="btn secondary" id="printPlan">Stampa</button> <button class="btn secondary" id="generatePlan">Genera turni dalle disponibilità</button> <button class="btn" id="togglePub"'+(total?"":" disabled")+'>'+(monthPub?"Ritira pubblicazione":"Pubblica turni")+'</button></span></div><div class="legend"><span>Tocca una cella per assegnare il turno</span><span><b style="color:#d92d20">riquadro rosso</b> = avviso</span><span>sfondo rosa = non disponibile · lilla = vorrebbe riposo</span><span>Ore stimate: M 7 h · P 5 h · G 12 h · N 12 h</span><span>Stato: <b>'+(monthPub?"pubblicato":"non pubblicato")+'</b></span></div>'+(a.length?'<div class="scroll"><table>'+headRow("Ore mese")+body+cov+hoursRow+'</table></div>':'<p class="muted">Approva almeno un infermiere per iniziare a pianificare.</p>')+quickAssignView(a)+(wl?'<ul class="warnlist">'+wl+"</ul>":"")+'</section>';
+ return '<section class="panel"><div class="printonly"><h2>'+safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2></div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Turni del mese</h2><span><button class="btn secondary" id="printPlan">Stampa</button> <button class="btn secondary" id="generatePlan">Genera turni dalle disponibilità</button> <button class="btn" id="togglePub"'+(total?"":" disabled")+'>'+(monthPub?"Ritira pubblicazione":"Pubblica turni")+'</button></span></div><div class="legend"><span>Tocca una cella per assegnare il turno</span><span><b style="color:#d92d20">riquadro rosso</b> = avviso</span><span>sfondo rosa = non disponibile · lilla = vorrebbe riposo</span><span>Ore stimate: M 7 h · P 5 h · G 12 h · N 12 h</span><span>Stato: <b>'+(monthPub?"pubblicato":"non pubblicato")+'</b></span></div>'+(a.length?'<div class="scroll"><table>'+headRow("Ore mese")+body+availableRows+cov+hoursRow+'</table></div>':'<p class="muted">Approva almeno un infermiere per iniziare a pianificare.</p>')+quickAssignView(a)+(wl?'<ul class="warnlist">'+wl+"</ul>":"")+'</section>';
 }
 function quickAssignView(a){
  const [from,to]=range();
