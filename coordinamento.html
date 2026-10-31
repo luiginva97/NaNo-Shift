@@ -70,6 +70,22 @@ dialog{border:0;border-radius:18px;width:min(420px,calc(100% - 24px));padding:20
 @media(max-width:700px){.top{align-items:flex-start;flex-direction:column;padding:12px}.brand{font-size:15px;flex-wrap:wrap}.brand img{width:124px;max-height:38px}.links{width:100%}.links a{flex:1;text-align:center;font-size:13px;padding:8px 7px}.wrap{padding:12px 10px 36px}.panel{padding:12px;border-radius:13px}.scroll{max-height:65vh}th:first-child,td:first-child{min-width:108px}.monthnav strong{min-width:125px}.opts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 <link rel="stylesheet" href="ui.css"><link rel="stylesheet" href="nav.css">
+<style>
+@media print{
+ @page{size:A4 landscape;margin:6mm}
+ html,body{width:100%!important;height:auto!important;background:#fff!important;margin:0!important;padding:0!important}
+ body *{visibility:hidden!important}
+ .print-target,.print-target *{visibility:visible!important}
+ .print-target{position:absolute!important;left:0!important;top:0!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}
+ .print-target .noprint{display:none!important}
+ .print-target .scroll{overflow:visible!important;max-height:none!important;border:0!important;margin:0!important}
+ .print-target table{width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:collapse!important}
+ .print-target thead{display:table-header-group!important}
+ .print-target tr{break-inside:avoid!important;page-break-inside:avoid!important}
+ .print-target th,.print-target td{min-width:0!important;overflow:hidden!important}
+ .print-target .printonly{display:block!important}
+}
+</style>
 </head>
 <body>
 <nav class="side-nav" id="sideNav" aria-label="Navigazione"></nav>
@@ -254,7 +270,7 @@ function planView(){
  const hoursRow='<tr class="covrow"><td>Ore assegnate</td>'+dailyHours.map(h=>'<td class="cov'+(h?"":" zero")+'">'+(h||"–")+'</td>').join("")+'<td class="totalcol summarycell"><b>'+fmtHours(dailyHours.reduce((x,h)=>x+h,0))+'</b></td></tr>';
  const wl=Object.keys(w).map(k=>{const [uid,day]=k.split("|"),p=a.find(x=>x.user_id===uid);return '<li>⚠ '+safe(p?p.display_name:"?")+", "+Number(day.slice(8))+"/"+Number(day.slice(5,7))+": "+safe(w[k].join(", "))+"</li>"}).join("");
  const total=Object.keys(as).filter(k=>k.split("|")[1]>=range()[0]).length;
- return '<section class="panel"><div class="printonly"><h2>'+safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2></div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Turni del mese</h2><span><button class="btn secondary" id="printPlan">Stampa</button> <button class="btn secondary" id="generatePlan">Genera turni dalle disponibilità</button> <button class="btn" id="togglePub"'+(total?"":" disabled")+'>'+(monthPub?"Ritira pubblicazione":"Pubblica turni")+'</button></span></div><div class="legend"><span>Tocca una cella per assegnare il turno</span><span><b style="color:#d92d20">riquadro rosso</b> = avviso</span><span>sfondo rosa = non disponibile · lilla = vorrebbe riposo</span><span>Ore stimate: M 7 h · P 5 h · G 12 h · N 12 h</span><span>Stato: <b>'+(monthPub?"pubblicato":"non pubblicato")+'</b></span></div>'+(a.length?'<div class="scroll"><table>'+headRow("Ore mese")+body+availableRows+cov+hoursRow+'</table></div>':'<p class="muted">Approva almeno un infermiere per iniziare a pianificare.</p>')+quickAssignView(a)+(wl?'<ul class="warnlist">'+wl+"</ul>":"")+'</section>';
+ return '<section class="panel print-target"><div class="printonly"><h2>'+safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2></div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Turni del mese</h2><span><button class="btn secondary" id="printPlan">Stampa</button> <button class="btn secondary" id="generatePlan">Genera turni dalle disponibilità</button> <button class="btn" id="togglePub"'+(total?"":" disabled")+'>'+(monthPub?"Ritira pubblicazione":"Pubblica turni")+'</button></span></div><div class="legend"><span>Tocca una cella per assegnare il turno</span><span><b style="color:#d92d20">riquadro rosso</b> = avviso</span><span>sfondo rosa = non disponibile · lilla = vorrebbe riposo</span><span>Ore stimate: M 7 h · P 5 h · G 12 h · N 12 h</span><span>Stato: <b>'+(monthPub?"pubblicato":"non pubblicato")+'</b></span></div>'+(a.length?'<div class="scroll"><table>'+headRow("Ore mese")+body+availableRows+cov+hoursRow+'</table></div>':'<p class="muted">Approva almeno un infermiere per iniziare a pianificare.</p>')+quickAssignView(a)+(wl?'<ul class="warnlist">'+wl+"</ul>":"")+'</section>';
 }
 function quickAssignView(a){
  const [from,to]=range();
