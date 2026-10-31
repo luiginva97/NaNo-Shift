@@ -34,10 +34,14 @@ h1{margin:0 0 4px;font-size:clamp(22px,4vw,29px);letter-spacing:-.4px}h2{margin:
 .scroll{overflow-x:auto;margin-top:8px;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;font-size:12px;min-width:100%}th,td{border:1px solid var(--line);padding:4px 3px;text-align:center;min-width:28px}th:first-child,td:first-child{position:sticky;left:0;background:#fff;text-align:left;min-width:110px;padding-left:8px;font-weight:700;z-index:1}tr.me td:first-child{color:var(--blue)}th.we{color:var(--red)}
 .list{margin:0;padding:0;list-style:none}
 @media(max-width:560px){.day .d{width:100%}}
+
+/* Responsive polish: area reparto */
+html{overflow-x:hidden}body{min-width:0;overflow-x:hidden}.top{width:100%;padding:12px max(12px,calc((100% - 1000px)/2))}.brand{min-width:0;flex-wrap:wrap;font-size:15px}.brand img{width:120px;max-height:36px}.links{min-width:0;display:flex;gap:6px;flex-wrap:wrap}.links a{white-space:normal;text-align:center;padding:8px 9px;font-size:13px}.wrap{width:100%;min-width:0;padding:14px 12px 36px}.panel{min-width:0;padding:13px;border-radius:13px}.monthnav{flex-wrap:wrap}.monthnav strong{min-width:0;flex:1;text-align:center}.scroll{max-width:100%;overscroll-behavior-x:contain}.savebar{position:sticky;bottom:0;padding:10px;background:#fffffff2;z-index:4}.row .field{min-width:min(180px,100%)}
+@media(max-width:620px){.top{align-items:stretch;flex-direction:column;gap:10px}.links{display:grid;grid-template-columns:1fr 1fr}.links a{font-size:12px;padding:8px 5px}.wrap{padding:10px 8px 28px}.day{gap:6px;padding:10px 0}.day .d{width:100%;font-size:13px}.chips{width:100%;flex-basis:100%}.chip{padding:6px 9px;font-size:12px}.scroll table{min-width:680px}h1{font-size:24px}.panel h2{font-size:17px}}
 </style>
 </head>
 <body>
-<header class="top"><div class="brand"><img src="nanoshift-logo.png" alt="NaNo Shift"> · Reparto</div><div class="links"><a href="dashboard.html">← Dashboard</a><a href="coordinatrice.html">Area coordinatrice</a></div></header>
+<header class="top"><div class="brand"><img src="nanoshift-logo.png" alt="NaNo Shift"> · Area reparto</div><div class="links"><a href="dashboard.html">← Dashboard</a><a href="coordinatrice.html">Area coordinatore</a></div></header>
 <main class="wrap" id="app"><div class="panel">Caricamento…</div></main>
 <script>
 const SUPABASE_URL="https://mmkdibdomjaxwqfryqcw.supabase.co";
@@ -115,7 +119,7 @@ function render(){
  const ok=myUnits();
  if(ok.length>1)h+='<div class="field" style="margin-top:10px"><label for="wardSel">Reparto</label><select id="wardSel">'+ok.map(m=>'<option value="'+m.unit_id+'"'+(unit&&m.unit_id===unit.id?" selected":"")+'>'+safe(m.name)+'</option>').join("")+'</select></div>';
  if(!unit){
-  if(units.some(m=>m.unit_role==="coordinator"&&m.status==="active"))h+='<div class="notice warn">Sei coordinatrice di un reparto: gestiscilo dall\'<a href="coordinatrice.html">area coordinatrice</a>.</div>';
+  if(units.some(m=>m.unit_role==="coordinator"&&m.status==="active"))h+='<div class="notice warn">Sei coordinatrice di un reparto: gestiscilo dall\'<a href="coordinatrice.html">area coordinatore</a>.</div>';
   h+=joinCard();app.innerHTML=h;bind();return
  }
  h+='<div class="tabs"><button data-tab="avail" class="'+(tab==="avail"?"active":"")+'">Disponibilità</button><button data-tab="sched" class="'+(tab==="sched"?"active":"")+'">Turni pubblicati</button></div>';
