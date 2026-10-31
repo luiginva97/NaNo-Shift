@@ -107,3 +107,13 @@
 }
 /* Distanza fra tabella e pannelli che la seguono */
 .scroll+.panel,.scroll+section{margin-top:16px}
+
+/* Campi data/ora: mai oltre il contenitore (iOS li allarga per via dell'aspetto nativo) */
+input,select,textarea{max-width:100%}
+.field,.row .field{min-width:0}
+.row .field{min-width:min(180px,100%)}
+input[type="date"],input[type="time"],input[type="month"],input[type="datetime-local"]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;min-height:44px;text-align:left;line-height:1.2}
+input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date-and-time-value{text-align:left;min-width:0}
+.rolechip{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;vertical-align:middle;white-space:nowrap}
+.rolechip.inf{background:#e6f0ff;color:#1c4fa3}.rolechip.oss{background:#e8f7ee;color:#18703d}
+.actions-inline{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.actions-inline select{min-height:36px;padding:4px 8px;border-radius:9px;border:1px solid var(--line);background:#fff}

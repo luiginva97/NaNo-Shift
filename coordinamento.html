@@ -68,6 +68,9 @@ const keyOf=t=>ymd(t.getFullYear(),t.getMonth(),t.getDate());
 const dim=()=>new Date(cursor.getFullYear(),cursor.getMonth()+1,0).getDate();
 const range=()=>[ymd(cursor.getFullYear(),cursor.getMonth(),1),ymd(cursor.getFullYear(),cursor.getMonth(),dim())];
 const recalcPub=()=>{const f=range()[0],r=Object.values(as).filter(x=>x.day>=f);monthPub=r.length>0&&r.every(x=>x.published)};
+const roleLabel=r=>r==='oss'?'OSS':'Infermiere';
+const roleChip=r=>'<span class="rolechip '+(r==='oss'?'oss':'inf')+'">'+roleLabel(r)+'</span>';
+let invites=[];
 const approved=()=>roster.filter(m=>m.status==="active");
 const nurses=()=>roster.filter(m=>m.status==="active"&&(m.unit_role==="nurse"||m.user_id===user?.id));
 const pending=()=>roster.filter(m=>m.status==="pending"&&m.unit_role==="nurse");
@@ -98,12 +101,14 @@ async function loadUnits(keepId){
 }
 async function loadData(){
  const [from,to]=range(),prev=new Date(cursor.getFullYear(),cursor.getMonth(),-6);
- const [r,a,s]=await Promise.all([
+ const [r,a,s,iv]=await Promise.all([
   sb.rpc("get_unit_roster",{p_unit:unit.id}),
   sb.from("unit_availability").select("user_id,day,choice,review_status").eq("unit_id",unit.id).gte("day",from).lte("day",to),
-  sb.from("unit_shifts").select("user_id,shift_date,code,published").eq("unit_id",unit.id).gte("shift_date",keyOf(prev)).lte("shift_date",to)
+  sb.from("unit_shifts").select("user_id,shift_date,code,published").eq("unit_id",unit.id).gte("shift_date",keyOf(prev)).lte("shift_date",to),
+  sb.from("unit_invitations").select("id,staff_role,label,created_at,expires_at,accepted_at,revoked_at").eq("unit_id",unit.id).order("created_at",{ascending:false}).limit(30)
  ]);
- const errs=[r.error,a.error,s.error].filter(Boolean).map(e=>e.message);
+ invites=iv.error?[]:(iv.data||[]);
+ const errs=[r.error,a.error,s.error,iv.error].filter(Boolean).map(e=>e.message);
  if(errs.length)note("Errore di caricamento: "+errs.join(" · "),"error");
  roster=r.data||[];av={};as={};
  (a.data||[]).forEach(x=>{av[x.user_id+"|"+x.day]={user_id:x.user_id,day:x.day,choice:x.choice,confirmed:x.review_status==="confirmed"}});
@@ -132,15 +137,23 @@ function warnings(){
  return out;
 }
 function createCard(){
- return '<section class="panel"><h2>'+(units.length?"Crea un altro reparto":"Crea il tuo reparto")+'</h2><p class="muted">Otterrai un codice da dare agli infermieri per chiedere di entrare.</p><form id="wardForm" class="row"><div class="field"><label for="wardName">Nome del reparto</label><input id="wardName" minlength="2" maxlength="80" required placeholder="Es. Medicina Generale"></div><button class="btn" type="submit">Crea reparto</button></form></section>';
+ return '<section class="panel"><h2>'+(units.length?"Crea un altro reparto":"Crea il tuo reparto")+'</h2><p class="muted">Potrai invitare infermieri e OSS con un link personale, oppure dare loro il codice del reparto.</p><form id="wardForm" class="row"><div class="field"><label for="wardName">Nome del reparto</label><input id="wardName" minlength="2" maxlength="80" required placeholder="Es. Medicina Generale"></div><button class="btn" type="submit">Crea reparto</button></form></section>';
 }
 function requestsView(){
  const p=pending();
- return '<section class="panel"><h2>Richieste di ingresso</h2>'+(p.map(m=>'<div class="item"><b>'+safe(m.display_name)+'</b><span><button class="btn small" data-approve="'+m.user_id+'">Approva</button> <button class="btn small danger" data-reject="'+m.user_id+'">Rifiuta</button></span></div>').join("")||'<p class="muted">Nessuna richiesta in attesa.</p>')+'</section>';
+ return '<section class="panel"><h2>Richieste di ingresso</h2>'+(p.map(m=>'<div class="item"><span><b>'+safe(m.display_name)+'</b> '+roleChip(m.staff_role)+'</span><span><button class="btn small" data-approve="'+m.user_id+'">Approva</button> <button class="btn small danger" data-reject="'+m.user_id+'">Rifiuta</button></span></div>').join("")||'<p class="muted">Nessuna richiesta in attesa.</p>')+'</section>';
+}
+function inviteStatus(i){return i.accepted_at?"Accettato":i.revoked_at?"Revocato":new Date(i.expires_at)<new Date()?"Scaduto":"In attesa"}
+function inviteCard(){
+ const open=invites.filter(i=>inviteStatus(i)==="In attesa");
+ return '<section class="panel"><h2>Invita con un link</h2><p class="muted">Crea un link personale per una persona: chi lo apre entra direttamente nel reparto con il ruolo scelto, senza codice e senza attendere l’approvazione. Il link vale 14 giorni e si usa una volta sola.</p><form id="inviteForm" class="row"><div class="field"><label for="invLabel">Per chi è (facoltativo)</label><input id="invLabel" maxlength="80" placeholder="Es. Maria Rossi"></div><div class="field"><label for="invRole">Ruolo</label><select id="invRole"><option value="infermiere">Infermiere</option><option value="oss">OSS</option></select></div><button class="btn" type="submit">Crea e copia link</button></form>'+(open.length?'<h3 style="margin:16px 0 4px;font-size:14px">Inviti in attesa</h3>'+open.map(i=>'<div class="item"><span><b>'+safe(i.label||"Invito senza nome")+'</b> '+roleChip(i.staff_role)+'<br><small class="muted">Scade il '+new Date(i.expires_at).toLocaleDateString("it-IT")+'</small></span><button class="btn small danger" data-revoke="'+i.id+'">Revoca</button></div>').join(""):"")+'</section>';
 }
 function staffView(){
- const a=approved();
- return '<section class="panel"><h2>Personale ('+a.length+')</h2>'+(a.map(m=>m.unit_role==="coordinator"?'<div class="item"><b>'+safe(m.display_name)+'</b><span class="muted">Coordinatore'+(m.user_id===user.id?" (tu)":"")+'</span></div>':'<div class="item"><b>'+safe(m.display_name)+'</b><span><button class="btn small secondary" data-promote="'+m.user_id+'">Rendi coordinatore</button> <button class="btn small danger" data-remove="'+m.user_id+'">Rimuovi</button></span></div>').join("")||'<p class="muted">Nessun infermiere nel reparto. Condividi il codice per ricevere le richieste.</p>')+'</section>';
+ const a=approved(),inf=a.filter(m=>m.staff_role!=="oss").length,oss=a.length-inf;
+ const rows=a.map(m=>m.unit_role==="coordinator"
+  ?'<div class="item"><span><b>'+safe(m.display_name)+'</b> '+roleChip(m.staff_role)+'</span><span class="muted">Coordinatore'+(m.user_id===user.id?" (tu)":"")+'</span></div>'
+  :'<div class="item"><span><b>'+safe(m.display_name)+'</b> '+roleChip(m.staff_role)+'</span><span class="actions-inline"><select data-role-of="'+m.user_id+'" aria-label="Ruolo di '+safe(m.display_name)+'"><option value="infermiere"'+(m.staff_role!=="oss"?" selected":"")+'>Infermiere</option><option value="oss"'+(m.staff_role==="oss"?" selected":"")+'>OSS</option></select> <button class="btn small secondary" data-promote="'+m.user_id+'">Rendi coordinatore</button> <button class="btn small danger" data-remove="'+m.user_id+'">Rimuovi</button></span></div>').join("");
+ return '<section class="panel"><h2>Personale ('+a.length+')</h2><p class="muted">'+inf+' infermier'+(inf===1?"e":"i")+' · '+oss+' OSS</p>'+(rows||'<p class="muted">Nessuno nel reparto. Invita qualcuno con un link o condividi il codice.</p>')+'</section>'+inviteCard();
 }
 function headRow(extraLabel="Totale"){
  const y=cursor.getFullYear(),m=cursor.getMonth();let h="<tr><th>Persona</th>";
@@ -159,7 +172,7 @@ function availView(){
   const counts={free:0,pref:0,rest:0,off:0};
   for(let d=1;d<=n;d++){const choice=availabilityChoice(p.user_id,ymd(y,m,d));if(choice==="ANY")counts.free++;else if(["M","P","G","N"].includes(choice))counts.pref++;else if(choice==="R")counts.rest++;else if(choice==="OFF")counts.off++}
   const total='<td class="totalcol summarycell" title="Liberi / preferenze / riposo / non disponibili"><b>'+ (counts.free+counts.pref)+'</b><br><small>'+counts.free+' L · '+counts.pref+' P</small></td>';
-  return '<tr><td>'+safe(p.display_name)+'<br><button class="btn small'+(all?" secondary":"")+'" data-confirm="'+p.user_id+'" data-set="'+(all?"pending":"confirmed")+'"'+(mine.length?"":" disabled")+' style="margin-top:2px">'+(all?"Riapri":"Conferma")+'</button></td>'+Array.from({length:n},(_,i)=>{
+  return '<tr><td>'+safe(p.display_name)+' '+roleChip(p.staff_role)+'<br><button class="btn small'+(all?" secondary":"")+'" data-confirm="'+p.user_id+'" data-set="'+(all?"pending":"confirmed")+'"'+(mine.length?"":" disabled")+' style="margin-top:2px">'+(all?"Riapri":"Conferma")+'</button></td>'+Array.from({length:n},(_,i)=>{
    const r=av[p.user_id+"|"+ymd(y,m,i+1)];
    return '<td class="a '+(r?PREF_CLS[r.choice]:"none")+(r&&r.confirmed?" conf":"")+'" title="'+(r?PREF_TXT[r.choice]+(r.confirmed?" · confermata":""):"Nessuna indicazione")+'">'+(r?PREF_SYM[r.choice]:"–")+"</td>";
   }).join("")+total+"</tr>";
@@ -178,7 +191,7 @@ function planView(){
    const h=cur?(SHIFT_HOURS[cur.code]??0):0;personHours+=h;
    return '<td><button class="cell'+(pr==="OFF"?" unav":pr==="R"?" rest":"")+(bad?" warn":"")+'" data-cell="'+p.user_id+'" data-day="'+k+'" title="'+safe(bad?bad.join(" · "):(pr?PREF_TXT[pr]:""))+'">'+(cur?'<span class="pill '+cur.code+'">'+cur.code+"</span>":"")+"</button></td>";
   }).join("");
-  return '<tr><td>'+safe(p.display_name)+'</td>'+cells+'<td class="totalcol summarycell"><b>'+fmtHours(personHours)+'</b></td></tr>';
+  return '<tr><td>'+safe(p.display_name)+'<br>'+roleChip(p.staff_role)+'</td>'+cells+'<td class="totalcol summarycell"><b>'+fmtHours(personHours)+'</b></td></tr>';
  }).join("");
  const cov=["M","P","G","N"].map(c=>'<tr class="covrow"><td>'+c+' coperti</td>'+Array.from({length:n},(_,i)=>{
   const k=ymd(y,m,i+1),cnt=a.filter(p=>as[p.user_id+"|"+k]?.code===c).length;
@@ -197,12 +210,13 @@ function quickAssignView(a){
 function render(){
  const app=$("app");let h="";
  if(!unit){h='<h1>Coordinamento</h1><div class="muted">Crea il reparto, approva il personale, conferma le disponibilità e gestisci i turni.</div>'+(msg?'<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>":"")+createCard();app.innerHTML=h;bind();return}
- h+='<div id="wardBar"><h1>'+safe(unit.name)+'</h1><div class="row" style="align-items:center"><span class="muted">Codice per entrare:</span><span class="code">'+safe(unit.join_code)+'</span><button class="btn secondary small" id="copyCode">Copia</button>'+(units.length>1?'<select id="wardSel" style="padding:8px;border-radius:9px;border:1px solid var(--line)">'+units.map(u=>'<option value="'+u.id+'"'+(u.id===unit.id?" selected":"")+">"+safe(u.name)+"</option>").join("")+"</select>":"")+"</div></div>";
+ h+='<div id="wardBar"><h1>'+safe(unit.name)+'</h1><div class="row" style="align-items:center"><span class="muted">Codice reparto:</span><span class="code">'+safe(unit.join_code)+'</span><button class="btn secondary small" id="copyCode">Copia</button>'+(units.length>1?'<select id="wardSel" style="padding:8px;border-radius:9px;border:1px solid var(--line)">'+units.map(u=>'<option value="'+u.id+'"'+(u.id===unit.id?" selected":"")+">"+safe(u.name)+"</option>").join("")+"</select>":"")+"</div></div>";
  if(msg)h+='<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>";
  const np=pending().length;
  h+='<div class="tabs">'+[["req","Richieste"+(np?'<span class="badge">'+np+"</span>":"")],["staff","Personale"],["avail","Disponibilità"],["plan","Turni"]].map(([id,l])=>'<button data-tab="'+id+'" class="'+(tab===id?"active":"")+'">'+l+"</button>").join("")+"</div>";
  if(tab==="avail"||tab==="plan")h+='<div class="monthnav"><button class="nav" data-month="-1" aria-label="Mese precedente">‹</button><strong>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</strong><button class="nav" data-month="1" aria-label="Mese successivo">›</button></div>';
  h+=tab==="req"?requestsView():tab==="staff"?staffView():tab==="avail"?availView():planView();
+ if(tab==="req")h+=inviteCard();
  if(tab==="req"||tab==="staff")h+=createCard();
  app.innerHTML=h;bind();
 }
@@ -222,6 +236,20 @@ function bind(){
  };
  const ws=$("wardSel");if(ws)ws.onchange=async()=>{unit=units.find(u=>u.id===ws.value);note(null);await loadData();render()};
  const cc=$("copyCode");if(cc)cc.onclick=async()=>{try{await navigator.clipboard.writeText(unit.join_code);cc.textContent="Copiato ✓"}catch(_){cc.textContent=unit.join_code}};
+ const inf=$("inviteForm");if(inf)inf.onsubmit=async e=>{
+  e.preventDefault();
+  const token=Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b=>b.toString(16).padStart(2,"0")).join("");
+  const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(token));
+  const hash=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  const {error}=await sb.rpc("create_unit_invitation",{p_unit:unit.id,p_token_hash:hash,p_staff_role:$("invRole").value,p_label:$("invLabel").value});
+  if(error){note("Invito non creato: "+error.message,"error");render();return}
+  const link=location.origin+location.pathname.replace(/[^/]*$/,"")+"accesso.html?unit_invite="+encodeURIComponent(token);
+  let copied=true;try{await navigator.clipboard.writeText(link)}catch(_){copied=false}
+  await loadData();
+  note(copied?"Link creato e copiato. Invialo alla persona: vale 14 giorni.":"Link creato (copialo e invialo): "+link,"");render();
+ };
+ document.querySelectorAll("[data-revoke]").forEach(b=>b.onclick=()=>{if(confirm("Revocare questo invito? Il link smetterà di funzionare."))run(sb.rpc("revoke_unit_invitation",{p_id:b.dataset.revoke}),"Invito revocato.")});
+ document.querySelectorAll("[data-role-of]").forEach(s=>s.onchange=()=>review(s.dataset.roleOf,"role_"+s.value,"Ruolo aggiornato."));
  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;note(null);render()});
  document.querySelectorAll("[data-month]").forEach(b=>b.onclick=async()=>{cursor=new Date(cursor.getFullYear(),cursor.getMonth()+Number(b.dataset.month),1);note(null);await loadData();render()});
  document.querySelectorAll("[data-approve]").forEach(b=>b.onclick=()=>review(b.dataset.approve,"approve","Richiesta approvata."));

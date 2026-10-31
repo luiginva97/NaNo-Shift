@@ -62,10 +62,28 @@ const locked=d=>review[d]==="confirmed";
 const dirty=()=>Object.keys(avail).some(d=>avail[d]!==orig[d]);
 const note=(t,type="")=>{msg=t?{t,type}:null};
 const myUnits=()=>units.filter(m=>m.status==="active"&&(m.unit_role==="nurse"||m.unit_role==="coordinator"));
+async function handleUnitInvite(){
+ const token=new URLSearchParams(location.search).get("unit_invite");
+ if(!token)return;
+ history.replaceState({},document.title,location.pathname);
+ try{
+  const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(token));
+  const hash=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  const {data:pv}=await sb.rpc("preview_unit_invitation",{p_token_hash:hash});
+  const info=Array.isArray(pv)?pv[0]:null;
+  if(!info){note("Questo invito non è valido, è scaduto o è già stato usato. Chiedi alla coordinatrice un nuovo link.","error");return}
+  if(info.already_member){note("Fai già parte del reparto "+info.unit_name+".","");return}
+  const {data:unitId,error}=await sb.rpc("accept_unit_invitation",{p_token_hash:hash});
+  if(error){note("Invito non accettato: "+error.message,"error");return}
+  note("Sei entrata/o nel reparto "+info.unit_name+" come "+(info.staff_role==="oss"?"OSS":"infermiere")+".","");
+  window.__joinedUnit=unitId;
+ }catch(err){note("Non riesco a verificare l'invito: "+err.message,"error")}
+}
 async function init(){
  const {data:{session}}=await sb.auth.getSession();
  if(!session){location.href="accesso.html";return}
  user=session.user;
+ await handleUnitInvite();
  await loadMemberships();render();
 }
 async function loadMemberships(){
@@ -73,7 +91,9 @@ async function loadMemberships(){
  if(error){note("Non riesco a caricare i reparti: "+error.message,"error");units=[];unit=null;return}
  units=data||[];
  const ok=myUnits();
- if(!unit||!ok.some(m=>m.unit_id===unit.id))unit=ok[0]?{id:ok[0].unit_id,name:ok[0].name}:null;
+ const jn=window.__joinedUnit?ok.find(m=>m.unit_id===window.__joinedUnit):null;window.__joinedUnit=null;
+ if(jn)unit={id:jn.unit_id,name:jn.name};
+ else if(!unit||!ok.some(m=>m.unit_id===unit.id))unit=ok[0]?{id:ok[0].unit_id,name:ok[0].name}:null;
  if(unit)await loadMonth();
 }
 async function loadMonth(){
@@ -92,7 +112,7 @@ async function loadMonth(){
 }
 function joinCard(){
  const pending=units.filter(m=>m.unit_role==="nurse"&&m.status!=="active").map(m=>'<div class="item"><span><b>'+safe(m.name)+'</b></span><span class="muted">In attesa di approvazione</span></div>').join("");
- return '<section class="panel"><h2>Entra in un reparto</h2><p class="muted">Chiedi il codice di ingresso alla tua coordinatrice. Potrai indicare le disponibilità dopo la sua approvazione.</p><form id="joinForm" class="row"><div class="field"><label for="code">Codice reparto</label><input id="code" maxlength="8" autocapitalize="characters" autocomplete="off" required placeholder="Es. K7M2QX9A"></div><button class="btn" type="submit">Invia richiesta</button></form>'+(pending?'<div style="margin-top:12px">'+pending+'</div>':"")+'</section>';
+ return '<section class="panel"><h2>Entra in un reparto</h2><p class="muted">Apri il link personale ricevuto dalla coordinatrice oppure inserisci qui il codice del reparto. Con il codice potrai indicare le disponibilità dopo la sua approvazione.</p><form id="joinForm" class="row"><div class="field"><label for="code">Codice reparto</label><input id="code" maxlength="8" autocapitalize="characters" autocomplete="off" required placeholder="Es. K7M2QX9A"></div><div class="field"><label for="joinRole">Il tuo ruolo</label><select id="joinRole"><option value="infermiere">Infermiere</option><option value="oss">OSS</option></select></div><button class="btn" type="submit">Invia richiesta</button></form>'+(pending?'<div style="margin-top:12px">'+pending+'</div>':"")+'</section>';
 }
 function availView(){
  const y=cursor.getFullYear(),m=cursor.getMonth();let h="";
@@ -132,7 +152,7 @@ function render(){
 }
 function bind(){
  const jf=$("joinForm");if(jf)jf.onsubmit=async e=>{
-  e.preventDefault();const {error}=await sb.rpc("request_join_unit",{p_code:$("code").value});
+  e.preventDefault();const {error}=await sb.rpc("request_join_unit",{p_code:$("code").value,p_staff_role:$("joinRole").value});
   if(error)note(error.message,"error");else note("Richiesta inviata: attendi l'approvazione della coordinatrice.","");
   await loadMemberships();render();
  };
