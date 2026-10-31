@@ -48,7 +48,7 @@ dialog{border:0;border-radius:18px;width:min(420px,calc(100% - 24px));padding:20
 <link rel="stylesheet" href="ui.css">
 </head>
 <body>
-<header class="top"><div class="brand"><img class="logo-mark" src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small>Area coordinamento</small></span></div><div class="links"><a href="dashboard.html">← Dashboard</a><a href="reparto.html">Reparto</a></div></header>
+<header class="top"><div class="brand"><img class="logo-mark" src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small>Area coordinamento</small></span></div><div class="links"><a href="dashboard.html?area=personale">Area personale</a><a href="reparto.html">Le mie disponibilità</a></div></header>
 <main class="wrap" id="app"><div class="panel">Caricamento…</div></main>
 <dialog id="cellDlg"></dialog>
 <script>
@@ -61,7 +61,7 @@ const WD=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"],WORK=["M","P","G","N"];
 const PREF_TXT={ANY:"Libero",M:"Preferisce M",P:"Preferisce P",G:"Preferisce G",N:"Preferisce N",R:"Vorrebbe riposo",OFF:"Non disponibile"};
 const PREF_SYM={ANY:"L",M:"M",P:"P",G:"G",N:"N",R:"Ri",OFF:"✕"};
 const PREF_CLS={ANY:"free",M:"M",P:"P",G:"G",N:"N",R:"rest",OFF:"unavailable"};
-let user=null,units=[],unit=null,roster=[],av={},as={},tab="plan",cursor=new Date(),msg=null,monthPub=false;
+let user=null,units=[],unit=null,roster=[],av={},as={},tab="home",cursor=new Date(),msg=null,monthPub=false;
 cursor.setDate(1);
 const ymd=(y,m,d)=>y+"-"+pad(m+1)+"-"+pad(d);
 const keyOf=t=>ymd(t.getFullYear(),t.getMonth(),t.getDate());
@@ -89,7 +89,7 @@ async function init(){
   document.body.innerHTML='<main style="max-width:620px;margin:12vh auto;padding:28px;font:16px/1.5 system-ui;color:#10284b"><h1>Accesso riservato</h1><p>L’Area coordinamento è disponibile solo agli amministratori e agli utenti che sono coordinatori attivi di almeno un reparto.</p><p><a href="dashboard.html">Torna alla dashboard</a></p></main>';
   return;
  }
- await loadUnits();if(unit&&pending().length)tab="req";render();
+ await loadUnits();render();
 }
 async function loadUnits(keepId){
  const {data,error}=await sb.rpc("get_my_units");
@@ -138,6 +138,21 @@ function warnings(){
 }
 function createCard(){
  return '<section class="panel"><h2>'+(units.length?"Crea un altro reparto":"Crea il tuo reparto")+'</h2><p class="muted">Potrai invitare infermieri e OSS con un link personale, oppure dare loro il codice del reparto.</p><form id="wardForm" class="row"><div class="field"><label for="wardName">Nome del reparto</label><input id="wardName" minlength="2" maxlength="80" required placeholder="Es. Medicina Generale"></div><button class="btn" type="submit">Crea reparto</button></form></section>';
+}
+function homeView(){
+ const today=keyOf(new Date()),a=nurses(),np=pending().length,[from,to]=range();
+ const inf=approved().filter(m=>m.staff_role!=="oss").length,oss=approved().length-inf;
+ const toConfirm=a.filter(p=>Object.values(av).some(r=>r.user_id===p.user_id&&!r.confirmed)).length;
+ const noAv=a.filter(p=>!Object.values(av).some(r=>r.user_id===p.user_id)).length;
+ const w=Object.keys(warnings()).length;
+ const monthShifts=Object.values(as).filter(x=>x.day>=from&&x.day<=to),pub=monthShifts.filter(x=>x.published).length;
+ const gaps=[];for(let d=1;d<=dim();d++){const k=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(k<today)continue;const cov=a.filter(p=>["M","P","G","N"].includes(as[p.user_id+"|"+k]?.code)).length;if(cov<2)gaps.push(d)}
+ const sh=c=>approved().filter(p=>as[p.user_id+"|"+today]?.code===c).map(p=>safe(p.display_name)+(p.staff_role==="oss"?" <small class=\"muted\">OSS</small>":""));
+ const row=(l,names)=>'<div class="item"><b>'+l+'</b><span>'+(names.length?names.join(", "):'<span class="muted">—</span>')+'</span></div>';
+ const stat=(n,l,tabId,warn)=>'<button class="statcard'+(warn?" warn":"")+'" data-tab="'+tabId+'"><b>'+n+'</b><span>'+l+'</span></button>';
+ return '<section class="statgrid">'+stat(np,"richieste di ingresso","req",np>0)+stat(toConfirm,"persone con disponibilità da confermare","avail",toConfirm>0)+stat(noAv,"senza disponibilità questo mese","avail",false)+stat(w,"avvisi nei turni","plan",w>0)+'</section>'
+ +'<section class="panel"><h2>Oggi · '+new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"})+'</h2>'+row("Mattina",sh("M"))+row("Pomeriggio",sh("P"))+row("Giornata",sh("G"))+row("Notte",sh("N"))+row("Riposo",sh("R"))+'</section>'
+ +'<section class="panel"><h2>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2><div class="item"><span>Personale</span><b>'+inf+' infermieri · '+oss+' OSS</b></div><div class="item"><span>Turni assegnati</span><b>'+monthShifts.length+' ('+pub+' pubblicati)</b></div><div class="item"><span>Giorni con meno di 2 persone in servizio</span><b>'+(gaps.length?gaps.length+" · dal "+gaps[0]:"nessuno")+'</b></div></section>';
 }
 function requestsView(){
  const p=pending();
@@ -213,9 +228,9 @@ function render(){
  h+='<div id="wardBar"><h1>'+safe(unit.name)+'</h1><div class="row" style="align-items:center"><span class="muted">Codice reparto:</span><span class="code">'+safe(unit.join_code)+'</span><button class="btn secondary small" id="copyCode">Copia</button>'+(units.length>1?'<select id="wardSel" style="padding:8px;border-radius:9px;border:1px solid var(--line)">'+units.map(u=>'<option value="'+u.id+'"'+(u.id===unit.id?" selected":"")+">"+safe(u.name)+"</option>").join("")+"</select>":"")+"</div></div>";
  if(msg)h+='<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>";
  const np=pending().length;
- h+='<div class="tabs">'+[["req","Richieste"+(np?'<span class="badge">'+np+"</span>":"")],["staff","Personale"],["avail","Disponibilità"],["plan","Turni"]].map(([id,l])=>'<button data-tab="'+id+'" class="'+(tab===id?"active":"")+'">'+l+"</button>").join("")+"</div>";
+ h+='<div class="tabs">'+[["home","Riepilogo"],["req","Richieste"+(np?'<span class="badge">'+np+"</span>":"")],["staff","Personale"],["avail","Disponibilità"],["plan","Turni"]].map(([id,l])=>'<button data-tab="'+id+'" class="'+(tab===id?"active":"")+'">'+l+"</button>").join("")+"</div>";
  if(tab==="avail"||tab==="plan")h+='<div class="monthnav"><button class="nav" data-month="-1" aria-label="Mese precedente">‹</button><strong>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</strong><button class="nav" data-month="1" aria-label="Mese successivo">›</button></div>';
- h+=tab==="req"?requestsView():tab==="staff"?staffView():tab==="avail"?availView():planView();
+ h+=tab==="home"?homeView():tab==="req"?requestsView():tab==="staff"?staffView():tab==="avail"?availView():planView();
  if(tab==="req")h+=inviteCard();
  if(tab==="req"||tab==="staff")h+=createCard();
  app.innerHTML=h;bind();
