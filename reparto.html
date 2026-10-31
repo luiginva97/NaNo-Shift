@@ -8,18 +8,27 @@
 <link rel="icon" type="image/png" sizes="512x512" href="favicon-512.png"><link rel="icon" type="image/x-icon" href="favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <style>
-:root{--navy:#10284b;--blue:#2463eb;--pale:#edf3ff;--bg:#f5f7fc;--line:#dfe6f1;--muted:#68778f;--red:#b42318;--green:#13845b}
+:root{--navy:#10284b;--blue:#2463eb;--pale:#edf3ff;--bg:#f5f7fc;--line:#dfe6f1;--muted:#68778f;--red:#b42318;--green:#13845b;--white:#fff;--shadow:0 14px 35px rgba(16,40,75,.08)}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--navy);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 button,input,select{font:inherit}button{cursor:pointer}
-.top{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:18px max(18px,calc((100% - 1180px)/2));background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:18px max(18px,calc((100% - 1180px)/2));background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:17px;color:#0057B7}.brand img{width:190px;height:auto;max-height:62px;object-fit:contain}
 .links{display:flex;gap:8px;flex-wrap:wrap}.links a{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--navy);text-decoration:none;font-weight:650;font-size:12px}.wrap{max-width:1180px;margin:auto;padding:24px 18px 48px}
 h1{margin:0 0 4px;font-size:clamp(22px,4vw,29px);letter-spacing:-.4px}h2{margin:0 0 8px;font-size:18px}.muted{color:var(--muted)}.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px;box-shadow:0 4px 18px #18345b08}.btn{border:0;border-radius:11px;background:var(--blue);color:#fff;padding:10px 15px;font-weight:700}.btn.secondary{background:#fff;color:var(--navy);border:1px solid var(--line)}.btn:disabled{opacity:.55;cursor:default}.field label{display:block;font-weight:700;font-size:13px;margin-bottom:5px}.field input,.field select,select.inline{width:100%;padding:11px;border:1px solid #ccd6e4;border-radius:10px;background:#fff;color:var(--navy)}.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.row .field{flex:1;min-width:180px}.notice{padding:11px 13px;border-radius:10px;background:#eaf7f0;color:#146543;margin:12px 0}.notice.error{background:#fff0ef;color:var(--red)}.notice.warn{background:#fff8e6;color:#7a5200}.tabs{display:flex;gap:7px;margin:14px 0 0;flex-wrap:wrap}.tabs button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;font-weight:650}.tabs button.active{background:var(--pale);border-color:#cfe0ff;color:var(--navy)}.monthnav{display:flex;align-items:center;gap:8px;margin:14px 0 6px}.monthnav strong{min-width:150px;text-align:center;text-transform:capitalize}.monthnav button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px}.day{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}.day:last-child{border-bottom:0}.day .d{width:62px;font-weight:700;font-size:14px}.day.we .d{color:var(--red)}.day.dirty{background:#f8faff}.chips{display:flex;gap:5px;flex-wrap:wrap;flex:1}.chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:5px 11px;font-size:13px;font-weight:650;color:var(--navy)}.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}.chip.on.rest{background:#7754c8;border-color:#7754c8}.chip.on.unavailable{background:var(--red);border-color:var(--red)}.chip.other{background:#fff0ef}.chip:disabled{opacity:.55;cursor:default}.lock{font-size:12px;color:var(--green);font-weight:700}.savebar{position:sticky;bottom:0;background:#fffffff0;border-top:1px solid var(--line);padding:10px 0;margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}.pill{display:inline-block;min-width:26px;text-align:center;padding:3px 7px;border-radius:7px;color:#fff;font-weight:800;font-size:12px}.M{background:#c58a12}.P{background:#3478d4}.G{background:#1a8b59}.N{background:#2c3d8f}.R{background:#7754c8}.item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.item:last-child{border-bottom:0}.scroll{overflow-x:auto;margin-top:8px;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;font-size:12px;min-width:100%}th,td{border:1px solid var(--line);padding:4px 3px;text-align:center}th:first-child,td:first-child{text-align:left}.list{margin:0;padding:0;list-style:none}@media(max-width:560px){.day .d{width:100%}}
 html{overflow-x:hidden}body{min-width:0;overflow-x:hidden}.top{width:100%;padding:12px max(12px,calc((100% - 1000px)/2))}.brand{min-width:0;flex-wrap:wrap;font-size:15px}.brand img{width:120px;max-height:38px}.links a{font-size:12px;padding:8px 5px}@media(max-width:620px){.top{align-items:stretch;flex-direction:column;gap:10px}.links{display:grid;grid-template-columns:1fr 1fr}.wrap{padding:10px 8px 28px}}
+
+.side-nav{position:fixed;left:0;top:0;bottom:0;width:216px;padding:22px 14px 20px;border-right:1px solid var(--line);background:#fff;display:flex;flex-direction:column;gap:8px;z-index:15}.side-nav .nav-brand{display:flex;align-items:center;gap:8px;padding:4px 6px 18px;border-bottom:1px solid var(--line);margin-bottom:6px}.side-nav .nav-brand img{width:36px;height:36px}.side-nav .nav-brand span{font-weight:800;font-size:16px}.side-nav button{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border:1px solid transparent;border-radius:12px;background:#f8faff;color:var(--navy);text-align:left;font-weight:700}.side-nav button.active{background:var(--pale);border-color:#dfeaff;color:var(--navy)}.side-nav button .icon{width:22px;height:22px;display:grid;place-items:center;border-radius:8px;background:#fff;border:1px solid var(--line);font-size:12px}.side-nav .nav-footer{margin-top:auto;border-top:1px solid var(--line);padding-top:12px}.side-nav .nav-footer button{background:#fff;border-color:var(--line)}.nav-settings-panel{position:fixed;right:20px;bottom:20px;width:min(340px,calc(100vw - 32px));background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;z-index:25}.nav-settings-panel[hidden]{display:none}.nav-settings-panel h3{margin:0 0 10px}.nav-settings-list{list-style:none;padding:0;margin:0;display:grid;gap:8px}.nav-settings-list li{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:#f9fbff}.nav-settings-list .drag-handle{cursor:grab;font-weight:900;color:var(--muted)}.nav-settings-list .move{display:flex;flex-direction:column;gap:4px}.nav-settings-list .move button{padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:#fff;font-weight:700}.nav-settings-panel .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+@media(min-width:1000px){body{padding-left:236px}.wrap{max-width:1180px;padding:22px 18px 48px}.top{padding-left:max(18px,calc((100% - 1180px)/2));padding-right:max(18px,calc((100% - 1180px)/2))}}@media(max-width:999px){.side-nav{position:sticky;top:0;width:auto;padding:10px 12px;flex-direction:row;align-items:center;overflow-x:auto;gap:8px;bottom:auto;border-right:0;border-bottom:1px solid var(--line)}.side-nav .nav-brand{padding:0;border-bottom:0;margin:0}.side-nav .nav-footer{margin-top:0;border-top:0;padding-top:0}.body-wrap{padding-top:0}.side-nav button{white-space:nowrap;width:auto}.nav-settings-panel{left:16px;right:16px;bottom:16px;width:auto}}
 </style>
 <link rel="stylesheet" href="ui.css">
 </head>
 <body>
+<aside class="side-nav" id="sideNav" aria-label="Menu reparto"></aside>
+<div id="navSettingsPanel" class="nav-settings-panel" hidden>
+  <h3>Impostazioni menu</h3>
+  <ul id="navSettingsList" class="nav-settings-list"></ul>
+  <div class="actions"><button type="button" class="btn secondary" id="closeNavSettings">Chiudi</button></div>
+</div>
 <header class="top"><div class="brand" role="button" tabindex="0" aria-label="Torna alla home"><img class="logo-mark" src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small class="brand-sub">Gestione turni</small></span></div><nav class="links"><a href="dashboard.html">Dashboard</a><a href="reparto.html">Reparto</a></nav></header>
 <main class="wrap" id="app"><div class="panel">Caricamento…</div></main>
 <script>
@@ -31,6 +40,8 @@ const safe=s=>String(s??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":
 const PREFS=[["ANY","Libero","free"],["M","Prefer. M","sp"],["P","Prefer. P","sp"],["G","Prefer. G","sp"],["N","Prefer. N","sp"],["R","Vorrei riposo","rest"],["OFF","Non disponibile","unavailable"]];
 const SHIFT={M:["07:00","14:00"],P:["14:00","19:00"],G:["07:00","19:00"],N:["19:00","07:00"],R:["00:00","00:00"]};
 const WD=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
+const NAV_DEFAULT=[{id:"avail",label:"Disponibilità",icon:"📅"},{id:"sched",label:"Turni",icon:"🗓️"},{id:"join",label:"Reparti",icon:"🏥"},{id:"settings",label:"Impostazioni",icon:"⚙️",isSettings:true}];
+const NAV_STORAGE_KEY="nanoshift.reparto.navOrder";
 let user=null,units=[],unit=null,cursor=new Date(),tab="avail",avail={},orig={},review={},schedule=[],msg=null,busy=false;
 cursor.setDate(1);
 const ymd=(y,m,d)=>y+"-"+pad(m+1)+"-"+pad(d);
@@ -40,6 +51,62 @@ const locked=d=>review[d]==="confirmed";
 const dirty=()=>Object.keys(avail).some(d=>avail[d]!==orig[d]);
 const note=(t,type="")=>{msg=t?{t,type}:null};
 const myUnits=()=>units.filter(m=>m.status==="active"&&(m.unit_role==="nurse"||m.unit_role==="coordinator"));
+
+function getNavOrder(){
+  try{
+    const raw=localStorage.getItem(NAV_STORAGE_KEY);
+    if(!raw)return NAV_DEFAULT.map(x=>x.id);
+    const arr=JSON.parse(raw); if(Array.isArray(arr)&&arr.length) return arr;
+  }catch(_){ }
+  return NAV_DEFAULT.map(x=>x.id);
+}
+function getOrderedNavItems(){
+  const order=getNavOrder();
+  const map=new Map(NAV_DEFAULT.map(item=>[item.id,item]));
+  const extras = NAV_DEFAULT.map(item=>item.id);
+  const finalOrder=[...order.filter(id=>map.has(id)), ...extras.filter(id=>!order.includes(id))];
+  return finalOrder.map(id=>map.get(id)).filter(Boolean);
+}
+function renderSideNav(){
+  const side=$("sideNav"); if(!side) return;
+  const items=getOrderedNavItems();
+  side.innerHTML = '<div class="nav-brand"><img src="favicon-192.png" alt=""><span>NaNoShift</span></div>' + items.map(item => {
+    if(item.isSettings){
+      return '<button type="button" class="nav-settings-trigger" data-settings="open"><span class="icon">'+item.icon+'</span><span>'+item.label+'</span></button>';
+    }
+    const active = tab===item.id ? 'active' : '';
+    return '<button type="button" class="'+active+'" data-tab="'+item.id+'"><span class="icon">'+item.icon+'</span><span>'+item.label+'</span></button>';
+  }).join('') + '<div class="nav-footer"><button type="button" data-settings="open"><span class="icon">⚙️</span><span>Impostazioni</span></button></div>';
+  side.querySelectorAll('[data-tab]').forEach(btn => btn.onclick=()=>{ tab=btn.dataset.tab; render(); });
+  side.querySelectorAll('[data-settings="open"]').forEach(btn => btn.onclick=()=>toggleNavSettings(true));
+}
+function toggleNavSettings(open){
+  const panel=$('navSettingsPanel'); if(!panel) return; panel.hidden = !open;
+  if(open) renderNavSettings();
+}
+function renderNavSettings(){
+  const list=$('navSettingsList'); if(!list) return;
+  const items=getOrderedNavItems().filter(item => !item.isSettings);
+  list.innerHTML=items.map((item,index)=>`<li data-nav-id="${item.id}"><span class="drag-handle" aria-label="Trascina">⋮⋮</span><span>${item.label}</span><span class="move"><button type="button" data-move="up" aria-label="Sposta su">↑</button><button type="button" data-move="down" aria-label="Sposta giù">↓</button></span></li>`).join('');
+  list.querySelectorAll('[data-move]').forEach(btn => {
+    btn.onclick = () => {
+      const li = btn.closest('li');
+      const id = li?.dataset.navId;
+      if(!id) return;
+      const order = getNavOrder();
+      const idx = order.indexOf(id);
+      const nextIdx = btn.dataset.move === 'up' ? Math.max(0, idx - 1) : Math.min(order.length - 1, idx + 1);
+      if(idx === -1 || idx === nextIdx) return;
+      const updated = [...order];
+      const temp = updated[idx];
+      updated[idx] = updated[nextIdx];
+      updated[nextIdx] = temp;
+      localStorage.setItem(NAV_STORAGE_KEY, JSON.stringify(updated));
+      renderSideNav();
+      renderNavSettings();
+    };
+  });
+}
 
 async function resolveHomePage(){
   try {
@@ -79,6 +146,7 @@ function bindHeaderNavigation(){
       location.href = "accesso.html";
     });
   });
+  const closeBtn=$('closeNavSettings'); if(closeBtn) closeBtn.onclick=()=>toggleNavSettings(false);
 }
 
 async function handleUnitInvite(){
@@ -104,7 +172,8 @@ async function init(){
   if(!session){location.href="accesso.html";return}
   user=session.user;
   await handleUnitInvite();
-  await loadMemberships();render();
+  await loadMemberships();
+  render();
 }
 async function loadMemberships(){
   const {data,error}=await sb.rpc("get_my_units");
@@ -161,13 +230,13 @@ function render(){
   if(ok.length>1)h+='<div class="field" style="margin-top:10px"><label for="wardSel">Reparto</label><select id="wardSel">'+ok.map(m=>'<option value="'+m.unit_id+'"'+(unit&&m.unit_id===unit.id?" selected":"")+'>'+safe(m.name)+'</option>').join("")+'</select></div>';
   if(!unit){
     if(units.some(m=>m.unit_role==="coordinator"&&m.status==="active"))h+='<div class="notice warn">Sei coordinatrice di un reparto: gestiscilo dall\'<a href="coordinamento.html">area coordinamento</a>\'.</div>';
-    h+=joinCard();app.innerHTML=h;bind();return
+    h+=joinCard();app.innerHTML=h;bind();renderSideNav();return
   }
   h+='<div class="tabs"><button data-tab="avail" class="'+(tab==="avail"?"active":"")+'">Disponibilità</button><button data-tab="sched" class="'+(tab==="sched"?"active":"")+'">Turni pubblicati</button></div>';
   h+='<div class="monthnav"><button data-month="-1" aria-label="Mese precedente">‹</button><strong>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</strong><button data-month="1" aria-label="Mese successivo">›</button></div>';
   h+=tab==="avail"?availView():scheduleView();
   h+=joinCard().replace('<section class="panel"><h2>Entra in un reparto</h2>','<section class="panel"><h2>Entra in un altro reparto</h2>');
-  app.innerHTML=h;bind();
+  app.innerHTML=h;bind();renderSideNav();
 }
 function bind(){
   const jf=$("joinForm");if(jf)jf.onsubmit=async e=>{
