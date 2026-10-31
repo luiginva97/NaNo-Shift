@@ -47,3 +47,13 @@ Migrazione `20261031220000_master_account_and_leave_unit.sql`: definisce `privat
 
 ### Preferenze, contatti e dashboard personale
 La voce Documenti del menu usa ora la preferenza `documents`; in Dati utente è disponibile il toggle “Documenti e scadenze”. Le preferenze non presenti restano abilitate (`!== false`). La descrizione di Reparto include disponibilità, turni pubblicati e contatti. La dashboard saluta la persona usando nome e, in fallback, nome visualizzato. I pulsanti WhatsApp in Reparto e Coordinamento mostrano un'icona SVG accessibile. Reparto offre “Lascia il reparto” con conferma e gestione dell'errore restituito dalla RPC.
+
+
+### Scadenze reparto, copertura e approvazione cambi turno
+La migrazione `20261031221643_shift_approval_coverage_and_expiries` introduce lo stato `pending_approval`: il destinatario può accettare la proposta, ma lo scambio dei turni pubblicati avviene solo dopo l'approvazione della coordinatrice tramite `review_unit_shift_swap`. La RPC invia anche notifiche in-app ai coordinatori. Nel planning le righe “M/P/G/N disponibili” contano le disponibilità confermate (inclusa la preferenza ANY), mentre “coperti” continua a mostrare i turni già assegnati. La scheda Scadenze mostra alla coordinatrice solo nome, tipo e data degli attestati non sanitari entro 90 giorni o già scaduti; non espone file né idoneità sanitarie.
+
+### Protezione dei dati di idoneità
+La migrazione `20261031224500_protect_medical_fitness_data` sposta la data di idoneità in `private.medical_fitness_expiries`, consultabile e modificabile dall'interessato tramite RPC dedicate. Il campo non è più nella tabella profili e la funzione admin non lo richiede. Le policy Storage e RLS impediscono il caricamento di file `medical_fitness`; la coordinatrice non riceve queste scadenze. I documenti restano in bucket privato; il CV è condiviso solo tramite opt-in esplicito. Questa misura tecnica non sostituisce informativa, base giuridica e tempi di conservazione da approvare prima dell'apertura a nuovi utenti.
+
+### Notifiche push (senza email)
+Le migrazioni `20261031230000_web_push_notifications`, `20261031231500_push_vapid_server_setup` e `20261031232000_push_subscription_and_schedule` aggiungono sottoscrizioni Web Push, chiavi VAPID generate sul server e conservate in Supabase Vault, e un job ogni 5 minuti che invia notifiche generiche senza dettagli sanitari sul lock screen. I promemoria di scadenza vengono generati ogni giorno alle 06:15 UTC, includendo anche la soglia di un giorno prima; il dispatcher push controlla le notifiche in attesa. Il client usa `push.js` e `sw.js`; l'utente deve autorizzare le notifiche dal dispositivo. Su iOS/iPadOS è necessario aggiungere la PWA alla schermata Home.
