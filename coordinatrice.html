@@ -239,49 +239,47 @@ function bind(){
 async function generatePlan(){
  const [from,to]=range(),staff=approved(),days=dim(),year=cursor.getFullYear(),month=cursor.getMonth();
  if(!staff.length){note("Prima approva almeno un infermiere del reparto.","warn");render();return}
- const missing=staff.filter(p=>!Object.values(av).some(r=>r.user_id===p.user_id&&r.confirmed&&r.day>=from&&r.day<=to));
- const unreviewed=staff.filter(p=>Object.values(av).some(r=>r.user_id===p.user_id&&r.day>=from&&r.day<=to&&!r.confirmed));
+ const monthAvailability=Object.values(av).filter(r=>r.day>=from&&r.day<=to);
+ const unreviewed=staff.filter(p=>monthAvailability.some(r=>r.user_id===p.user_id&&!r.confirmed));
  if(unreviewed.length){note("Ci sono disponibilità non approvate. Confermale prima di generare i turni.","warn");render();return}
- if(missing.length&&!confirm("Attenzione: "+missing.map(p=>p.display_name).join(", ")+" non ha disponibilità confermate per questo mese e non verrà assegnato. Vuoi continuare?"))return;
- if(monthPub&&!confirm("Il calendario risulta pubblicato. Rigenerando i turni dovrai ricontrollare e ripubblicare la nuova bozza. Continuare?"))return;
- if(!confirm("Generare la bozza del mese da tutte le disponibilità approvate? I turni già presenti nel mese verranno sostituiti. La generazione applica un massimo indicativo di 5 turni a settimana per persona, rispetta 'non disponibile' e la preferenza di riposo, prova a distribuire equamente i turni e evita, quando possibile, un turno dopo la notte. Potrai modificare la bozza prima di pubblicarla."))return;
+ const missing=staff.filter(p=>!monthAvailability.some(r=>r.user_id===p.user_id&&r.confirmed));
+ if(missing.length&&!confirm("Non risultano disponibilità per: "+missing.map(p=>p.display_name).join(", ")+". Per queste persone non sarà possibile generare turni. Vuoi continuare?"))return;
  const existing=Object.values(as).filter(x=>x.day>=from&&x.day<=to);
+ if(monthPub&&!confirm("Il calendario risulta pubblicato. Rigenerando i turni dovrai ricontrollare e ripubblicare la nuova bozza. Continuare?"))return;
+ if(!confirm("Generare la bozza usando TUTTE le disponibilità confermate? Le preferenze M/P/G/N saranno assegnate esattamente come indicate, 'L' sarà trasformato in un turno da distribuire, 'Ri' in riposo e '✕' resterà senza turno. Non verranno applicati limiti settimanali né esclusi sabati o domeniche. Gli eventuali problemi saranno segnalati con avvisi, senza eliminare le disponibilità. I turni già presenti nel mese verranno sostituiti."))return;
  if(existing.some(x=>x.published)){
   const {error}=await sb.rpc("publish_unit_shifts",{p_unit:unit.id,p_from:from,p_to:to,p_published:false});
   if(error){note("Non riesco a ritirare la pubblicazione prima di rigenerare: "+error.message,"error");render();return}
  }
- const planned=[],counts={},typeCounts={},weekCounts={},prevCode={};
- const getWeek=k=>{const d=new Date(k+"T12:00:00"),day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return keyOf(d)};
- // Keep earlier shifts only as context for night-rest checks.
- for(const p of staff){
-  counts[p.user_id]=0;typeCounts[p.user_id]={M:0,P:0,G:0,N:0};
-  const prior=as[p.user_id+"|"+keyOf(new Date(year,month,0))];
-  prevCode[p.user_id]=prior?.code||"";
- }
+ const planned=[],typeCounts={};
+ for(const p of staff)typeCounts[p.user_id]={M:0,P:0,G:0,N:0};
  for(let d=1;d<=days;d++){
-  const day=ymd(year,month,d),weekday=new Date(year,month,d).getDay(),week=getWeek(day);
-  const candidates=[];
-  for(const p of staff){
-   const r=av[p.user_id+"|"+day];if(!r||!r.confirmed||r.choice==="OFF"||r.choice==="R")continue;
-   const wk=p.user_id+"|"+week,worked=weekCounts[wk]||0;if(worked>=5)continue;
-   if(prevCode[p.user_id]==="N")continue;
-   const preferred=["M","P","G","N"].includes(r.choice)?r.choice:null;
-   candidates.push({p,r,preferred,wk,worked});
-  }
-  // Specific shift preferences are honored first; open availability is balanced across shift types.
-  candidates.sort((a,b)=>{
-   const ap=a.preferred?0:1,bp=b.preferred?0:1;
-   return ap-bp || (counts[a.p.user_id]-counts[b.p.user_id]) || (a.worked-b.worked) || a.p.display_name.localeCompare(b.p.display_name,"it");
-  });
+  const day=ymd(year,month,d);
+  const available=staff.map(p=>({p,r:av[p.user_id+"|"+day]})).filter(x=>x.r&&x.r.confirmed);
+  const open=available.filter(x=>x.r.choice==="ANY");
   const dayTypes={M:0,P:0,G:0,N:0};
-  for(const c of candidates){
-   const code=c.preferred||["M","P","G","N"].sort((a,b)=>dayTypes[a]-dayTypes[b]||typeCounts[c.p.user_id][a]-typeCounts[c.p.user_id][b])[0];
-   planned.push({unit_id:unit.id,user_id:c.p.user_id,shift_date:day,code,published:false,updated_at:new Date().toISOString()});
-   counts[c.p.user_id]++;typeCounts[c.p.user_id][code]++;weekCounts[c.wk]=(weekCounts[c.wk]||0)+1;dayTypes[code]++;
-   prevCode[c.p.user_id]=code;
+  // Honor every explicit preference, including weekends and consecutive shifts.
+  for(const {p,r} of available){
+   if(r.choice==="OFF")continue;
+   if(r.choice==="R"){
+    planned.push({unit_id:unit.id,user_id:p.user_id,shift_date:day,code:"R",published:false,updated_at:new Date().toISOString()});
+    continue;
+   }
+   if(["M","P","G","N"].includes(r.choice)){
+    planned.push({unit_id:unit.id,user_id:p.user_id,shift_date:day,code:r.choice,published:false,updated_at:new Date().toISOString()});
+    typeCounts[p.user_id][r.choice]++;dayTypes[r.choice]++;
+   }
   }
-  // People with no assigned shift that day are treated as resting for consecutive-day/night checks.
-  for(const p of staff)if(!candidates.some(c=>c.p.user_id===p.user_id))prevCode[p.user_id]="";
+  // "L / libero" means available for any shift: distribute these without excluding dates or imposing caps.
+  open.sort((a,b)=>
+   (Object.values(typeCounts[a.p.user_id]).reduce((x,y)=>x+y,0)-Object.values(typeCounts[b.p.user_id]).reduce((x,y)=>x+y,0))||
+   a.p.display_name.localeCompare(b.p.display_name,"it")
+  );
+  for(const {p} of open){
+   const code=["M","P","G","N"].sort((a,b)=>dayTypes[a]-dayTypes[b]||typeCounts[p.user_id][a]-typeCounts[p.user_id][b])[0];
+   planned.push({unit_id:unit.id,user_id:p.user_id,shift_date:day,code,published:false,updated_at:new Date().toISOString()});
+   typeCounts[p.user_id][code]++;dayTypes[code]++;
+  }
  }
  const {error:delError}=await sb.from("unit_shifts").delete().eq("unit_id",unit.id).gte("shift_date",from).lte("shift_date",to);
  if(delError){note("Non riesco a sostituire la bozza esistente: "+delError.message,"error");await loadData();render();return}
@@ -289,7 +287,7 @@ async function generatePlan(){
   const {error:insertError}=await sb.from("unit_shifts").insert(planned);
   if(insertError){note("Bozza non salvata: "+insertError.message,"error");await loadData();render();return}
  }
- note("Bozza generata: "+planned.length+" assegnazioni. Controlla coperture e avvisi, poi modifica o pubblica il calendario.","");
+ note("Bozza generata: "+planned.length+" righe da disponibilità confermate. Sono state mantenute tutte le preferenze; controlla gli avvisi e poi modifica o pubblica il calendario.","");
  await loadData();render();
 }
 function openCell(uid,day){
