@@ -22,7 +22,7 @@
  const PRIMARY=4;
  const byId=Object.fromEntries(ITEMS.map(i=>[i.id,i]));
  // Pagina corrente → voce di menu evidenziata (le pagine "intere" non sono sezioni della dashboard).
- const PAGE_IDS={reparto:"ward",coordinamento:"coord",professional:"docs",cvs:"cvs",admin:"users"};
+ const PAGE_IDS={reparto:"ward",demo:"demo",coordinamento:"coord",professional:"docs",cvs:"cvs",admin:"users"};
 
  // Una voce è disponibile per questa persona (ruolo e tipo di impiego), indipendentemente dai toggle.
  const available=(it,ctx)=>!(it.coordOnly&&!ctx.isCoord)&&!(it.adminOnly&&!ctx.isAdmin)&&!(it.notEmployee&&ctx.employee)&&!(it.id==="ward"&&ctx.isMaster)&&!(it.id==="demo"&&!ctx.isMaster);
@@ -82,7 +82,7 @@
    sb.rpc("get_my_units")
   ]);
   const profile=p.data||{},units=u.data||[];
-  const isAdmin=profile.role==="admin",isMaster=isAdmin&&units.length===0;
+  const isAdmin=profile.role==="admin",isMaster=isAdmin&&user.email?.toLowerCase()==="nanoshift01@gmail.com";
   return {profile,prefs:profile.feature_preferences||{},ctx:{isCoord:units.some(m=>m.unit_role==="coordinator"&&m.status==="active"),isAdmin,isMaster,employee:profile.employment_type==="employee"}};
  }
 
