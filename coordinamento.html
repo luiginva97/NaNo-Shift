@@ -29,7 +29,7 @@ h1{margin:0 0 4px;font-size:clamp(22px,4vw,29px);letter-spacing:-.4px}h2{margin:
 .scroll{overflow:auto;max-height:72vh;margin-top:8px;border:1px solid var(--line);border-radius:12px}table{border-collapse:separate;border-spacing:0;font-size:12px;min-width:100%}
 th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:0;text-align:center;min-width:32px;height:32px}
 th{position:sticky;top:0;background:#f8faff;z-index:2;font-size:11px;color:var(--muted);line-height:1.1}th.we{color:var(--red)}
-th:first-child,td:first-child{position:sticky;left:0;background:#fff;text-align:left;min-width:128px;padding:0 8px;font-weight:700;z-index:3;white-space:nowrap}th:first-child{z-index:4;background:#f8faff}
+th:first-child,td:first-child{position:sticky;left:0;background:#fff;text-align:left;min-width:128px;padding:0 8px;font-weight:700;z-index:3;white-space:nowrap}th:first-child{z-index:4;background:#f8faff}th.totalcol,td.totalcol{position:sticky;right:0;z-index:3;background:#f1f5fc;min-width:94px;padding:3px 6px;font-weight:800}th.totalcol{z-index:4;background:#e8eef9}.summarycell{font-size:11px;white-space:nowrap}.summarycell small{font-weight:500;color:var(--muted)}
 td.cov{font-weight:700;color:var(--navy);background:#fafcff}td.cov.zero{color:#b8c2d3;font-weight:400}tr.covrow td:first-child{font-weight:600;color:var(--muted)}
 .cell{width:100%;height:32px;border:0;background:transparent;font-weight:800;color:var(--navy);padding:0}.cell:hover{background:var(--pale)}
 .cell.unav{background:#fff0ef}.cell.rest{background:#f1ecfc}.cell.warn{outline:2px solid #d92d20;outline-offset:-2px}
@@ -141,36 +141,53 @@ function staffView(){
  const a=approved();
  return '<section class="panel"><h2>Personale ('+a.length+')</h2>'+(a.map(m=>m.unit_role==="coordinator"?'<div class="item"><b>'+safe(m.display_name)+'</b><span class="muted">Coordinatore'+(m.user_id===user.id?" (tu)":"")+'</span></div>':'<div class="item"><b>'+safe(m.display_name)+'</b><span><button class="btn small secondary" data-promote="'+m.user_id+'">Rendi coordinatore</button> <button class="btn small danger" data-remove="'+m.user_id+'">Rimuovi</button></span></div>').join("")||'<p class="muted">Nessun infermiere nel reparto. Condividi il codice per ricevere le richieste.</p>')+'</section>';
 }
-function headRow(){
+function headRow(extraLabel="Totale"){
  const y=cursor.getFullYear(),m=cursor.getMonth();let h="<tr><th>Persona</th>";
  for(let d=1;d<=dim();d++){const wd=new Date(y,m,d).getDay();h+='<th class="'+(wd===0||wd===6?"we":"")+'">'+d+"<br>"+WD[wd].slice(0,2)+"</th>"}
- return h+"</tr>";
+ return h+'<th class="totalcol">'+safe(extraLabel)+'</th></tr>';
 }
+const SHIFT_HOURS={M:7,P:5,G:12,N:12,R:0};
+const fmtHours=n=>Number(n||0).toLocaleString("it-IT",{maximumFractionDigits:2})+" h";
+function availabilityChoice(uid,day){return av[uid+"|"+day]?.choice||null}
+function isAvailableChoice(choice){return ["ANY","M","P","G","N"].includes(choice)}
+
 function availView(){
  const a=nurses(),y=cursor.getFullYear(),m=cursor.getMonth(),n=dim();
  const rows=a.map(p=>{
   const mine=Object.keys(av).filter(k=>k.startsWith(p.user_id+"|")).map(k=>av[k]),all=mine.length>0&&mine.every(r=>r.confirmed);
+  const counts={free:0,pref:0,rest:0,off:0};
+  for(let d=1;d<=n;d++){const choice=availabilityChoice(p.user_id,ymd(y,m,d));if(choice==="ANY")counts.free++;else if(["M","P","G","N"].includes(choice))counts.pref++;else if(choice==="R")counts.rest++;else if(choice==="OFF")counts.off++}
+  const total='<td class="totalcol summarycell" title="Liberi / preferenze / riposo / non disponibili"><b>'+ (counts.free+counts.pref)+'</b><br><small>'+counts.free+' L · '+counts.pref+' P</small></td>';
   return '<tr><td>'+safe(p.display_name)+'<br><button class="btn small'+(all?" secondary":"")+'" data-confirm="'+p.user_id+'" data-set="'+(all?"pending":"confirmed")+'"'+(mine.length?"":" disabled")+' style="margin-top:2px">'+(all?"Riapri":"Conferma")+'</button></td>'+Array.from({length:n},(_,i)=>{
    const r=av[p.user_id+"|"+ymd(y,m,i+1)];
    return '<td class="a '+(r?PREF_CLS[r.choice]:"none")+(r&&r.confirmed?" conf":"")+'" title="'+(r?PREF_TXT[r.choice]+(r.confirmed?" · confermata":""):"Nessuna indicazione")+'">'+(r?PREF_SYM[r.choice]:"–")+"</td>";
-  }).join("")+"</tr>";
+  }).join("")+total+"</tr>";
  }).join("");
+ const daily=Array.from({length:n},(_,i)=>{const day=ymd(y,m,i+1),cnt=a.filter(p=>isAvailableChoice(availabilityChoice(p.user_id,day))).length;return '<td class="cov'+(cnt?"":" zero")+'" title="Operatori indicati disponibili">'+cnt+'</td>'}).join("");
  const any=Object.values(av).some(r=>!r.confirmed);
- return '<section class="panel"><div class="notice" style="margin-bottom:12px"><b>Flusso di pianificazione:</b> approva le disponibilità di tutto il personale, poi nella scheda <b>Turni</b> premi <b>Genera turni dalle disponibilità</b>. Controlla e modifica la bozza generata; pubblica solo quando il calendario è pronto.</div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Disponibilità del mese</h2><button class="btn" id="confirmAll"'+(any?"":" disabled")+'>Approva tutte le disponibilità</button></div><div class="legend"><span><b style="color:var(--green)">L</b> libero</span><span><b>M P G N</b> preferenza</span><span><b style="color:#7754c8">Ri</b> vorrebbe riposo</span><span><b style="color:#d92d20">✕</b> non disponibile</span><span>riga verde = confermata</span></div>'+(a.length?'<div class="scroll"><table>'+headRow()+rows+'</table></div>':'<p class="muted">Nessun infermiere approvato.</p>')+'</section>';
+ const totals='<tr class="covrow"><td>Disponibili</td>'+daily+'<td class="totalcol summarycell">—</td></tr>';
+ return '<section class="panel"><div class="notice" style="margin-bottom:12px"><b>Flusso di pianificazione:</b> approva le disponibilità di tutto il personale, poi nella scheda <b>Turni</b> premi <b>Genera turni dalle disponibilità</b>. Controlla e modifica la bozza generata; pubblica solo quando il calendario è pronto.</div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Disponibilità del mese</h2><button class="btn" id="confirmAll"'+(any?"":" disabled")+'>Approva tutte le disponibilità</button></div><div class="legend"><span><b style="color:var(--green)">L</b> libero</span><span><b>M P G N</b> preferenza</span><span><b style="color:#7754c8">Ri</b> vorrebbe riposo</span><span><b style="color:#d92d20">✕</b> non disponibile</span><span>riga verde = confermata</span><span>Totale riga = giorni disponibili (L + preferenze)</span></div>'+(a.length?'<div class="scroll"><table>'+headRow("Disponibilità")+rows+totals+'</table></div>':'<p class="muted">Nessun infermiere approvato.</p>')+'</section>';
 }
 function planView(){
  const a=approved(),y=cursor.getFullYear(),m=cursor.getMonth(),n=dim(),w=warnings();
- const body=a.map(p=>'<tr><td>'+safe(p.display_name)+"</td>"+Array.from({length:n},(_,i)=>{
-  const k=ymd(y,m,i+1),cur=as[p.user_id+"|"+k],pr=av[p.user_id+"|"+k]?.choice,bad=w[p.user_id+"|"+k];
-  return '<td><button class="cell'+(pr==="OFF"?" unav":pr==="R"?" rest":"")+(bad?" warn":"")+'" data-cell="'+p.user_id+'" data-day="'+k+'" title="'+safe(bad?bad.join(" · "):(pr?PREF_TXT[pr]:""))+'">'+(cur?'<span class="pill '+cur.code+'">'+cur.code+"</span>":"")+"</button></td>";
- }).join("")+"</tr>").join("");
+ const body=a.map(p=>{
+  let personHours=0;
+  const cells=Array.from({length:n},(_,i)=>{
+   const k=ymd(y,m,i+1),cur=as[p.user_id+"|"+k],pr=av[p.user_id+"|"+k]?.choice,bad=w[p.user_id+"|"+k];
+   const h=cur?(SHIFT_HOURS[cur.code]??0):0;personHours+=h;
+   return '<td><button class="cell'+(pr==="OFF"?" unav":pr==="R"?" rest":"")+(bad?" warn":"")+'" data-cell="'+p.user_id+'" data-day="'+k+'" title="'+safe(bad?bad.join(" · "):(pr?PREF_TXT[pr]:""))+'">'+(cur?'<span class="pill '+cur.code+'">'+cur.code+"</span>":"")+"</button></td>";
+  }).join("");
+  return '<tr><td>'+safe(p.display_name)+'</td>'+cells+'<td class="totalcol summarycell"><b>'+fmtHours(personHours)+'</b></td></tr>';
+ }).join("");
  const cov=["M","P","G","N"].map(c=>'<tr class="covrow"><td>'+c+' coperti</td>'+Array.from({length:n},(_,i)=>{
   const k=ymd(y,m,i+1),cnt=a.filter(p=>as[p.user_id+"|"+k]?.code===c).length;
   return '<td class="cov'+(cnt?"":" zero")+'">'+cnt+"</td>";
- }).join("")+"</tr>").join("");
+ }).join("")+'<td class="totalcol summarycell">—</td></tr>').join("");
+ const dailyHours=Array.from({length:n},(_,i)=>{const k=ymd(y,m,i+1);return a.reduce((sum,p)=>sum+(SHIFT_HOURS[as[p.user_id+"|"+k]?.code]||0),0)});
+ const hoursRow='<tr class="covrow"><td>Ore assegnate</td>'+dailyHours.map(h=>'<td class="cov'+(h?"":" zero")+'">'+(h||"–")+'</td>').join("")+'<td class="totalcol summarycell"><b>'+fmtHours(dailyHours.reduce((x,h)=>x+h,0))+'</b></td></tr>';
  const wl=Object.keys(w).map(k=>{const [uid,day]=k.split("|"),p=a.find(x=>x.user_id===uid);return '<li>⚠ '+safe(p?p.display_name:"?")+", "+Number(day.slice(8))+"/"+Number(day.slice(5,7))+": "+safe(w[k].join(", "))+"</li>"}).join("");
  const total=Object.keys(as).filter(k=>k.split("|")[1]>=range()[0]).length;
- return '<section class="panel"><div class="printonly"><h2>'+safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2></div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Turni del mese</h2><span><button class="btn secondary" id="printPlan">Stampa</button> <button class="btn secondary" id="generatePlan">Genera turni dalle disponibilità</button> <button class="btn" id="togglePub"'+(total?"":" disabled")+'>'+(monthPub?"Ritira pubblicazione":"Pubblica turni")+'</button></span></div><div class="legend"><span>Tocca una cella per assegnare il turno</span><span><b style="color:#d92d20">riquadro rosso</b> = avviso</span><span>sfondo rosa = non disponibile · lilla = vorrebbe riposo</span><span>Stato: <b>'+(monthPub?"pubblicato":"non pubblicato")+'</b></span></div>'+(a.length?'<div class="scroll"><table>'+headRow()+body+cov+'</table></div>':'<p class="muted">Approva almeno un infermiere per iniziare a pianificare.</p>')+quickAssignView(a)+(wl?'<ul class="warnlist">'+wl+"</ul>":"")+'</section>';
+ return '<section class="panel"><div class="printonly"><h2>'+safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2></div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Turni del mese</h2><span><button class="btn secondary" id="printPlan">Stampa</button> <button class="btn secondary" id="generatePlan">Genera turni dalle disponibilità</button> <button class="btn" id="togglePub"'+(total?"":" disabled")+'>'+(monthPub?"Ritira pubblicazione":"Pubblica turni")+'</button></span></div><div class="legend"><span>Tocca una cella per assegnare il turno</span><span><b style="color:#d92d20">riquadro rosso</b> = avviso</span><span>sfondo rosa = non disponibile · lilla = vorrebbe riposo</span><span>Ore stimate: M 7 h · P 5 h · G 12 h · N 12 h</span><span>Stato: <b>'+(monthPub?"pubblicato":"non pubblicato")+'</b></span></div>'+(a.length?'<div class="scroll"><table>'+headRow("Ore mese")+body+cov+hoursRow+'</table></div>':'<p class="muted">Approva almeno un infermiere per iniziare a pianificare.</p>')+quickAssignView(a)+(wl?'<ul class="warnlist">'+wl+"</ul>":"")+'</section>';
 }
 function quickAssignView(a){
  const [from,to]=range();
