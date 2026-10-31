@@ -65,7 +65,7 @@ const dim=()=>new Date(cursor.getFullYear(),cursor.getMonth()+1,0).getDate();
 const range=()=>[ymd(cursor.getFullYear(),cursor.getMonth(),1),ymd(cursor.getFullYear(),cursor.getMonth(),dim())];
 const recalcPub=()=>{const f=range()[0],r=Object.values(as).filter(x=>x.day>=f);monthPub=r.length>0&&r.every(x=>x.published)};
 const approved=()=>roster.filter(m=>m.status==="active");
-const nurses=()=>roster.filter(m=>m.status==="active"&&m.unit_role==="nurse");
+const nurses=()=>roster.filter(m=>m.status==="active"&&(m.unit_role==="nurse"||m.user_id===user?.id));
 const pending=()=>roster.filter(m=>m.status==="pending"&&m.unit_role==="nurse");
 const note=(t,type="")=>{msg=t?{t,type}:null};
 async function init(){
@@ -156,7 +156,11 @@ function planView(){
  }).join("")+"</tr>").join("");
  const wl=Object.keys(w).map(k=>{const [uid,day]=k.split("|"),p=a.find(x=>x.user_id===uid);return '<li>⚠ '+safe(p?p.display_name:"?")+", "+Number(day.slice(8))+"/"+Number(day.slice(5,7))+": "+safe(w[k].join(", "))+"</li>"}).join("");
  const total=Object.keys(as).filter(k=>k.split("|")[1]>=range()[0]).length;
- return '<section class="panel"><div class="printonly"><h2>'+safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2></div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Turni del mese</h2><span><button class="btn secondary" id="printPlan">Stampa</button> <button class="btn" id="togglePub"'+(total?"":" disabled")+'>'+(monthPub?"Ritira pubblicazione":"Pubblica turni")+'</button></span></div><div class="legend"><span>Tocca una cella per assegnare il turno</span><span><b style="color:#d92d20">riquadro rosso</b> = avviso</span><span>sfondo rosa = non disponibile · lilla = vorrebbe riposo</span><span>Stato: <b>'+(monthPub?"pubblicato":"non pubblicato")+'</b></span></div>'+(a.length?'<div class="scroll"><table>'+headRow()+body+cov+'</table></div>':'<p class="muted">Approva almeno un infermiere per iniziare a pianificare.</p>')+(wl?'<ul class="warnlist">'+wl+"</ul>":"")+'</section>';
+ return '<section class="panel"><div class="printonly"><h2>'+safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2></div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Turni del mese</h2><span><button class="btn secondary" id="printPlan">Stampa</button> <button class="btn" id="togglePub"'+(total?"":" disabled")+'>'+(monthPub?"Ritira pubblicazione":"Pubblica turni")+'</button></span></div><div class="legend"><span>Tocca una cella per assegnare il turno</span><span><b style="color:#d92d20">riquadro rosso</b> = avviso</span><span>sfondo rosa = non disponibile · lilla = vorrebbe riposo</span><span>Stato: <b>'+(monthPub?"pubblicato":"non pubblicato")+'</b></span></div>'+(a.length?'<div class="scroll"><table>'+headRow()+body+cov+'</table></div>':'<p class="muted">Approva almeno un infermiere per iniziare a pianificare.</p>')++quickAssignView(a)+(wl?'<ul class="warnlist">'+wl+"</ul>":"")+'</section>';
+}
+function quickAssignView(a){
+ const [from,to]=range();
+ return '<div class="panel noprint"><h2>Assegnazione rapida</h2><p class="muted">Assegna lo stesso turno a una persona per un intervallo di date, senza aprire ogni singolo giorno. Puoi scegliere tutti i giorni o solo i feriali.</p><form id="quickAssign" class="row"><div class="field"><label for="qaPerson">Persona</label><select id="qaPerson" required><option value="">Seleziona persona</option>'+a.map(p=>'<option value="'+p.user_id+'">'+safe(p.display_name)+(p.user_id===user.id?' (tu)':'')+'</option>').join("")+'</select></div><div class="field"><label for="qaFrom">Dal</label><input id="qaFrom" type="date" value="'+from+'" required></div><div class="field"><label for="qaTo">Al</label><input id="qaTo" type="date" value="'+to+'" required></div><div class="field"><label for="qaCode">Turno</label><select id="qaCode" required><option value="M">M · Mattina</option><option value="P">P · Pomeriggio</option><option value="G">G · Giornata</option><option value="N">N · Notte</option><option value="R">R · Riposo</option></select></div><div class="field"><label for="qaDays">Giorni da assegnare</label><select id="qaDays"><option value="all">Tutti i giorni</option><option value="weekdays">Solo lunedì–venerdì</option></select></div><button class="btn" type="submit">Assegna intervallo</button></form></div>';
 }
 function render(){
  const app=$("app");let h="";
@@ -199,6 +203,19 @@ function bind(){
   const bad=res.find(r=>r.error);
   if(bad){note("Operazione non riuscita: "+bad.error.message,"error");await loadData();render();return}
   note("Tutte le disponibilità del mese sono confermate.","");await loadData();render();
+ };
+ const qa=$("quickAssign");if(qa)qa.onsubmit=async e=>{
+  e.preventDefault();const uid=$("qaPerson").value,from=$("qaFrom").value,to=$("qaTo").value,code=$("qaCode").value,days=$("qaDays").value;
+  if(!uid||!from||!to||from>to){note("Controlla persona e intervallo di date.","error");render();return}
+  const rows=[];for(let t=new Date(from+"T12:00:00");keyOf(t)<=to;t.setDate(t.getDate()+1)){
+   const wd=t.getDay();if(days==="weekdays"&&(wd===0||wd===6))continue;
+   rows.push({unit_id:unit.id,user_id:uid,shift_date:keyOf(t),code,published:false,updated_at:new Date().toISOString()});
+  }
+  if(!rows.length){note("Nessuna data selezionata nell’intervallo.","error");render();return}
+  if(!confirm("Assegnare "+code+" a "+(roster.find(p=>p.user_id===uid)?.display_name||"questa persona")+" per "+rows.length+" giorni? I turni esistenti in queste date saranno sostituiti."))return;
+  const {error}=await sb.from("unit_shifts").upsert(rows,{onConflict:"unit_id,user_id,shift_date"});
+  if(error){note("Assegnazione rapida non riuscita: "+error.message,"error");render();return}
+  note("Assegnati "+rows.length+" turni. Pubblica il calendario quando hai finito.","");await loadData();render();
  };
  document.querySelectorAll("[data-cell]").forEach(b=>b.onclick=()=>openCell(b.dataset.cell,b.dataset.day));
  const pp=$("printPlan");if(pp)pp.onclick=()=>window.print();
