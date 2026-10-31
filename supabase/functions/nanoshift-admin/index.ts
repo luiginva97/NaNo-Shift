@@ -46,7 +46,8 @@ Deno.serve(async (req: Request) => {
     const unitId = String(body.unit_id || "");
     if (!unitId) return json({ error: "Reparto non specificato" }, 400);
     const { data: coord } = await admin.from("unit_members").select("unit_id").eq("unit_id", unitId).eq("user_id", user.id).eq("unit_role", "coordinator").eq("status", "active").maybeSingle();
-    if (!coord && profile?.role !== "admin") return json({ error: "Accesso riservato alla coordinatrice del reparto" }, 403);
+    const { data: unit } = await admin.from("units").select("approval_status").eq("id", unitId).maybeSingle();
+    if (!coord || unit?.approval_status !== "approved") return json({ error: "Accesso riservato alla coordinatrice attiva del reparto" }, 403);
     const { data: members, error: memberError } = await admin.from("unit_members").select("user_id").eq("unit_id", unitId).eq("status", "active");
     if (memberError) return json({ error: "Impossibile leggere il personale del reparto" }, 500);
     const ids = (members || []).map((m) => m.user_id);
@@ -64,22 +65,52 @@ Deno.serve(async (req: Request) => {
   if (profile?.role !== "admin") return json({ error: "Operazione riservata all'amministratore" }, 403);
 
   if (action === "list_users") {
-    const [{ data: profiles, error: pErr }, { data: users, error: uErr }, { data: units, error: unErr }, { data: members, error: mErr }] = await Promise.all([
-      admin.from("profiles").select("id,display_name,first_name,last_name,profession,employment_type,role,created_at,tax_code,order_registration_number,blsd_expires_on,order_expires_on,fire_safety_expires_on,cv_visible_to_coordinators").order("created_at", { ascending: false }),
-      admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
-      admin.from("units").select("id,name"),
-      admin.from("unit_members").select("unit_id,user_id,unit_role,status")
+    const [{ data: profiles, error: pErr }, { data: users, error: uErr }] = await Promise.all([
+      admin.from("profiles").select("id,display_name,first_name,last_name,profession,employment_type,role,created_at").order("created_at", { ascending: false }),
+      admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
     ]);
-    if (pErr || uErr || unErr || mErr) return json({ error: "Impossibile caricare l'elenco utenti" }, 500);
+    if (pErr || uErr) return json({ error: "Impossibile caricare l'elenco utenti" }, 500);
     const authById = new Map((users?.users || []).map((u) => [u.id, u]));
     return json({
       users: (profiles || []).map((p) => {
         const a = authById.get(p.id);
-        return { ...p, email: a?.email || "", last_sign_in_at: a?.last_sign_in_at || null, email_confirmed: !!a?.email_confirmed_at,
-          unit_memberships: (members || []).filter((m) => m.user_id === p.id).map((m) => ({ ...m, unit_name: (units || []).find((u) => u.id === m.unit_id)?.name || "Reparto" })) };
-      }),
-      units: units || []
+        return { ...p, email: a?.email || "", last_sign_in_at: a?.last_sign_in_at || null, email_confirmed: !!a?.email_confirmed_at };
+      })
     });
+  }
+
+  if (action === "list_units") {
+    const { data, error } = await admin.from("units")
+      .select("id,name,approval_status,created_at")
+      .eq("approval_status", "pending")
+      .order("created_at", { ascending: true });
+    if (error) return json({ error: "Impossibile caricare le richieste delle strutture" }, 500);
+    return json({ units: data || [] });
+  }
+
+  if (action === "review_unit") {
+    const unitId = String(body.unit_id || "");
+    const decision = String(body.decision || "");
+    if (!unitId || !["approve", "reject"].includes(decision)) return json({ error: "Decisione non valida" }, 400);
+    const { data: unit, error: unitError } = await admin.from("units")
+      .select("id,approval_status").eq("id", unitId).maybeSingle();
+    if (unitError || !unit || unit.approval_status !== "pending") return json({ error: "Richiesta non più disponibile" }, 409);
+    if (decision === "approve") {
+      const { error: approveError } = await admin.from("units")
+        .update({ approval_status: "approved" }).eq("id", unitId);
+      if (approveError) return json({ error: "Approvazione struttura non riuscita" }, 500);
+      const { error: memberError } = await admin.from("unit_members")
+        .update({ status: "active" }).eq("unit_id", unitId).eq("unit_role", "coordinator").eq("status", "pending");
+      if (memberError) return json({ error: "Struttura approvata, ma attivazione coordinatore da verificare" }, 500);
+    } else {
+      const { error: rejectError } = await admin.from("units")
+        .update({ approval_status: "rejected" }).eq("id", unitId);
+      if (rejectError) return json({ error: "Rifiuto struttura non riuscito" }, 500);
+      const { error: memberError } = await admin.from("unit_members")
+        .delete().eq("unit_id", unitId).eq("unit_role", "coordinator").eq("status", "pending");
+      if (memberError) return json({ error: "Struttura rifiutata, ma richiesta coordinatore da verificare" }, 500);
+    }
+    return json({ success: true });
   }
 
   if (action === "set_global_role") {
@@ -92,17 +123,7 @@ Deno.serve(async (req: Request) => {
     return json({ success: true });
   }
 
-  if (action === "set_unit_role") {
-    const target = String(body.user_id || ""), unit = String(body.unit_id || "");
-    const role = String(body.role || "");
-    if (!target || !unit || !["nurse", "coordinator"].includes(role)) return json({ error: "Dati ruolo reparto non validi" }, 400);
-    const { data: existingMember, error: lookupError } = await admin.from("unit_members").select("staff_role").eq("user_id", target).eq("unit_id", unit).maybeSingle();
-    if (lookupError) return json({ error: "Verifica iscrizione al reparto non riuscita" }, 500);
-    const membership = { unit_id: unit, user_id: target, unit_role: role, status: "active", staff_role: existingMember?.staff_role || "infermiere" };
-    const { error } = await admin.from("unit_members").upsert(membership, { onConflict: "unit_id,user_id" });
-    if (error) return json({ error: "Modifica ruolo reparto non riuscita" }, 500);
-    return json({ success: true });
-  }
+
 
   return json({ error: "Azione non riconosciuta" }, 400);
 });
