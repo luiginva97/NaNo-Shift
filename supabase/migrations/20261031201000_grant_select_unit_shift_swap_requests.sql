@@ -1,0 +1,1 @@
+grant select on public.unit_shift_swap_requests to authenticated;
