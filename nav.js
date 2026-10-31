@@ -82,7 +82,9 @@
    sb.rpc("get_my_units")
   ]);
   const profile=p.data||{},units=u.data||[];
-  const isAdmin=profile.role==="admin",isMaster=isAdmin&&user.email?.toLowerCase()==="nanoshift01@gmail.com";
+  const isAdmin=profile.role==="admin";
+  let isMaster=false;
+  if(isAdmin){const masterCheck=await sb.rpc("is_master_account");isMaster=!masterCheck.error&&masterCheck.data===true;}
   return {profile,prefs:profile.feature_preferences||{},ctx:{isCoord:units.some(m=>m.unit_role==="coordinator"&&m.status==="active"),isAdmin,isMaster,employee:profile.employment_type==="employee"}};
  }
 
