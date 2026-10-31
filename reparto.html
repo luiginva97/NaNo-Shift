@@ -7,41 +7,54 @@
 <title>NaNo Shift · Reparto</title>
 <link rel="icon" type="image/png" sizes="512x512" href="favicon-512.png"><link rel="icon" type="image/x-icon" href="favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
+<script src="nav.js"></script>
 <style>
-:root{--navy:#10284b;--blue:#2463eb;--pale:#edf3ff;--bg:#f5f7fc;--line:#dfe6f1;--muted:#68778f;--red:#b42318;--green:#13845b;--white:#fff;--shadow:0 14px 35px rgba(16,40,75,.08)}
+:root{--navy:#10284b;--blue:#2463eb;--pale:#edf3ff;--bg:#f5f7fc;--line:#dfe6f1;--muted:#68778f;--red:#b42318;--green:#13845b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--navy);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 button,input,select{font:inherit}button{cursor:pointer}
-.top{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:18px max(18px,calc((100% - 1180px)/2));background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:18px max(18px,calc((100% - 1180px)/2));background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
 .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:17px;color:#0057B7}.brand img{width:190px;height:auto;max-height:62px;object-fit:contain}
-.links{display:flex;gap:8px;flex-wrap:wrap}.links a{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--navy);text-decoration:none;font-weight:650;font-size:12px}.wrap{max-width:1180px;margin:auto;padding:24px 18px 48px}
-h1{margin:0 0 4px;font-size:clamp(22px,4vw,29px);letter-spacing:-.4px}h2{margin:0 0 8px;font-size:18px}.muted{color:var(--muted)}.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px;box-shadow:0 4px 18px #18345b08}.btn{border:0;border-radius:11px;background:var(--blue);color:#fff;padding:10px 15px;font-weight:700}.btn.secondary{background:#fff;color:var(--navy);border:1px solid var(--line)}.btn:disabled{opacity:.55;cursor:default}.field label{display:block;font-weight:700;font-size:13px;margin-bottom:5px}.field input,.field select,select.inline{width:100%;padding:11px;border:1px solid #ccd6e4;border-radius:10px;background:#fff;color:var(--navy)}.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.row .field{flex:1;min-width:180px}.notice{padding:11px 13px;border-radius:10px;background:#eaf7f0;color:#146543;margin:12px 0}.notice.error{background:#fff0ef;color:var(--red)}.notice.warn{background:#fff8e6;color:#7a5200}.tabs{display:flex;gap:7px;margin:14px 0 0;flex-wrap:wrap}.tabs button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;font-weight:650}.tabs button.active{background:var(--pale);border-color:#cfe0ff;color:var(--navy)}.monthnav{display:flex;align-items:center;gap:8px;margin:14px 0 6px}.monthnav strong{min-width:150px;text-align:center;text-transform:capitalize}.monthnav button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px}.day{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}.day:last-child{border-bottom:0}.day .d{width:62px;font-weight:700;font-size:14px}.day.we .d{color:var(--red)}.day.dirty{background:#f8faff}.chips{display:flex;gap:5px;flex-wrap:wrap;flex:1}.chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:5px 11px;font-size:13px;font-weight:650;color:var(--navy)}.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}.chip.on.rest{background:#7754c8;border-color:#7754c8}.chip.on.unavailable{background:var(--red);border-color:var(--red)}.chip.other{background:#fff0ef}.chip:disabled{opacity:.55;cursor:default}.lock{font-size:12px;color:var(--green);font-weight:700}.savebar{position:sticky;bottom:0;background:#fffffff0;border-top:1px solid var(--line);padding:10px 0;margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}.pill{display:inline-block;min-width:26px;text-align:center;padding:3px 7px;border-radius:7px;color:#fff;font-weight:800;font-size:12px}.M{background:#c58a12}.P{background:#3478d4}.G{background:#1a8b59}.N{background:#2c3d8f}.R{background:#7754c8}.item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.item:last-child{border-bottom:0}.scroll{overflow-x:auto;margin-top:8px;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;font-size:12px;min-width:100%}th,td{border:1px solid var(--line);padding:4px 3px;text-align:center}th:first-child,td:first-child{text-align:left}.list{margin:0;padding:0;list-style:none}@media(max-width:560px){.day .d{width:100%}}
-html{overflow-x:hidden}body{min-width:0;overflow-x:hidden}.top{width:100%;padding:12px max(12px,calc((100% - 1000px)/2))}.brand{min-width:0;flex-wrap:wrap;font-size:15px}.brand img{width:120px;max-height:38px}.links a{font-size:12px;padding:8px 5px}@media(max-width:620px){.top{align-items:stretch;flex-direction:column;gap:10px}.links{display:grid;grid-template-columns:1fr 1fr}.wrap{padding:10px 8px 28px}}
+.links{display:flex;gap:8px;flex-wrap:wrap}.links a{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--navy);text-decoration:none;font-weight:650;font-size:14px}
+.wrap{max-width:1180px;margin:auto;padding:24px 18px 48px}
+h1{margin:0 0 4px;font-size:clamp(22px,4vw,29px);letter-spacing:-.4px}h2{margin:0 0 8px;font-size:18px}
+.muted{color:var(--muted)}.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px;box-shadow:0 4px 18px #18345b08}
+.btn{border:0;border-radius:11px;background:var(--blue);color:#fff;padding:10px 15px;font-weight:700}.btn.secondary{background:#fff;color:var(--navy);border:1px solid var(--line)}.btn:disabled{opacity:.5;cursor:default}
+.field label{display:block;font-weight:700;font-size:13px;margin-bottom:5px}.field input,.field select,select.inline{width:100%;padding:11px;border:1px solid #ccd6e4;border-radius:10px;background:#fff;color:var(--navy)}
+.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.row .field{flex:1;min-width:180px}
+.notice{padding:11px 13px;border-radius:10px;background:#eaf7f0;color:#146543;margin:12px 0}.notice.error{background:#fff0ef;color:var(--red)}.notice.warn{background:#fff8e6;color:#7a5200}
+.tabs{display:flex;gap:7px;margin:14px 0 0;flex-wrap:wrap}.tabs button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;font-weight:650}.tabs button.active{background:var(--pale);border-color:#b9cdfb;color:var(--blue)}
+.monthnav{display:flex;align-items:center;gap:8px;margin:14px 0 6px}.monthnav strong{min-width:150px;text-align:center;text-transform:capitalize}.monthnav button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 12px}
+.day{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}.day:last-child{border-bottom:0}
+.day .d{width:62px;font-weight:700;font-size:14px}.day.we .d{color:var(--red)}.day.dirty{background:#f8faff}
+.chips{display:flex;gap:5px;flex-wrap:wrap;flex:1}.chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:5px 11px;font-size:13px;font-weight:650;color:var(--navy)}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}.chip.on.rest{background:#7754c8;border-color:#7754c8}.chip.on.unavailable{background:var(--red);border-color:var(--red)}.chip.on.free{background:var(--green);border-color:var(--green)}
+.chip:disabled{opacity:.55;cursor:default}.lock{font-size:12px;color:var(--green);font-weight:700}
+.savebar{position:sticky;bottom:0;background:#fffffff0;border-top:1px solid var(--line);padding:10px 0;margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pill{display:inline-block;min-width:26px;text-align:center;padding:3px 7px;border-radius:7px;color:#fff;font-weight:800;font-size:12px}.M{background:#c58a12}.P{background:#3478d4}.G{background:#13845b}.N{background:#7754c8}.R{background:#fff4bf;color:#0755b7;border:1px solid #0057b7}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.item:last-child{border-bottom:0}
+.scroll{overflow-x:auto;margin-top:8px;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;font-size:12px;min-width:100%}th,td{border:1px solid var(--line);padding:4px 3px;text-align:center;min-width:28px}th:first-child,td:first-child{position:sticky;left:0;background:#fff;text-align:left;min-width:110px;padding-left:8px;font-weight:700;z-index:1}tr.me td:first-child{color:var(--blue)}th.we{color:var(--red)}
+.list{margin:0;padding:0;list-style:none}
+@media(max-width:560px){.day .d{width:100%}}
 
-.side-nav{position:fixed;left:0;top:0;bottom:0;width:216px;padding:22px 14px 20px;border-right:1px solid var(--line);background:#fff;display:flex;flex-direction:column;gap:8px;z-index:15}.side-nav .nav-brand{display:flex;align-items:center;gap:8px;padding:4px 6px 18px;border-bottom:1px solid var(--line);margin-bottom:6px}.side-nav .nav-brand img{width:36px;height:36px}.side-nav .nav-brand span{font-weight:800;font-size:16px}.side-nav button{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border:1px solid transparent;border-radius:12px;background:#f8faff;color:var(--navy);text-align:left;font-weight:700}.side-nav button.active{background:var(--pale);border-color:#dfeaff;color:var(--navy)}.side-nav button .icon{width:22px;height:22px;display:grid;place-items:center;border-radius:8px;background:#fff;border:1px solid var(--line);font-size:12px}.side-nav .nav-footer{margin-top:auto;border-top:1px solid var(--line);padding-top:12px}.side-nav .nav-footer button{background:#fff;border-color:var(--line)}.nav-settings-panel{position:fixed;right:20px;bottom:20px;width:min(340px,calc(100vw - 32px));background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;z-index:25}.nav-settings-panel[hidden]{display:none}.nav-settings-panel h3{margin:0 0 10px}.nav-settings-list{list-style:none;padding:0;margin:0;display:grid;gap:8px}.nav-settings-list li{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:#f9fbff}.nav-settings-list .drag-handle{cursor:grab;font-weight:900;color:var(--muted)}.nav-settings-list .move{display:flex;flex-direction:column;gap:4px}.nav-settings-list .move button{padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:#fff;font-weight:700}.nav-settings-panel .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
-@media(min-width:1000px){body{padding-left:236px}.wrap{max-width:1180px;padding:22px 18px 48px}.top{padding-left:max(18px,calc((100% - 1180px)/2));padding-right:max(18px,calc((100% - 1180px)/2))}}@media(max-width:999px){.side-nav{position:sticky;top:0;width:auto;padding:10px 12px;flex-direction:row;align-items:center;overflow-x:auto;gap:8px;bottom:auto;border-right:0;border-bottom:1px solid var(--line)}.side-nav .nav-brand{padding:0;border-bottom:0;margin:0}.side-nav .nav-footer{margin-top:0;border-top:0;padding-top:0}.body-wrap{padding-top:0}.side-nav button{white-space:nowrap;width:auto}.nav-settings-panel{left:16px;right:16px;bottom:16px;width:auto}}
+/* Responsive polish: area reparto */
+html{overflow-x:hidden}body{min-width:0;overflow-x:hidden}.top{width:100%;padding:12px max(12px,calc((100% - 1000px)/2))}.brand{min-width:0;flex-wrap:wrap;font-size:15px}.brand img{width:120px;max-height:36px}.links{min-width:0;display:flex;gap:6px;flex-wrap:wrap}.links a{white-space:normal;text-align:center;padding:8px 9px;font-size:13px}.wrap{width:100%;min-width:0;padding:14px 12px 36px}.panel{min-width:0;padding:13px;border-radius:13px}.monthnav{flex-wrap:wrap}.monthnav strong{min-width:0;flex:1;text-align:center}.scroll{max-width:100%;overscroll-behavior-x:contain}.savebar{position:sticky;bottom:0;padding:10px;background:#fffffff2;z-index:4}.row .field{min-width:min(180px,100%)}
+@media(max-width:620px){.top{align-items:stretch;flex-direction:column;gap:10px}.links{display:grid;grid-template-columns:1fr 1fr}.links a{font-size:12px;padding:8px 5px}.wrap{padding:10px 8px 28px}.day{gap:6px;padding:10px 0}.day .d{width:100%;font-size:13px}.chips{width:100%;flex-basis:100%}.chip{padding:6px 9px;font-size:12px}.scroll table{min-width:680px}h1{font-size:24px}.panel h2{font-size:17px}}
 </style>
-<link rel="stylesheet" href="ui.css">
+<link rel="stylesheet" href="ui.css"><link rel="stylesheet" href="nav.css">
 </head>
 <body>
-<aside class="side-nav" id="sideNav" aria-label="Menu reparto"></aside>
-<div id="navSettingsPanel" class="nav-settings-panel" hidden>
-  <h3>Impostazioni menu</h3>
-  <ul id="navSettingsList" class="nav-settings-list"></ul>
-  <div class="actions"><button type="button" class="btn secondary" id="closeNavSettings">Chiudi</button></div>
-</div>
-<header class="top"><div class="brand" role="button" tabindex="0" aria-label="Torna alla home"><img class="logo-mark" src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small class="brand-sub">Gestione turni</small></span></div><nav class="links"><a href="dashboard.html">Dashboard</a><a href="reparto.html">Reparto</a></nav></header>
+<nav class="side-nav" id="sideNav" aria-label="Navigazione"></nav>
+<header class="top"><div class="brand"><img class="logo-mark" src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small>Area reparto</small></span></div><div id="headerAccount"></div></header>
 <main class="wrap" id="app"><div class="panel">Caricamento…</div></main>
 <script>
 const SUPABASE_URL="https://mmkdibdomjaxwqfryqcw.supabase.co";
 const SUPABASE_KEY="sb_publishable_QPArC4ARilfFLqxnNsV72A_UBzZN-5g";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id),pad=n=>String(n).padStart(2,"0");
-const safe=s=>String(s??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const PREFS=[["ANY","Libero","free"],["M","Prefer. M","sp"],["P","Prefer. P","sp"],["G","Prefer. G","sp"],["N","Prefer. N","sp"],["R","Vorrei riposo","rest"],["OFF","Non disponibile","unavailable"]];
 const SHIFT={M:["07:00","14:00"],P:["14:00","19:00"],G:["07:00","19:00"],N:["19:00","07:00"],R:["00:00","00:00"]};
 const WD=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
-const NAV_DEFAULT=[{id:"avail",label:"Disponibilità",icon:"📅"},{id:"sched",label:"Turni",icon:"🗓️"},{id:"join",label:"Reparti",icon:"🏥"},{id:"settings",label:"Impostazioni",icon:"⚙️",isSettings:true}];
-const NAV_STORAGE_KEY="nanoshift.reparto.navOrder";
 let user=null,units=[],unit=null,cursor=new Date(),tab="avail",avail={},orig={},review={},schedule=[],msg=null,busy=false;
 cursor.setDate(1);
 const ymd=(y,m,d)=>y+"-"+pad(m+1)+"-"+pad(d);
@@ -51,243 +64,146 @@ const locked=d=>review[d]==="confirmed";
 const dirty=()=>Object.keys(avail).some(d=>avail[d]!==orig[d]);
 const note=(t,type="")=>{msg=t?{t,type}:null};
 const myUnits=()=>units.filter(m=>m.status==="active"&&(m.unit_role==="nurse"||m.unit_role==="coordinator"));
-
-function getNavOrder(){
-  try{
-    const raw=localStorage.getItem(NAV_STORAGE_KEY);
-    if(!raw)return NAV_DEFAULT.map(x=>x.id);
-    const arr=JSON.parse(raw); if(Array.isArray(arr)&&arr.length) return arr;
-  }catch(_){ }
-  return NAV_DEFAULT.map(x=>x.id);
-}
-function getOrderedNavItems(){
-  const order=getNavOrder();
-  const map=new Map(NAV_DEFAULT.map(item=>[item.id,item]));
-  const extras = NAV_DEFAULT.map(item=>item.id);
-  const finalOrder=[...order.filter(id=>map.has(id)), ...extras.filter(id=>!order.includes(id))];
-  return finalOrder.map(id=>map.get(id)).filter(Boolean);
-}
-function renderSideNav(){
-  const side=$("sideNav"); if(!side) return;
-  const items=getOrderedNavItems();
-  side.innerHTML = '<div class="nav-brand"><img src="favicon-192.png" alt=""><span>NaNoShift</span></div>' + items.map(item => {
-    if(item.isSettings){
-      return '<button type="button" class="nav-settings-trigger" data-settings="open"><span class="icon">'+item.icon+'</span><span>'+item.label+'</span></button>';
-    }
-    const active = tab===item.id ? 'active' : '';
-    return '<button type="button" class="'+active+'" data-tab="'+item.id+'"><span class="icon">'+item.icon+'</span><span>'+item.label+'</span></button>';
-  }).join('') + '<div class="nav-footer"><button type="button" data-settings="open"><span class="icon">⚙️</span><span>Impostazioni</span></button></div>';
-  side.querySelectorAll('[data-tab]').forEach(btn => btn.onclick=()=>{ tab=btn.dataset.tab; render(); });
-  side.querySelectorAll('[data-settings="open"]').forEach(btn => btn.onclick=()=>toggleNavSettings(true));
-}
-function toggleNavSettings(open){
-  const panel=$('navSettingsPanel'); if(!panel) return; panel.hidden = !open;
-  if(open) renderNavSettings();
-}
-function renderNavSettings(){
-  const list=$('navSettingsList'); if(!list) return;
-  const items=getOrderedNavItems().filter(item => !item.isSettings);
-  list.innerHTML=items.map((item,index)=>`<li data-nav-id="${item.id}"><span class="drag-handle" aria-label="Trascina">⋮⋮</span><span>${item.label}</span><span class="move"><button type="button" data-move="up" aria-label="Sposta su">↑</button><button type="button" data-move="down" aria-label="Sposta giù">↓</button></span></li>`).join('');
-  list.querySelectorAll('[data-move]').forEach(btn => {
-    btn.onclick = () => {
-      const li = btn.closest('li');
-      const id = li?.dataset.navId;
-      if(!id) return;
-      const order = getNavOrder();
-      const idx = order.indexOf(id);
-      const nextIdx = btn.dataset.move === 'up' ? Math.max(0, idx - 1) : Math.min(order.length - 1, idx + 1);
-      if(idx === -1 || idx === nextIdx) return;
-      const updated = [...order];
-      const temp = updated[idx];
-      updated[idx] = updated[nextIdx];
-      updated[nextIdx] = temp;
-      localStorage.setItem(NAV_STORAGE_KEY, JSON.stringify(updated));
-      renderSideNav();
-      renderNavSettings();
-    };
-  });
-}
-
-async function resolveHomePage(){
-  try {
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) return "accesso.html";
-    const { data: memberships } = await sb.rpc("get_my_units");
-    if (Array.isArray(memberships) && memberships.some(m => m.status === "active" && m.unit_role === "coordinator")) return "coordinamento.html";
-    if (Array.isArray(memberships) && memberships.some(m => m.status === "active" && (m.unit_role === "nurse" || m.unit_role === "coordinator"))) return "reparto.html";
-    return "dashboard.html";
-  } catch (_) {
-    return "dashboard.html";
-  }
-}
-
-function bindHeaderNavigation(){
-  const goHome = async () => {
-    const target = await resolveHomePage();
-    location.href = target;
-  };
-  document.querySelectorAll(".brand, .brand-text, .brand-name, .logo-mark, [data-home-link]").forEach((el) => {
-    el.style.cursor = "pointer";
-    el.addEventListener("click", (event) => {
-      event.preventDefault();
-      goHome();
-    });
-    el.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        goHome();
-      }
-    });
-  });
-  document.querySelectorAll('[data-logout], [data-action="logout"], #logoutButton, .logout-btn, .logout, [aria-label*="logout" i], [title*="logout" i]').forEach((button) => {
-    button.addEventListener("click", async (event) => {
-      event.preventDefault();
-      try { await sb.auth.signOut(); } catch (_) {}
-      location.href = "accesso.html";
-    });
-  });
-  const closeBtn=$('closeNavSettings'); if(closeBtn) closeBtn.onclick=()=>toggleNavSettings(false);
-}
-
 async function handleUnitInvite(){
-  const token=new URLSearchParams(location.search).get("unit_invite");
-  if(!token)return;
-  history.replaceState({},document.title,location.pathname);
-  try{
-    const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(token));
-    const hash=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,"0")).join("");
-    const {data:pv}=await sb.rpc("preview_unit_invitation",{p_token_hash:hash});
-    const info=Array.isArray(pv)?pv[0]:null;
-    if(!info){note("Questo invito non è valido, è scaduto o è già stato usato. Chiedi alla coordinatrice un nuovo link.","error");return}
-    if(info.already_member){note("Fai già parte del reparto "+info.unit_name+".","");return}
-    const {data:unitId,error}=await sb.rpc("accept_unit_invitation",{p_token_hash:hash});
-    if(error){note("Invito non accettato: "+error.message,"error");return}
-    note("Sei entrata/o nel reparto "+info.unit_name+" come "+(info.staff_role==="oss"?"OSS":"infermiere")+".","");
-    window.__joinedUnit=unitId;
-  }catch(err){note("Non riesco a verificare l'invito: "+err.message,"error")}
+ const token=new URLSearchParams(location.search).get("unit_invite");
+ if(!token)return;
+ history.replaceState({},document.title,location.pathname);
+ try{
+  const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(token));
+  const hash=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  const {data:pv}=await sb.rpc("preview_unit_invitation",{p_token_hash:hash});
+  const info=Array.isArray(pv)?pv[0]:null;
+  if(!info){note("Questo invito non è valido, è scaduto o è già stato usato. Chiedi alla coordinatrice un nuovo link.","error");return}
+  if(info.already_member){note("Fai già parte del reparto "+info.unit_name+".","");return}
+  const {data:unitId,error}=await sb.rpc("accept_unit_invitation",{p_token_hash:hash});
+  if(error){note("Invito non accettato: "+error.message,"error");return}
+  note("Sei entrata/o nel reparto "+info.unit_name+" come "+(info.staff_role==="oss"?"OSS":"infermiere")+".","");
+  window.__joinedUnit=unitId;
+ }catch(err){note("Non riesco a verificare l'invito: "+err.message,"error")}
 }
 async function init(){
-  bindHeaderNavigation();
-  const {data:{session}}=await sb.auth.getSession();
-  if(!session){location.href="accesso.html";return}
-  user=session.user;
-  await handleUnitInvite();
-  await loadMemberships();
-  render();
+ const {data:{session}}=await sb.auth.getSession();
+ if(!session){location.href="accesso.html";return}
+ user=session.user;
+ const nv=await NanoNav.loadContext(sb,user);
+ NanoNav.render({container:$("sideNav"),page:"reparto",prefs:nv.prefs,ctx:nv.ctx});
+ NanoNav.mountAccount($("headerAccount"),{sb,user,profile:nv.profile});
+ await handleUnitInvite();
+ await loadMemberships();render();
 }
 async function loadMemberships(){
-  const {data,error}=await sb.rpc("get_my_units");
-  if(error){note("Non riesco a caricare i reparti: "+error.message,"error");units=[];unit=null;return}
-  units=data||[];
-  const ok=myUnits();
-  const jn=window.__joinedUnit?ok.find(m=>m.unit_id===window.__joinedUnit):null;window.__joinedUnit=null;
-  if(jn)unit={id:jn.unit_id,name:jn.name};
-  else if(!unit||!ok.some(m=>m.unit_id===unit.id))unit=ok[0]?{id:ok[0].unit_id,name:ok[0].name}:null;
-  if(unit)await loadMonth();
+ const {data,error}=await sb.rpc("get_my_units");
+ if(error){note("Non riesco a caricare i reparti: "+error.message,"error");units=[];unit=null;return}
+ units=data||[];
+ const ok=myUnits();
+ const jn=window.__joinedUnit?ok.find(m=>m.unit_id===window.__joinedUnit):null;window.__joinedUnit=null;
+ if(jn)unit={id:jn.unit_id,name:jn.name};
+ else if(!unit||!ok.some(m=>m.unit_id===unit.id))unit=ok[0]?{id:ok[0].unit_id,name:ok[0].name}:null;
+ if(unit)await loadMonth();
 }
 async function loadMonth(){
-  const [from,to]=range();
-  const [a,s,r]=await Promise.all([
-    sb.from("unit_availability").select("day,choice,review_status").eq("unit_id",unit.id).eq("user_id",user.id).gte("day",from).lte("day",to),
-    sb.from("unit_shifts").select("user_id,shift_date,code").eq("unit_id",unit.id).eq("published",true).gte("shift_date",from).lte("shift_date",to),
-    sb.rpc("get_unit_roster",{p_unit:unit.id})
-  ]);
-  const errs=[a.error,s.error,r.error].filter(Boolean).map(e=>e.message);
-  if(errs.length)note("Errore di caricamento: "+errs.join(" · "),"error");
-  avail={};orig={};review={};
-  (a.data||[]).forEach(x=>{avail[x.day]=x.choice;orig[x.day]=x.choice;review[x.day]=x.review_status});
-  const names={};(r.data||[]).forEach(x=>{names[x.user_id]=x.display_name});
-  schedule=(s.data||[]).map(x=>({user_id:x.user_id,day:x.shift_date,code:x.code,display_name:names[x.user_id]||"Collega"}));
+ const [from,to]=range();
+ const [a,s,r]=await Promise.all([
+  sb.from("unit_availability").select("day,choice,review_status").eq("unit_id",unit.id).eq("user_id",user.id).gte("day",from).lte("day",to),
+  sb.from("unit_shifts").select("user_id,shift_date,code").eq("unit_id",unit.id).eq("published",true).gte("shift_date",from).lte("shift_date",to),
+  sb.rpc("get_unit_roster",{p_unit:unit.id})
+ ]);
+ const errs=[a.error,s.error,r.error].filter(Boolean).map(e=>e.message);
+ if(errs.length)note("Errore di caricamento: "+errs.join(" · "),"error");
+ avail={};orig={};review={};
+ (a.data||[]).forEach(x=>{avail[x.day]=x.choice;orig[x.day]=x.choice;review[x.day]=x.review_status});
+ const names={};(r.data||[]).forEach(x=>{names[x.user_id]=x.display_name});
+ schedule=(s.data||[]).map(x=>({user_id:x.user_id,day:x.shift_date,code:x.code,display_name:names[x.user_id]||"Collega"}));
 }
 function joinCard(){
-  const pending=units.filter(m=>m.unit_role==="nurse"&&m.status!=="active").map(m=>'<div class="item"><span><b>'+safe(m.name)+'</b></span><span class="muted">In attesa di approvazione</span></div>');
-  return '<section class="panel"><h2>Entra in un reparto</h2><p class="muted">Apri il link personale ricevuto dalla coordinatrice oppure inserisci qui il codice del reparto. Con il codice potrai inviare una richiesta di accesso.</p><form id="joinForm" class="row"><div class="field"><label for="code">Codice reparto</label><input id="code" maxlength="20" placeholder="Es. ABCD1234" required></div><div class="field"><label for="joinRole">Ruolo</label><select id="joinRole"><option value="nurse">Infermiere</option><option value="oss">OSS</option></select></div><div style="align-self:end"><button type="submit" class="btn">Invia richiesta</button></div></form>'+(pending.length?'<div class="panel" style="margin-top:10px"><h3>In attesa</h3>'+pending.join("")+'</div>':'')+'</section>';
+ const pending=units.filter(m=>m.unit_role==="nurse"&&m.status!=="active").map(m=>'<div class="item"><span><b>'+safe(m.name)+'</b></span><span class="muted">In attesa di approvazione</span></div>').join("");
+ return '<section class="panel"><h2>Entra in un reparto</h2><p class="muted">Apri il link personale ricevuto dalla coordinatrice oppure inserisci qui il codice del reparto. Con il codice potrai indicare le disponibilità dopo la sua approvazione.</p><form id="joinForm" class="row"><div class="field"><label for="code">Codice reparto</label><input id="code" maxlength="8" autocapitalize="characters" autocomplete="off" required placeholder="Es. K7M2QX9A"></div><div class="field"><label for="joinRole">Il tuo ruolo</label><select id="joinRole"><option value="infermiere">Infermiere</option><option value="oss">OSS</option></select></div><button class="btn" type="submit">Invia richiesta</button></form>'+(pending?'<div style="margin-top:12px">'+pending+'</div>':"")+'</section>';
 }
 function availView(){
-  const y=cursor.getFullYear(),m=cursor.getMonth();let h="";
-  for(let d=1;d<=dim();d++){
-    const key=ymd(y,m,d),wd=new Date(y,m,d).getDay(),cur=avail[key]||"ANY",lock=locked(key);
-    h+='<div class="day'+(wd===0||wd===6?" we":"")+(avail[key]!==orig[key]?" dirty":"")+'"><div class="d">'+WD[wd]+" "+d+'</div><div class="chips">'+PREFS.map(([v,l,cls])=>'<button type="button" class="chip'+(cur===v?" on":"")+' '+(v==="OFF"?"unavailable":v==="R"?"rest":"")+'" data-day="'+key+'" data-pref="'+v+'"'+(lock?" disabled":"")+'>'+l+'</button>').join("")+'</div></div>';
-  }
-  return '<section class="panel"><h2>Le tue disponibilità</h2><p class="muted">Per ogni giorno scegli: libero, preferenza per un turno, vorrei riposo oppure non disponibile. Dopo la conferma della coordinatrice, i dati diventano definitivi.</p><div class="row" style="margin-top:8px"><div class="field"><label for="fillPref">Applica a tutti i giorni</label><select id="fillPref"><option value="">Seleziona</option>'+PREFS.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("")+'</select></div><div style="align-self:end"><button class="btn" id="saveAvail">Salva disponibilità</button></div></div></section>' + h;
+ const y=cursor.getFullYear(),m=cursor.getMonth();let h="";
+ for(let d=1;d<=dim();d++){
+  const key=ymd(y,m,d),wd=new Date(y,m,d).getDay(),cur=avail[key]||"ANY",lock=locked(key);
+  h+='<div class="day'+(wd===0||wd===6?" we":"")+(avail[key]!==orig[key]?" dirty":"")+'"><div class="d">'+WD[wd]+" "+d+'</div><div class="chips">'+PREFS.map(([v,l,cls])=>'<button type="button" class="chip '+cls+(cur===v?" on":"")+'" data-day="'+key+'" data-pref="'+v+'"'+(lock?" disabled":"")+'>'+l+'</button>').join("")+'</div>'+(lock?'<span class="lock">✓ confermata</span>':review[key]==="rejected"?'<span class="lock" style="color:var(--red)">non accettata: puoi modificarla</span>':"")+'</div>';
+ }
+ return '<section class="panel"><h2>Le tue disponibilità</h2><p class="muted">Per ogni giorno scegli: libero, preferenza per un turno, vorrei riposo oppure non disponibile. Dopo la conferma della coordinatrice un giorno non è più modificabile.</p>'+h+'<div class="savebar"><button class="btn" id="saveAvail"'+(dirty()&&!busy?"":" disabled")+'>'+(busy?"Salvataggio…":"Salva disponibilità")+'</button><select id="fillPref" class="inline" style="width:auto"><option value="">Imposta i giorni non confermati…</option>'+PREFS.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("")+'</select>'+(dirty()?'<span class="muted">Modifiche non salvate</span>':"")+'</div></section>';
 }
 function scheduleView(){
-  const y=cursor.getFullYear(),m=cursor.getMonth(),n=dim();
-  if(!schedule.length)return '<section class="panel"><h2>Turni del reparto</h2><p class="muted">La coordinatrice non ha ancora pubblicato i turni di questo mese.</p></section>';
-  const mine=schedule.filter(r=>r.user_id===user.id).sort((a,b)=>a.day.localeCompare(b.day));
-  const people=[...new Map(schedule.map(r=>[r.user_id,r.display_name])).entries()].sort((a,b)=>(a[0]===user.id?-1:b[0]===user.id?1:String(a[1]).localeCompare(String(b[1]),"it")));
-  const by={};schedule.forEach(r=>{by[r.user_id+"|"+r.day]=r.code});
-  let head="<tr><th>Persona</th>";for(let d=1;d<=n;d++){const wd=new Date(y,m,d).getDay();head+='<th class="'+(wd===0||wd===6?"we":"")+'">'+d+"</th>"}head+="</tr>";
-  const body=people.map(([id,name])=>'<tr class="'+(id===user.id?"me":"")+'"><td>'+safe(name)+(id===user.id?" (tu)":"")+"</td>"+Array.from({length:n},(_,i)=>{const c=by[id+"|"+ymd(y,m,i+1)];return '<td>'+(c?'<span class="pill '+c+'">'+c+'</span>':'–')+'</td>'}).join("")+"</tr>").join("");
-  const list=mine.map(r=>'<div class="item"><span><b>'+new Date(r.day+"T12:00:00").toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"})+'</b></span><span class="pill '+r.code+'">'+r.code+'</span></div>').join("");
-  return '<section class="panel"><h2>I tuoi turni</h2>'+list+(mine.length?'<div class="savebar"><button class="btn" id="importShifts">Importa nel mio calendario</button> <button class="btn danger" id="removeImportedShifts">Rimuovi importati</button></div>':'')+'<div class="scroll"><table><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div></section>';
+ const y=cursor.getFullYear(),m=cursor.getMonth(),n=dim();
+ if(!schedule.length)return '<section class="panel"><h2>Turni del reparto</h2><p class="muted">La coordinatrice non ha ancora pubblicato i turni di questo mese.</p></section>';
+ const mine=schedule.filter(r=>r.user_id===user.id).sort((a,b)=>a.day.localeCompare(b.day));
+ const people=[...new Map(schedule.map(r=>[r.user_id,r.display_name])).entries()].sort((a,b)=>(a[0]===user.id?-1:b[0]===user.id?1:String(a[1]).localeCompare(String(b[1]),"it")));
+ const by={};schedule.forEach(r=>{by[r.user_id+"|"+r.day]=r.code});
+ let head="<tr><th>Persona</th>";for(let d=1;d<=n;d++){const wd=new Date(y,m,d).getDay();head+='<th class="'+(wd===0||wd===6?"we":"")+'">'+d+"</th>"}head+="</tr>";
+ const body=people.map(([id,name])=>'<tr class="'+(id===user.id?"me":"")+'"><td>'+safe(name)+(id===user.id?" (tu)":"")+"</td>"+Array.from({length:n},(_,i)=>{const c=by[id+"|"+ymd(y,m,i+1)];return "<td>"+(c?'<span class="pill '+c+'">'+c+"</span>":"")+"</td>"}).join("")+"</tr>").join("");
+ const list=mine.map(r=>'<div class="item"><span><b>'+new Date(r.day+"T12:00:00").toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"})+'</b></span><span class="pill '+r.code+'">'+r.code+'</span></div>').join("")||'<p class="muted">Nessun turno assegnato a te questo mese.</p>';
+ return '<section class="panel"><h2>I tuoi turni</h2>'+list+(mine.length?'<div class="savebar"><button class="btn" id="importShifts">Importa nel mio calendario</button> <button class="btn danger" id="removeImportedShifts">Rimuovi turni importati</button></div><p class="muted">Puoi rimuovere dal calendario personale solo i turni importati da questo reparto; gli altri turni resteranno invariati.</p>':"")+'</section><section class="panel"><h2>Turni del reparto</h2><div class="scroll"><table>'+head+body+'</table></div></section>';
 }
 function render(){
-  const app=$("app");
-  let h='<h1>'+(unit?safe(unit.name):"Reparto")+'</h1><div class="muted">Disponibilità e turni pubblicati dalla coordinatrice.</div>';
-  if(msg)h+='<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+'</div>';
-  const ok=myUnits();
-  if(ok.length>1)h+='<div class="field" style="margin-top:10px"><label for="wardSel">Reparto</label><select id="wardSel">'+ok.map(m=>'<option value="'+m.unit_id+'"'+(unit&&m.unit_id===unit.id?" selected":"")+'>'+safe(m.name)+'</option>').join("")+'</select></div>';
-  if(!unit){
-    if(units.some(m=>m.unit_role==="coordinator"&&m.status==="active"))h+='<div class="notice warn">Sei coordinatrice di un reparto: gestiscilo dall\'<a href="coordinamento.html">area coordinamento</a>\'.</div>';
-    h+=joinCard();app.innerHTML=h;bind();renderSideNav();return
-  }
-  h+='<div class="tabs"><button data-tab="avail" class="'+(tab==="avail"?"active":"")+'">Disponibilità</button><button data-tab="sched" class="'+(tab==="sched"?"active":"")+'">Turni pubblicati</button></div>';
-  h+='<div class="monthnav"><button data-month="-1" aria-label="Mese precedente">‹</button><strong>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</strong><button data-month="1" aria-label="Mese successivo">›</button></div>';
-  h+=tab==="avail"?availView():scheduleView();
-  h+=joinCard().replace('<section class="panel"><h2>Entra in un reparto</h2>','<section class="panel"><h2>Entra in un altro reparto</h2>');
-  app.innerHTML=h;bind();renderSideNav();
+ const app=$("app");
+ let h='<h1>'+(unit?safe(unit.name):"Reparto")+'</h1><div class="muted">Disponibilità e turni pubblicati dalla coordinatrice.</div>';
+ if(msg)h+='<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+'</div>';
+ const ok=myUnits();
+ if(ok.length>1)h+='<div class="field" style="margin-top:10px"><label for="wardSel">Reparto</label><select id="wardSel">'+ok.map(m=>'<option value="'+m.unit_id+'"'+(unit&&m.unit_id===unit.id?" selected":"")+'>'+safe(m.name)+'</option>').join("")+'</select></div>';
+ if(!unit){
+  if(units.some(m=>m.unit_role==="coordinator"&&m.status==="active"))h+='<div class="notice warn">Sei coordinatrice di un reparto: gestiscilo dall\'<a href="coordinamento.html">area coordinamento</a>.</div>';
+  h+=joinCard();app.innerHTML=h;bind();return
+ }
+ h+='<div class="tabs"><button data-tab="avail" class="'+(tab==="avail"?"active":"")+'">Disponibilità</button><button data-tab="sched" class="'+(tab==="sched"?"active":"")+'">Turni pubblicati</button></div>';
+ h+='<div class="monthnav"><button data-month="-1" aria-label="Mese precedente">‹</button><strong>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</strong><button data-month="1" aria-label="Mese successivo">›</button></div>';
+ h+=tab==="avail"?availView():scheduleView();
+ h+=joinCard().replace('<section class="panel"><h2>Entra in un reparto</h2>','<section class="panel"><h2>Entra in un altro reparto</h2>');
+ app.innerHTML=h;bind();
 }
 function bind(){
-  const jf=$("joinForm");if(jf)jf.onsubmit=async e=>{
-    e.preventDefault();const {error}=await sb.rpc("request_join_unit",{p_code:$("code").value,p_staff_role:$("joinRole").value});
-    if(error)note(error.message,"error");else note("Richiesta inviata: attendi l'approvazione della coordinatrice.","");
-    await loadMemberships();render();
-  };
-  const ws=$("wardSel");if(ws)ws.onchange=async()=>{const m=units.find(x=>x.unit_id===ws.value);unit={id:m.unit_id,name:m.name};note(null);await loadMonth();render()};
-  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
-  document.querySelectorAll("[data-month]").forEach(b=>b.onclick=async()=>{
-    if(dirty()&&!confirm("Hai modifiche non salvate. Vuoi cambiare mese e perderle?"))return;
-    cursor=new Date(cursor.getFullYear(),cursor.getMonth()+Number(b.dataset.month),1);note(null);await loadMonth();render();
-  });
-  document.querySelectorAll(".chip[data-day]").forEach(b=>b.onclick=()=>{avail[b.dataset.day]=b.dataset.pref;const y=window.scrollY;render();window.scrollTo(0,y)});
-  const fill=$("fillPref");if(fill)fill.onchange=()=>{if(!fill.value)return;for(let d=1;d<=dim();d++){const k=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(!locked(k))avail[k]=fill.value}render()};
-  const sv=$("saveAvail");if(sv)sv.onclick=saveAvail;
-  const im=$("importShifts");if(im)im.onclick=importShifts;
-  const rm=$("removeImportedShifts");if(rm)rm.onclick=removeImportedShifts;
+ const jf=$("joinForm");if(jf)jf.onsubmit=async e=>{
+  e.preventDefault();const {error}=await sb.rpc("request_join_unit",{p_code:$("code").value,p_staff_role:$("joinRole").value});
+  if(error)note(error.message,"error");else note("Richiesta inviata: attendi l'approvazione della coordinatrice.","");
+  await loadMemberships();render();
+ };
+ const ws=$("wardSel");if(ws)ws.onchange=async()=>{const m=units.find(x=>x.unit_id===ws.value);unit={id:m.unit_id,name:m.name};note(null);await loadMonth();render()};
+ document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
+ document.querySelectorAll("[data-month]").forEach(b=>b.onclick=async()=>{
+  if(dirty()&&!confirm("Hai modifiche non salvate. Vuoi cambiare mese e perderle?"))return;
+  cursor=new Date(cursor.getFullYear(),cursor.getMonth()+Number(b.dataset.month),1);note(null);await loadMonth();render();
+ });
+ document.querySelectorAll(".chip[data-day]").forEach(b=>b.onclick=()=>{avail[b.dataset.day]=b.dataset.pref;const y=window.scrollY;render();window.scrollTo(0,y)});
+ const fill=$("fillPref");if(fill)fill.onchange=()=>{if(!fill.value)return;for(let d=1;d<=dim();d++){const k=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(!locked(k))avail[k]=fill.value}render()};
+ const sv=$("saveAvail");if(sv)sv.onclick=saveAvail;
+ const im=$("importShifts");if(im)im.onclick=importShifts;
+ const rm=$("removeImportedShifts");if(rm)rm.onclick=removeImportedShifts;
 }
 async function saveAvail(){
-  const rows=Object.keys(avail).filter(d=>avail[d]!==orig[d]&&!locked(d)).map(d=>({unit_id:unit.id,user_id:user.id,day:d,choice:avail[d],review_status:"pending",updated_at:new Date().toISOString()}));
-  if(!rows.length)return;
-  busy=true;render();
-  const {error}=await sb.from("unit_availability").upsert(rows,{onConflict:"unit_id,user_id,day"});
-  busy=false;
-  if(error)note("Salvataggio non riuscito: "+error.message,"error");else note("Disponibilità salvate.","");
-  await loadMonth();render();
+ const rows=Object.keys(avail).filter(d=>avail[d]!==orig[d]&&!locked(d)).map(d=>({unit_id:unit.id,user_id:user.id,day:d,choice:avail[d],review_status:"pending",updated_at:new Date().toISOString()}));
+ if(!rows.length)return;
+ busy=true;render();
+ const {error}=await sb.from("unit_availability").upsert(rows,{onConflict:"unit_id,user_id,day"});
+ busy=false;
+ if(error)note("Salvataggio non riuscito: "+error.message,"error");else note("Disponibilità salvate.","");
+ await loadMonth();render();
 }
 async function removeImportedShifts(){
-  const [from,to]=range(),prefix="Reparto: "+unit.name;
-  if(!confirm("Vuoi eliminare dal tuo calendario personale i turni importati da questo reparto per "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+"? Gli altri turni personali non verranno toccati."))return;
-  const {data,error}=await sb.from("shifts").select("id,notes").eq("user_id",user.id).gte("shift_date",from).lte("shift_date",to);
-  if(error){note("Non riesco a caricare i turni da rimuovere: "+error.message,"error");render();return}
-  const ids=(data||[]).filter(r=>String(r.notes||"").startsWith(prefix)).map(r=>r.id);
-  if(!ids.length){note("Non ci sono turni importati da questo reparto nel mese selezionato.","warn");render();return}
-  const {error:delError}=await sb.from("shifts").delete().eq("user_id",user.id).in("id",ids);
-  if(delError)note("Eliminazione non riuscita: "+delError.message,"error");
-  else note("Eliminati "+ids.length+" turni importati da "+unit.name+". Gli altri turni personali sono rimasti invariati.","");
-  await loadMonth();render();
+ const [from,to]=range(),prefix="Reparto: "+unit.name;
+ if(!confirm("Vuoi eliminare dal tuo calendario personale i turni importati da questo reparto per "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+"? Gli altri turni personali non verranno modificati."))return;
+ const {data,error}=await sb.from("shifts").select("id,notes").eq("user_id",user.id).gte("shift_date",from).lte("shift_date",to);
+ if(error){note("Non riesco a caricare i turni da rimuovere: "+error.message,"error");render();return}
+ const ids=(data||[]).filter(r=>String(r.notes||"").startsWith(prefix)).map(r=>r.id);
+ if(!ids.length){note("Non ci sono turni importati da questo reparto nel mese selezionato.","warn");render();return}
+ const {error:delError}=await sb.from("shifts").delete().eq("user_id",user.id).in("id",ids);
+ if(delError)note("Eliminazione non riuscita: "+delError.message,"error");
+ else note("Eliminati "+ids.length+" turni importati da "+unit.name+". Gli altri turni personali sono rimasti invariati.","");
+ await loadMonth();render();
 }
 async function importShifts(){
-  const [from,to]=range(),mine=schedule.filter(r=>r.user_id===user.id);
-  const {data:existing,error:e1}=await sb.from("shifts").select("shift_date").eq("user_id",user.id).gte("shift_date",from).lte("shift_date",to);
-  if(e1){note("Importazione non riuscita: "+e1.message,"error");render();return}
-  const taken=new Set((existing||[]).map(r=>r.shift_date));
-  const rows=mine.filter(r=>!taken.has(r.day)).map(r=>({user_id:user.id,shift_date:r.day,code:r.code,start_time:SHIFT[r.code][0],end_time:SHIFT[r.code][1],actual_hours:r.code==="R"?0:null,availability_hours:0,notes:"Reparto: "+unit.name,site_id:null,template_id:null}));
-  if(!rows.length){note("Tutti i turni sono già nel tuo calendario.","warn");render();return}
-  const {error}=await sb.from("shifts").insert(rows);
-  if(error)note("Importazione non riuscita: "+error.message,"error");
-  else note("Importati "+rows.length+" turni nel tuo calendario"+(mine.length>rows.length?" ("+(mine.length-rows.length)+" già presenti, saltati).":"."),"");
-  render();
+ const [from,to]=range(),mine=schedule.filter(r=>r.user_id===user.id);
+ const {data:existing,error:e1}=await sb.from("shifts").select("shift_date").eq("user_id",user.id).gte("shift_date",from).lte("shift_date",to);
+ if(e1){note("Importazione non riuscita: "+e1.message,"error");render();return}
+ const taken=new Set((existing||[]).map(r=>r.shift_date));
+ const rows=mine.filter(r=>!taken.has(r.day)).map(r=>({user_id:user.id,shift_date:r.day,code:r.code,start_time:SHIFT[r.code][0],end_time:SHIFT[r.code][1],actual_hours:r.code==="R"?0:null,availability_hours:0,notes:"Reparto: "+unit.name,updated_at:new Date().toISOString()}));
+ if(!rows.length){note("Tutti i turni sono già nel tuo calendario.","warn");render();return}
+ const {error}=await sb.from("shifts").insert(rows);
+ if(error)note("Importazione non riuscita: "+error.message,"error");
+ else note("Importati "+rows.length+" turni nel tuo calendario"+(mine.length>rows.length?" ("+(mine.length-rows.length)+" già presenti, saltati).":"."),"");
+ render();
 }
 window.addEventListener("beforeunload",e=>{if(dirty()){e.preventDefault();e.returnValue=""}});
 init();

@@ -36,3 +36,7 @@ Cloudflare Pages è collegato alla repository GitHub `luiginva97/NaNo-Shift`, co
 
 ### Inviti al reparto e ruoli
 Migrazione `20261031140000_unit_invitations_and_staff_roles.sql`: colonna `unit_members.staff_role` (infermiere|oss), tabella `unit_invitations` (solo hash SHA-256 del token), funzioni `create_unit_invitation`, `revoke_unit_invitation`, `preview_unit_invitation`, `accept_unit_invitation`; `request_join_unit` e `get_unit_roster` ora gestiscono il ruolo. Il link è `accesso.html?unit_invite=TOKEN` e dopo il login porta a `reparto.html`. **Va applicata al database prima di pubblicare il frontend.**
+
+
+### Menu condiviso
+`nav.js` + `nav.css` definiscono un solo menu (colonna laterale su desktop, barra in basso con "Altro" su telefono) usato da dashboard, reparto e coordinamento. L'ordine delle voci si cambia da Dati utente → Ordine del menu (salvato in `profiles.feature_preferences.nav_order`) e i toggle di Funzionalità nascondono le voci in tutte le pagine. Le coordinatrici aprono su Coordinamento; l'area personale è `dashboard.html?area=personale`.

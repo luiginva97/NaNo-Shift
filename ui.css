@@ -27,32 +27,6 @@
  body:has(.side-nav) .top .brand-text small{font-size:14px;color:var(--navy);font-weight:650}
 }
 
-/* Navigazione: ordine fisso su desktop, 4 voci + "Altro" su telefono */
-.side-nav button[hidden]{display:none!important}
-.side-nav .nav-more-btn{display:none}
-.side-nav .nav-more{display:contents}
-@media(min-width:1000px){
- .side-nav [data-section="overviewView"]{order:1}
- .side-nav [data-section="calendarView"]{order:2}
- .side-nav [data-section="listView"]{order:3}
- .side-nav [data-section="groupsView"]{order:4}
- .side-nav [data-section="sitesView"]{order:5}
- .side-nav [data-section="taxView"]{order:6}
- .side-nav [data-href]{order:7}
- .side-nav [data-section="profileView"]{order:8}
- .side-nav .side-caption{order:99;margin-top:auto}
-}
-@media(max-width:999px){
- .side-nav{justify-content:stretch;gap:2px;overflow:visible}
- .side-nav>button{flex:1 1 0;min-width:0;font-size:11px;line-height:1.15;padding:8px 2px}
- .side-nav>button span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
- .side-nav .nav-more-btn{display:flex}
- .side-nav .nav-more{display:none}
- .side-nav.more-open .nav-more{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;position:fixed;left:10px;right:10px;bottom:calc(76px + env(safe-area-inset-bottom));padding:8px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 48px #102b4e2e;z-index:25}
- .side-nav.more-open .nav-more button{flex:none;flex-direction:row;justify-content:flex-start;gap:10px;width:100%;min-width:0;padding:12px;font-size:14px;border-radius:11px;background:#f7f9fd;border:0}
- .side-nav.more-open .nav-more button svg{width:20px;height:20px}
-}
-
 /* Notifiche: il pannello non esce mai dallo schermo */
 @media(max-width:600px){
  .notification-wrap{position:static}

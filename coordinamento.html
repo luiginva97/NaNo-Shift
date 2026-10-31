@@ -7,6 +7,7 @@
 <title>NaNo Shift · Area coordinamento</title>
 <link rel="icon" type="image/png" sizes="512x512" href="favicon-512.png"><link rel="icon" type="image/x-icon" href="favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
+<script src="nav.js"></script>
 <style>
 :root{--navy:#10284b;--blue:#2463eb;--pale:#edf3ff;--bg:#f5f7fc;--line:#dfe6f1;--muted:#68778f;--red:#b42318;--green:#13845b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--navy);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -45,10 +46,11 @@ dialog{border:0;border-radius:18px;width:min(420px,calc(100% - 24px));padding:20
 /* Responsive polish: coordinatore */
 @media(max-width:700px){.top{align-items:flex-start;flex-direction:column;padding:12px}.brand{font-size:15px;flex-wrap:wrap}.brand img{width:124px;max-height:38px}.links{width:100%}.links a{flex:1;text-align:center;font-size:13px;padding:8px 7px}.wrap{padding:12px 10px 36px}.panel{padding:12px;border-radius:13px}.scroll{max-height:65vh}th:first-child,td:first-child{min-width:108px}.monthnav strong{min-width:125px}.opts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
-<link rel="stylesheet" href="ui.css">
+<link rel="stylesheet" href="ui.css"><link rel="stylesheet" href="nav.css">
 </head>
 <body>
-<header class="top"><div class="brand"><img class="logo-mark" src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small>Area coordinamento</small></span></div><div class="links"><a href="dashboard.html?area=personale">Area personale</a><a href="reparto.html">Le mie disponibilità</a></div></header>
+<nav class="side-nav" id="sideNav" aria-label="Navigazione"></nav>
+<header class="top"><div class="brand"><img class="logo-mark" src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small>Area coordinamento</small></span></div><div id="headerAccount"></div></header>
 <main class="wrap" id="app"><div class="panel">Caricamento…</div></main>
 <dialog id="cellDlg"></dialog>
 <script>
@@ -79,6 +81,9 @@ async function init(){
  const {data:{session}}=await sb.auth.getSession();
  if(!session){location.href="accesso.html";return}
  user=session.user;
+ const nv=await NanoNav.loadContext(sb,user);
+ NanoNav.render({container:$("sideNav"),page:"coordinamento",prefs:nv.prefs,ctx:nv.ctx});
+ NanoNav.mountAccount($("headerAccount"),{sb,user,profile:nv.profile});
  const {data:profile}=await sb.from("profiles").select("role").eq("id",user.id).single();
  // Accesso per ruolo globale oppure per appartenenza attiva come coordinatore di reparto.
  const globalAccess=["admin","nurse_coordinator"].includes(profile?.role);

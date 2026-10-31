@@ -1,0 +1,59 @@
+/* Menu condiviso (nav.js): colonna laterale su desktop, barra in basso su telefono */
+.side-nav button{display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;color:var(--navy);text-align:left;padding:11px 12px;border-radius:11px;font-weight:650;font:inherit;font-weight:650;cursor:pointer}
+.side-nav button.active,.side-nav button:hover{background:var(--pale);color:var(--blue)}
+.side-nav button svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.side-nav button[hidden]{display:none!important}
+.side-nav .side-brand{display:flex;align-items:center;gap:9px;cursor:pointer}
+.side-nav .side-brand img{object-fit:contain}
+.side-nav .nav-more-btn{display:none}
+.side-nav .nav-more{display:contents}
+
+@media(min-width:1000px){
+ body.has-nav{padding-left:238px}
+ .side-nav{position:fixed;inset:0 auto 0 0;width:220px;padding:26px 14px;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:8px;z-index:20;overflow-y:auto}
+ .side-nav .side-brand{font-size:19px;font-weight:850;letter-spacing:-.5px;padding:4px 12px 22px}
+ .side-nav .side-brand .sb-name>span{color:var(--gold,#f2bd36)}
+ .side-nav .side-caption{margin-top:auto;padding:12px;color:var(--muted);font-size:12px}
+ .wrap{max-width:1280px}
+}
+
+@media(max-width:999px){
+ body.has-nav{padding-bottom:88px}
+ .side-nav{position:fixed;inset:auto 0 0;width:100%;display:flex;justify-content:space-around;gap:2px;overflow:visible;padding:7px max(5px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(5px,env(safe-area-inset-left));background:#fff;border-top:1px solid var(--line);box-shadow:0 -6px 22px #10284b12;z-index:20}
+ .side-nav .side-brand,.side-nav .side-caption{display:none}
+ .side-nav>button{flex:1 1 0;min-width:0;flex-direction:column;justify-content:center;gap:3px;padding:8px 2px;border-radius:10px;font-size:11px;line-height:1.15;white-space:nowrap;width:auto}
+ .side-nav>button svg{width:20px;height:20px}
+ .side-nav>button span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+ .side-nav .nav-more-btn{display:flex}
+ .side-nav .nav-more{display:none}
+ .side-nav.more-open .nav-more{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;position:fixed;left:10px;right:10px;bottom:calc(76px + env(safe-area-inset-bottom));padding:8px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 48px #102b4e2e;z-index:25}
+ .side-nav.more-open .nav-more button{flex-direction:row;justify-content:flex-start;gap:10px;width:100%;min-width:0;padding:12px;font-size:14px;border-radius:11px;background:#f7f9fd}
+ .side-nav.more-open .nav-more button svg{width:20px;height:20px}
+ .wrap{padding-bottom:20px}
+}
+@media(max-width:480px){.side-nav>button{font-size:10px}}
+
+/* Intestazione condivisa: azioni utente */
+.header-actions{display:flex;align-items:center;gap:12px}
+.header-actions .account-menu-wrap{position:relative}
+.avatar-button{width:44px;height:44px;border:1px solid var(--line);border-radius:50%;background:#f2f6fc;display:flex;align-items:center;justify-content:center;position:relative;overflow:visible;padding:0;color:var(--navy);font-weight:800;cursor:pointer;font:inherit;font-weight:800}
+.avatar-button img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.avatar-chevron{position:absolute;right:-5px;bottom:-4px;width:17px;height:17px;border-radius:50%;background:#fff;border:1px solid var(--line);font-size:12px;line-height:14px;text-align:center}
+.account-menu{position:absolute;right:0;top:52px;width:220px;padding:7px;background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:0 12px 35px #10284b20;z-index:30}
+.account-menu[hidden]{display:none}
+.account-menu button{display:block;width:100%;padding:11px;border:0;border-radius:8px;background:#fff;text-align:left;color:var(--navy);font:inherit;font-weight:650;cursor:pointer}
+.account-menu button:hover{background:var(--pale)}
+.account-menu .logout-menu-item{color:var(--red)}
+
+/* Ordine del menu (Dati utente) */
+.nav-order{list-style:none;margin:8px 0 0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.nav-order li{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-bottom:1px solid var(--line)}
+.nav-order li:last-child{border-bottom:0}
+.nav-order li svg{width:18px;height:18px;flex:none;fill:none;stroke:var(--muted);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.nav-order li b{flex:1;font-weight:650}
+.nav-order li small{color:var(--muted)}
+.nav-order .mv{display:flex;gap:6px}
+.nav-order .mv button{width:36px;height:36px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--navy);font:inherit;cursor:pointer}
+.nav-order .mv button:disabled{opacity:.35;cursor:default}
+@media print{.side-nav{display:none!important}body.has-nav{padding:0!important}}
+@media(max-width:700px){body.has-nav .top{flex-direction:row!important;align-items:center!important;padding:10px 12px!important}}
