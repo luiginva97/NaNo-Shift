@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f5f7fc">
-<title>NaNo Shift · Coordinatrice</title>
+<title>NaNo Shift · Coordinamento</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="icon" type="image/x-icon" href="favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <style>
@@ -44,7 +44,7 @@ dialog{border:0;border-radius:18px;width:min(420px,calc(100% - 24px));padding:20
 </style>
 </head>
 <body>
-<header class="top"><div class="brand"><img src="favicon.svg" alt=""> NaNo<span>Shift</span> · Coordinatrice</div><div class="links"><a href="dashboard.html">← Dashboard</a><a href="reparto.html">Area reparto</a></div></header>
+<header class="top"><div class="brand"><img src="favicon.svg" alt=""> NaNo<span>Shift</span> · Coordinamento</div><div class="links"><a href="dashboard.html">← Dashboard</a><a href="reparto.html">Area reparto</a></div></header>
 <main class="wrap" id="app"><div class="panel">Caricamento…</div></main>
 <dialog id="cellDlg"></dialog>
 <script>
@@ -164,7 +164,7 @@ function quickAssignView(a){
 }
 function render(){
  const app=$("app");let h="";
- if(!unit){h='<h1>Area coordinatrice</h1><div class="muted">Crea il reparto, approva il personale, conferma le disponibilità e gestisci i turni.</div>'+(msg?'<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>":"")+createCard();app.innerHTML=h;bind();return}
+ if(!unit){h='<h1>Coordinamento</h1><div class="muted">Crea il reparto, approva il personale, conferma le disponibilità e gestisci i turni.</div>'+(msg?'<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>":"")+createCard();app.innerHTML=h;bind();return}
  h+='<div id="wardBar"><h1>'+safe(unit.name)+'</h1><div class="row" style="align-items:center"><span class="muted">Codice per entrare:</span><span class="code">'+safe(unit.join_code)+'</span><button class="btn secondary small" id="copyCode">Copia</button>'+(units.length>1?'<select id="wardSel" style="padding:8px;border-radius:9px;border:1px solid var(--line)">'+units.map(u=>'<option value="'+u.id+'"'+(u.id===unit.id?" selected":"")+">"+safe(u.name)+"</option>").join("")+"</select>":"")+"</div></div>";
  if(msg)h+='<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>";
  const np=pending().length;
