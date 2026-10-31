@@ -95,6 +95,7 @@ async function init(){
  if(!session){location.href="accesso.html";return}
  user=session.user;
  const nv=await NanoNav.loadContext(sb,user);
+ if(nv.ctx.isMaster){location.href="demo-reparto.html";return}
  NanoNav.render({container:$("sideNav"),page:"reparto",prefs:nv.prefs,ctx:nv.ctx,account:{name:nv.profile.display_name||nv.profile.first_name||user.email,avatar:nv.profile.avatar_url,onLogout:async()=>{await sb.auth.signOut();location.href="accesso.html"}}});
  NanoNav.mountAccount($("headerAccount"),{sb,user,profile:nv.profile});
  await handleUnitInvite();
@@ -132,8 +133,9 @@ async function loadMonth(){
  schedule=(s.data||[]).map(x=>({user_id:x.user_id,day:x.shift_date,code:x.code,display_name:names[x.user_id]||"Collega"}));swapRequests=swapData||[];
 }
 function joinCard(){
- const pending=units.filter(m=>m.unit_role==="nurse"&&m.status!=="active").map(m=>'<div class="item"><span><b>'+safe(m.name)+'</b></span><span class="muted">In attesa di approvazione</span></div>').join("");
- return '<section class="panel"><h2>Entra in un reparto</h2><p class="muted">Apri il link personale ricevuto dalla coordinatrice oppure inserisci qui il codice del reparto. Con il codice potrai indicare le disponibilità dopo la sua approvazione.</p><form id="joinForm" class="row"><div class="field"><label for="code">Codice reparto</label><input id="code" maxlength="8" autocapitalize="characters" autocomplete="off" required placeholder="Es. K7M2QX9A"></div><div class="field"><label for="joinRole">Il tuo ruolo</label><select id="joinRole"><option value="infermiere">Infermiere</option><option value="oss">OSS</option></select></div><button class="btn" type="submit">Invia richiesta</button></form>'+(pending?'<div style="margin-top:12px">'+pending+'</div>':"")+'</section>';
+ const pending=units.filter(m=>m.unit_role==="nurse"&&m.status!=="active").map(m=>'<div class="item"><span><b>'+safe(m.name)+'</b></span><span class="muted">In attesa di approvazione della coordinatrice</span></div>').join("");
+ const pendingStructures=units.filter(m=>m.unit_role==="coordinator"&&m.status!=="active").map(m=>'<div class="item"><span><b>'+safe(m.name)+'</b></span><span class="muted">Struttura in attesa di approvazione Master</span></div>').join("");
+ return '<section class="panel"><h2>Entra in un reparto</h2><p class="muted">Apri il link personale ricevuto dalla coordinatrice oppure inserisci qui il codice del reparto. Con il codice potrai indicare le disponibilità dopo la sua approvazione.</p><form id="joinForm" class="row"><div class="field"><label for="code">Codice reparto</label><input id="code" maxlength="8" autocapitalize="characters" autocomplete="off" required placeholder="Es. K7M2QX9A"></div><div class="field"><label for="joinRole">Il tuo ruolo</label><select id="joinRole"><option value="infermiere">Infermiere</option><option value="oss">OSS</option></select></div><button class="btn" type="submit">Invia richiesta</button></form>'+(pending?'<div style="margin-top:12px">'+pending+'</div>':"")+(pendingStructures?'<div style="margin-top:12px">'+pendingStructures+'</div>':"")+'<div style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px"><h2>Richiedi una nuova struttura</h2><p class="muted">Se sei il referente di una struttura, puoi inviare una richiesta di attivazione. Lo spazio e il ruolo di coordinatore saranno attivati solo dopo l’approvazione del Master.</p><form id="createUnitForm" class="row"><div class="field"><label for="newUnitName">Nome della struttura</label><input id="newUnitName" maxlength="80" minlength="2" required placeholder="Es. Casa di cura …"></div><button class="btn" type="submit">Invia richiesta di attivazione</button></form></div></section>';
 }
 function availView(){
  const y=cursor.getFullYear(),m=cursor.getMonth();let h='<div id="availabilityGrid">';
@@ -203,6 +205,12 @@ function bind(){
  const jf=$("joinForm");if(jf)jf.onsubmit=async e=>{
   e.preventDefault();const {error}=await sb.rpc("request_join_unit",{p_code:$("code").value,p_staff_role:$("joinRole").value});
   if(error)note(error.message,"error");else note("Richiesta inviata: attendi l'approvazione della coordinatrice.","");
+  await loadMemberships();render();
+ };
+ const cf=$("createUnitForm");if(cf)cf.onsubmit=async e=>{
+  e.preventDefault();const name=$("newUnitName").value.trim();if(name.length<2||name.length>80){note("Inserisci un nome struttura tra 2 e 80 caratteri.","error");return}
+  const {error}=await sb.rpc("create_unit",{p_name:name});
+  if(error)note(error.message,"error");else note("Richiesta inviata al Master. La struttura sarà attivata solo dopo l'approvazione.","");
   await loadMemberships();render();
  };
  const leave=$("leaveUnit");if(leave)leave.onclick=async()=>{
