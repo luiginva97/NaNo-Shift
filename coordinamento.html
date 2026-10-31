@@ -41,7 +41,7 @@ td.a{font-weight:800;font-size:12px}td.a.free{background:#e8f6ef;color:var(--gre
 dialog{border:0;border-radius:18px;width:min(420px,calc(100% - 24px));padding:20px;box-shadow:0 20px 80px #14294d33}dialog::backdrop{background:#0b1f3d77}
 .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.opts button{padding:12px 4px;border-radius:11px;border:1px solid var(--line);background:#fff;font-weight:800}.opts button.on{border-color:var(--blue);background:var(--pale);color:var(--blue)}
 .printonly{display:none}
-@media print{@page{size:landscape;margin:10mm}body{background:#fff}.top,.tabs,.noprint,.monthnav button,.legend,.warnlist,.notice,#wardBar{display:none!important}.panel{border:0;box-shadow:0;padding:0;margin:0}.scroll{overflow:visible;max-height:none;border:0}table{font-size:10px}th,td{min-width:20px;height:22px}th:first-child,td:first-child{min-width:100px;position:static}th{position:static}.cell{height:22px}.cell.unav,.cell.rest{background:transparent}.cell.warn{outline:0}.printonly{display:block;margin-bottom:8px}.pill{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media print{@page{size:landscape;margin:10mm}body{background:#fff}.top,.tabs,.noprint,.monthnav button,.legend,.warnlist,.notice,#wardBar{display:none!important}.panel{border:0;box-shadow:0;padding:0;margin:0}.scroll{overflow:visible;max-height:none;border:0}table{font-size:12px;width:100%;table-layout:fixed}th,td{min-width:0;width:27px;height:36px;padding:1px;border:1px solid #9aa8bd}th:first-child,td:first-child{width:128px;min-width:128px;position:static;font-size:12px}th.totalcol,td.totalcol{width:58px}th{position:static;font-size:11px}.cell{height:36px}.pill{min-width:0;width:24px;padding:5px 0;font-size:14px;border-radius:6px}.rolechip{display:none!important}th.totalcol,td.totalcol{position:static!important;box-shadow:none!important}td:first-child{white-space:normal;overflow:hidden;line-height:1.15}.panel{box-shadow:none!important}.cell.unav,.cell.rest{background:transparent}.cell.warn{outline:0}.printonly{display:block;margin-bottom:8px}.pill{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 
 /* Responsive polish: coordinatore */
 @media(max-width:700px){.top{align-items:flex-start;flex-direction:column;padding:12px}.brand{font-size:15px;flex-wrap:wrap}.brand img{width:124px;max-height:38px}.links{width:100%}.links a{flex:1;text-align:center;font-size:13px;padding:8px 7px}.wrap{padding:12px 10px 36px}.panel{padding:12px;border-radius:13px}.scroll{max-height:65vh}th:first-child,td:first-child{min-width:108px}.monthnav strong{min-width:125px}.opts{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -82,7 +82,7 @@ async function init(){
  if(!session){location.href="accesso.html";return}
  user=session.user;
  const nv=await NanoNav.loadContext(sb,user);
- NanoNav.render({container:$("sideNav"),page:"coordinamento",prefs:nv.prefs,ctx:nv.ctx});
+ NanoNav.render({container:$("sideNav"),page:"coordinamento",prefs:nv.prefs,ctx:nv.ctx,account:{name:nv.profile.display_name||nv.profile.first_name||user.email,avatar:nv.profile.avatar_url,onLogout:async()=>{await sb.auth.signOut();location.href="accesso.html"}}});
  NanoNav.mountAccount($("headerAccount"),{sb,user,profile:nv.profile});
  const {data:profile}=await sb.from("profiles").select("role").eq("id",user.id).single();
  // Accesso per ruolo globale oppure per appartenenza attiva come coordinatore di reparto.

@@ -57,3 +57,22 @@
 .nav-order .mv button:disabled{opacity:.35;cursor:default}
 @media print{.side-nav{display:none!important}body.has-nav{padding:0!important}}
 @media(max-width:700px){body.has-nav .top{flex-direction:row!important;align-items:center!important;padding:10px 12px!important}}
+
+/* Account: in basso a sinistra nella colonna (desktop); sul telefono resta l'avatar nell'intestazione */
+.avatar-chevron{display:none!important}
+.side-account{display:none}
+@media(min-width:1000px){
+ .side-account{display:block;position:relative;margin-top:auto;padding-top:12px;border-top:1px solid var(--line)}
+ .side-account-btn{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border:0;border-radius:11px;background:transparent;color:var(--navy);font:inherit;font-weight:650;text-align:left;cursor:pointer}
+ .side-account-btn:hover{background:var(--pale)}
+ .sa-avatar{width:36px;height:36px;border-radius:50%;flex:none;display:grid;place-items:center;background:#f2f6fc;border:1px solid var(--line);font-weight:800;overflow:hidden}
+ .sa-avatar img{width:100%;height:100%;object-fit:cover}
+ .sa-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .side-account-menu{position:absolute;left:0;right:0;bottom:calc(100% - 4px);padding:7px;background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:0 12px 35px #10284b20;z-index:30}
+ .side-account-menu[hidden]{display:none}
+ .side-account-menu button{display:block;width:100%;padding:11px;border:0;border-radius:8px;background:#fff;text-align:left;color:var(--navy);font:inherit;font-weight:650;cursor:pointer}
+ .side-account-menu button:hover{background:var(--pale)}
+ .side-account-menu .logout-menu-item{color:var(--red)}
+ .header-actions .account-menu-wrap{display:none}
+ #headerAccount{display:none}
+}

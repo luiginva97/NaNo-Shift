@@ -48,6 +48,14 @@
   nav.innerHTML='<div class="side-brand" role="link" tabindex="0" aria-label="Vai alla pagina iniziale"><img src="favicon-192.png" alt="" width="38" height="38"><span class="sb-name">NaNo<span>Shift</span></span></div>'
    +main.map(btn).join("")
    +(more.length?'<button type="button" class="nav-more-btn'+(more.some(i=>i.id===activeId)?" active":"")+'" aria-expanded="false" aria-controls="navMore"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg><span>Altro</span></button><div class="nav-more" id="navMore">'+more.map(btn).join("")+'</div>':"");
+  const acc=o.account;
+  if(acc){
+   nav.insertAdjacentHTML("beforeend",'<div class="side-account"><button type="button" class="side-account-btn" aria-haspopup="menu" aria-expanded="false"><span class="sa-avatar">'+(acc.avatar?'<img src="'+esc(acc.avatar)+'" alt="">':esc(String(acc.name||"?").trim().charAt(0).toUpperCase()))+'</span><span class="sa-name">'+esc(acc.name||"Account")+'</span></button><div class="side-account-menu" role="menu" hidden><button type="button" role="menuitem" data-acc="profile">Dati utente</button><button type="button" role="menuitem" data-acc="logout" class="logout-menu-item">Esci</button></div></div>');
+   const ab=nav.querySelector(".side-account-btn"),am=nav.querySelector(".side-account-menu");
+   ab.onclick=e=>{e.stopPropagation();am.hidden=!am.hidden;ab.setAttribute("aria-expanded",String(!am.hidden))};
+   am.querySelector('[data-acc="profile"]').onclick=()=>{am.hidden=true;if(page==="dashboard")o.onSection("profileView");else location.href="dashboard.html?area=personale&section=profileView"};
+   am.querySelector('[data-acc="logout"]').onclick=()=>acc.onLogout&&acc.onLogout();
+  }
   nav.querySelectorAll("[data-section]").forEach(b=>b.onclick=()=>{nav.classList.remove("more-open");o.onSection&&o.onSection(b.dataset.section)});
   nav.querySelectorAll("[data-href]").forEach(b=>b.onclick=()=>{location.href=b.dataset.href});
   const mb=nav.querySelector(".nav-more-btn");
@@ -56,7 +64,7 @@
   brand.onclick=home;brand.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();home()}};
   if(!window.__navGlobalBound){
    window.__navGlobalBound=true;
-   document.addEventListener("click",e=>{const n=document.querySelector(".side-nav");if(n&&!e.target.closest(".nav-more")&&!e.target.closest(".nav-more-btn")){n.classList.remove("more-open");const b=n.querySelector(".nav-more-btn");if(b)b.setAttribute("aria-expanded","false")}});
+   document.addEventListener("click",e=>{const am=document.querySelector(".side-account-menu");if(am&&!e.target.closest(".side-account")){am.hidden=true;const b=document.querySelector(".side-account-btn");if(b)b.setAttribute("aria-expanded","false")}const n=document.querySelector(".side-nav");if(n&&!e.target.closest(".nav-more")&&!e.target.closest(".nav-more-btn")){n.classList.remove("more-open");const b=n.querySelector(".nav-more-btn");if(b)b.setAttribute("aria-expanded","false")}});
    document.addEventListener("keydown",e=>{if(e.key==="Escape"){const n=document.querySelector(".side-nav");if(n)n.classList.remove("more-open")}});
   }
  }
@@ -75,7 +83,7 @@
  function mountAccount(el,o){
   const name=(o.profile&&(o.profile.display_name||o.profile.first_name))||(o.user&&o.user.email)||"?";
   const av=o.profile&&o.profile.avatar_url;
-  el.innerHTML='<div class="header-actions"><div class="account-menu-wrap"><button type="button" class="avatar-button" id="navAvatar" aria-haspopup="menu" aria-expanded="false" aria-label="Menu account">'+(av?'<img src="'+esc(av)+'" alt="">':esc(String(name).trim().charAt(0).toUpperCase()))+'<span class="avatar-chevron" aria-hidden="true">⌄</span></button><div class="account-menu" id="navAccountMenu" role="menu" hidden><button type="button" role="menuitem" data-go="dashboard.html?area=personale&section=profileView">Dati utente</button><button type="button" role="menuitem" class="logout-menu-item" data-logout>Esci</button></div></div></div>';
+  el.innerHTML='<div class="header-actions"><div class="account-menu-wrap"><button type="button" class="avatar-button" id="navAvatar" aria-haspopup="menu" aria-expanded="false" aria-label="Menu account">'+(av?'<img src="'+esc(av)+'" alt="">':esc(String(name).trim().charAt(0).toUpperCase()))+'</button><div class="account-menu" id="navAccountMenu" role="menu" hidden><button type="button" role="menuitem" data-go="dashboard.html?area=personale&section=profileView">Dati utente</button><button type="button" role="menuitem" class="logout-menu-item" data-logout>Esci</button></div></div></div>';
   const b=el.querySelector("#navAvatar"),m=el.querySelector("#navAccountMenu");
   b.onclick=e=>{e.stopPropagation();m.hidden=!m.hidden;b.setAttribute("aria-expanded",String(!m.hidden))};
   document.addEventListener("click",e=>{if(!e.target.closest(".account-menu-wrap")){m.hidden=true;b.setAttribute("aria-expanded","false")}});

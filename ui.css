@@ -95,3 +95,17 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
 .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}
 .statcard{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;font:inherit;color:var(--navy)}
 .statcard b{font-size:28px;line-height:1}.statcard span{font-size:13px;color:var(--muted)}.statcard.warn{border-color:#f0b4ae;background:#fff6f5}.statcard.warn b{color:#b42318}
+
+/* I miei turni: calendario del mese */
+.mysum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 12px}
+.mysum>div{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#f9fbff}
+.mysum b{display:block;font-size:18px;line-height:1.2}.mysum span{font-size:12px;color:var(--muted)}
+.sumchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.sumchip{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.mh{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:2px 0}
+.mc{min-height:62px;border:1px solid var(--line);border-radius:10px;padding:4px;display:flex;flex-direction:column;align-items:center;gap:2px;background:#fff}
+.mc.empty{border:0;background:transparent}.mc.we .dn{color:var(--red)}
+.mc .dn{align-self:flex-start;font-size:11px;font-weight:700;color:var(--muted)}
+.mc .tm{font-size:10px;color:var(--muted);white-space:nowrap}
+.mc.has{background:#f9fbff}.mc.today{outline:2px solid var(--blue);outline-offset:-2px}
+@media(max-width:520px){.mc{min-height:54px;padding:3px 2px;border-radius:8px}.mc .tm{display:none}.mysum b{font-size:15px}}
