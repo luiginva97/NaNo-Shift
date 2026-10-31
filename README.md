@@ -6,8 +6,8 @@ Applicazione web per la gestione personale dei turni e la condivisione dei turni
 - `index.html`: accesso e registrazione.
 - `accesso.html`: pagina di accesso compatibile con i link di autenticazione e invito.
 - `dashboard.html`: calendario, turni, riepiloghi, impostazioni del profilo, gruppi e notifiche.
-- `reparto.html`: area del personale. Ingresso in un reparto con codice, disponibilità mensili, turni pubblicati e importazione nel calendario personale.
-- `coordinamento.html`: area della coordinatrice/coordinatore. Creazione reparto, approvazione del personale, conferma delle disponibilità, generazione bozza e pianificazione dei turni, pubblicazione, avvisi (non disponibilità, riposo dopo la notte, oltre 6 giorni di fila), totali ore e stampa.
+- `reparto.html`: area del personale. Ingresso in un reparto con link di invito personale o con codice (scegliendo ruolo Infermiere/OSS), disponibilità mensili, turni pubblicati e importazione nel calendario personale.
+- `coordinamento.html`: area della coordinatrice/coordinatore. Creazione reparto, inviti con link personali (ruolo Infermiere/OSS, validi 14 giorni, monouso), approvazione del personale, ruoli visibili e modificabili, conferma delle disponibilità, generazione bozza e pianificazione dei turni, pubblicazione, avvisi (non disponibilità, riposo dopo la notte, oltre 6 giorni di fila), totali ore e stampa.
 - `ui.css`: stile condiviso (intestazione, navigazione mobile con menu «Altro», menu «Strumenti» del calendario, tabelle, accessibilità). Viene caricato dopo gli stili inline delle pagine.
 
 ## Tipi di turno
@@ -32,3 +32,7 @@ Usa le tabelle `units`, `unit_members`, `unit_availability` e `unit_shifts` e le
 
 ## Pubblicazione
 Cloudflare Pages è collegato alla repository GitHub `luiginva97/NaNo-Shift`, con ramo di produzione `main` e directory radice `/`. I push su `main` avviano il deployment automatico.
+
+
+### Inviti al reparto e ruoli
+Migrazione `20261031140000_unit_invitations_and_staff_roles.sql`: colonna `unit_members.staff_role` (infermiere|oss), tabella `unit_invitations` (solo hash SHA-256 del token), funzioni `create_unit_invitation`, `revoke_unit_invitation`, `preview_unit_invitation`, `accept_unit_invitation`; `request_join_unit` e `get_unit_roster` ora gestiscono il ruolo. Il link è `accesso.html?unit_invite=TOKEN` e dopo il login porta a `reparto.html`. **Va applicata al database prima di pubblicare il frontend.**
