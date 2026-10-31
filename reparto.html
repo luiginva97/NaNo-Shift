@@ -56,7 +56,7 @@ const range=()=>[ymd(cursor.getFullYear(),cursor.getMonth(),1),ymd(cursor.getFul
 const locked=d=>review[d]==="confirmed";
 const dirty=()=>Object.keys(avail).some(d=>avail[d]!==orig[d]);
 const note=(t,type="")=>{msg=t?{t,type}:null};
-const myUnits=()=>units.filter(m=>m.unit_role==="nurse"&&m.status==="active");
+const myUnits=()=>units.filter(m=>m.status==="active"&&(m.unit_role==="nurse"||m.unit_role==="coordinator"));
 async function init(){
  const {data:{session}}=await sb.auth.getSession();
  if(!session){location.href="accesso.html";return}
