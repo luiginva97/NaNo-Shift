@@ -19,42 +19,227 @@ a{color:var(--blue)}button,input{font:inherit}.shell{width:min(100%,480px)}.bran
 <div id="message" class="message" role="status" aria-live="polite"></div>
 </section><p class="foot">Accesso riservato · Non inserire dati clinici dei pazienti</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script><script>
-const SUPABASE_URL="https://mmkdibdomjaxwqfryqcw.supabase.co",SUPABASE_KEY="sb_publishable_QPArC4ARilfFLqxnNsV72A_UBzZN-5g",APP_URL="https://nanoshift.pages.dev";
-const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const $=id=>document.getElementById(id),form=$("authForm"),email=$("email"),password=$("password"),confirmPassword=$("confirmPassword"),submit=$("submitBtn"),message=$("message");
-let mode="login",recoveryMode=false;
-function msg(t,type="info"){message.textContent=t;message.className="message show "+type}
-function clearMsg(){message.textContent="";message.className="message"}
-function passwordChecks(v){return {length:v.length>=8,upper:/[A-Z]/.test(v),lower:/[a-z]/.test(v),number:/[0-9]/.test(v)}}
-function updateRules(){const c=passwordChecks(password.value);Object.entries(c).forEach(([k,ok])=>document.querySelector('[data-rule="'+k+'"]').classList.toggle("ok",ok));const same=confirmPassword.value && password.value===confirmPassword.value;document.querySelector('[data-rule="length"]').classList.toggle("ok", c.length);if(confirmPassword.value){confirmPassword.setCustomValidity(same?"":"Le password non coincidono");confirmPassword.reportValidity();}}
-function setMode(next){mode=next;recoveryMode=false;$("loginTab").hidden=false;$("signupTab").hidden=false;$("loginTab").setAttribute("aria-selected",String(next==="login"));$("signupTab").setAttribute("aria-selected",String(next==="signup"));$("nameWrap").hidden=next!=="signup";$("confirmWrap").hidden=next!=="signup";$("passwordRules").hidden=next!=="signup";$("submitBtn").textContent=next==="signup"?"Registrati":"Accedi";$("backToLogin").hidden=!recoveryMode&&(next==="login");$("forgotLink").hidden=recoveryMode;}
-document.querySelectorAll("[data-eye]").forEach(b=>b.addEventListener("click",()=>{const el=$(b.dataset.eye),show=el.type==="password";el.type=show?"text":"password";b.setAttribute("aria-label",show?"Nascondi password":"Mostra password")}));
-password.addEventListener("input",updateRules);confirmPassword.addEventListener("input",updateRules);
-$("loginTab").onclick=()=>setMode("login");$("signupTab").onclick=()=>setMode("signup");$("backToLogin").onclick=()=>setMode("login");
-$("forgotLink").onclick=async()=>{clearMsg();const address=email.value.trim().toLowerCase();if(!address){msg("Inserisci prima il tuo indirizzo email.","error");email.focus();return}try{recoveryMode=true;setMode("login");const {error}=await sb.auth.resetPasswordForEmail(address,{redirectTo:location.origin+location.pathname+"?reset=1"});if(error)throw error;msg("Controlla la tua email: ti abbiamo inviato il link per reimpostare la password.","success")}catch(e){msg(e.message||"Si è verificato un errore.","error");recoveryMode=false;setMode("login");}};
-form.addEventListener("submit",async e=>{e.preventDefault();clearMsg();submit.disabled=true;try{
-const address=email.value.trim().toLowerCase(),pass=password.value;
-if(recoveryMode){if(!Object.values(passwordChecks(pass)).every(Boolean))throw Error("La nuova password non rispetta tutti i requisiti.");if(pass!==confirmPassword.value)throw Error("Le password non coincidono.");const {error}=await sb.auth.updateUser({password:pass});if(error)throw error;msg("Password aggiornata correttamente.","success");recoveryMode=false;setMode("login");return}
-if(mode==="signup"){if(!$("firstName").value.trim()||!$("lastName").value.trim())throw Error("Inserisci nome e cognome.");if(!Object.values(passwordChecks(pass)).every(Boolean))throw Error("La password deve contenere almeno 8 caratteri, una maiuscola, una minuscola e un numero.");if(pass!==confirmPassword.value)throw Error("Le password non coincidono.");const {data, error}=await sb.auth.signUp({email:address,password:pass,options:{data:{first_name:$("firstName").value.trim(),last_name:$("lastName").value.trim(),display_name:$("firstName").value.trim()+" "+$("lastName").value.trim()}}});if(error)throw error;msg("Registrazione completata. Controlla la tua email per confermare l’account.","success");return}
-if(mode==="login"){if(!address||!pass)throw Error("Inserisci email e password.");const {data,error}=await sb.auth.signInWithPassword({email:address,password:pass});if(error)throw error;const target=await nextUrl();if(target){window.location.href=target}else{window.location.href="dashboard.html";}}
-}catch(e){msg(e.message||"Si è verificato un errore. Riprova.","error")}finally{submit.disabled=false}});
-async function nextUrl(){
-const q=new URLSearchParams(location.search);
-if(q.has("unit_invite"))return"reparto.html?unit_invite="+encodeURIComponent(q.get("unit_invite"));
-try{
- const {data:{user},error:userErr}=await sb.auth.getUser();
- if(userErr||!user)return"dashboard.html";
- const {data:profile,error:profileErr}=await sb.from("profiles").select("role").eq("id",user.id).maybeSingle();
- const role=(profile&&profile.role)?profile.role:"user";
- const {data:memberships,error:membershipErr}=await sb.rpc("get_my_units");
- const coord=(memberships||[]).some(m=>m.unit_role==="coordinator"&&m.status==="active");
- const teamMember=(memberships||[]).some(m=>m.status==="active"&&(m.unit_role==="nurse"||m.unit_role==="coordinator"));
- if(role==="admin"||role==="nurse_coordinator"||coord)return"coordinamento.html";
- if(teamMember)return"reparto.html";
- return"dashboard.html";
-}catch(_){return"dashboard.html";}
+const SUPABASE_URL = "https://mmkdibdomjaxwqfryqcw.supabase.co";
+const SUPABASE_KEY = "sb_publishable_QPArC4ARilfFLqxnNsV72A_UBzZN-5g";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+const form = $("authForm");
+const email = $("email");
+const password = $("password");
+const confirmPassword = $("confirmPassword");
+const submit = $("submitBtn");
+const message = $("message");
+let mode = "login";
+let recoveryMode = false;
+
+function msg(text, type = "info") {
+  message.textContent = text;
+  message.className = "message show " + type;
 }
-(async()=>{const params=new URLSearchParams(location.search),hash=new URLSearchParams(location.hash.replace(/^#/,"));if(params.get("error_description")||hash.get("error_description")){msg("Il login non è andato a buon fine. Controlla i dettagli dell’errore e riprova.","error")}else if(params.get("reset")==="1"){msg("Inserisci la nuova password per completare il reset.","info");recoveryMode=true;setMode("login");const pw=$("password");pw.value="";const c=$("confirmPassword");if(c)c.value="";$("passwordRules").hidden=false;$("confirmWrap").hidden=false;$("submitBtn").textContent="Aggiorna password";}
-if(params.get("invite") || params.get("unit_invite")){const target="reparto.html"+(params.get("unit_invite")?"?unit_invite="+encodeURIComponent(params.get("unit_invite")):"");window.location.replace(target);return}
-const {data:{session}}=await sb.auth.getSession();if(session){const target=await nextUrl();window.location.replace(target);}})();
+
+function clearMsg() {
+  message.textContent = "";
+  message.className = "message";
+}
+
+function passwordChecks(v) {
+  return {
+    length: v.length >= 8,
+    upper: /[A-Z]/.test(v),
+    lower: /[a-z]/.test(v),
+    number: /[0-9]/.test(v)
+  };
+}
+
+function updateRules() {
+  const checks = passwordChecks(password.value);
+  Object.entries(checks).forEach(([key, ok]) => {
+    const el = document.querySelector('[data-rule="' + key + '"]');
+    if (el) el.classList.toggle("ok", ok);
+  });
+
+  if (confirmPassword.value) {
+    const same = password.value === confirmPassword.value;
+    confirmPassword.setCustomValidity(same ? "" : "Le password non coincidono");
+    confirmPassword.reportValidity();
+  }
+}
+
+function setMode(next) {
+  mode = next;
+  recoveryMode = false;
+  $("loginTab").setAttribute("aria-selected", String(next === "login"));
+  $("signupTab").setAttribute("aria-selected", String(next === "signup"));
+  $("nameWrap").hidden = next !== "signup";
+  $("confirmWrap").hidden = next !== "signup";
+  $("passwordRules").hidden = next !== "signup";
+  $("submitBtn").textContent = next === "signup" ? "Registrati" : "Accedi";
+  $("backToLogin").hidden = next === "login";
+  $("forgotLink").hidden = recoveryMode;
+}
+
+document.querySelectorAll("[data-eye]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const input = $(button.dataset.eye);
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    button.setAttribute("aria-label", show ? "Nascondi password" : "Mostra password");
+  });
+});
+
+password.addEventListener("input", updateRules);
+confirmPassword.addEventListener("input", updateRules);
+
+$("loginTab").onclick = () => setMode("login");
+$("signupTab").onclick = () => setMode("signup");
+$("backToLogin").onclick = () => setMode("login");
+
+$("forgotLink").onclick = async () => {
+  clearMsg();
+  const address = email.value.trim().toLowerCase();
+  if (!address) {
+    msg("Inserisci prima il tuo indirizzo email.", "error");
+    email.focus();
+    return;
+  }
+
+  try {
+    recoveryMode = true;
+    setMode("login");
+    const { error } = await sb.auth.resetPasswordForEmail(address, {
+      redirectTo: location.origin + location.pathname + "?reset=1"
+    });
+    if (error) throw error;
+    msg("Controlla la tua email: ti abbiamo inviato il link per reimpostare la password.", "success");
+  } catch (e) {
+    msg(e.message || "Si è verificato un errore.", "error");
+    recoveryMode = false;
+    setMode("login");
+  }
+};
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearMsg();
+  submit.disabled = true;
+
+  try {
+    const address = email.value.trim().toLowerCase();
+    const pass = password.value;
+
+    if (recoveryMode) {
+      if (!Object.values(passwordChecks(pass)).every(Boolean)) {
+        throw Error("La nuova password non rispetta tutti i requisiti.");
+      }
+      if (pass !== confirmPassword.value) {
+        throw Error("Le password non coincidono.");
+      }
+
+      const { error } = await sb.auth.updateUser({ password: pass });
+      if (error) throw error;
+
+      msg("Password aggiornata correttamente.", "success");
+      recoveryMode = false;
+      setMode("login");
+      return;
+    }
+
+    if (mode === "signup") {
+      if (!$("firstName").value.trim() || !$("lastName").value.trim()) {
+        throw Error("Inserisci nome e cognome.");
+      }
+      if (!Object.values(passwordChecks(pass)).every(Boolean)) {
+        throw Error("La password deve contenere almeno 8 caratteri, una maiuscola, una minuscola e un numero.");
+      }
+      if (pass !== confirmPassword.value) {
+        throw Error("Le password non coincidono.");
+      }
+
+      const { data, error } = await sb.auth.signUp({
+        email: address,
+        password: pass,
+        options: {
+          data: {
+            first_name: $("firstName").value.trim(),
+            last_name: $("lastName").value.trim(),
+            display_name: $("firstName").value.trim() + " " + $("lastName").value.trim()
+          }
+        }
+      });
+
+      if (error) throw error;
+      msg("Registrazione completata. Controlla la tua email per confermare l’account.", "success");
+      return;
+    }
+
+    if (mode === "login") {
+      if (!address || !pass) {
+        throw Error("Inserisci email e password.");
+      }
+
+      const { data, error } = await sb.auth.signInWithPassword({ email: address, password: pass });
+      if (error) throw error;
+
+      const target = await nextUrl();
+      window.location.href = target;
+    }
+  } catch (e) {
+    msg(e.message || "Si è verificato un errore. Riprova.", "error");
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+async function nextUrl() {
+  const q = new URLSearchParams(location.search);
+  if (q.has("unit_invite")) {
+    return "reparto.html?unit_invite=" + encodeURIComponent(q.get("unit_invite"));
+  }
+
+  try {
+    const { data: { user }, error: userErr } = await sb.auth.getUser();
+    if (userErr || !user) return "dashboard.html";
+
+    const { data: profile, error: profileErr } = await sb.from("profiles").select("role").eq("id", user.id).maybeSingle();
+    const role = profile && profile.role ? profile.role : "user";
+
+    const { data: memberships, error: membershipErr } = await sb.rpc("get_my_units");
+    const coord = Array.isArray(memberships) && memberships.some((m) => m.unit_role === "coordinator" && m.status === "active");
+    const teamMember = Array.isArray(memberships) && memberships.some((m) => m.status === "active" && (m.unit_role === "nurse" || m.unit_role === "coordinator"));
+
+    if (role === "admin" || role === "nurse_coordinator" || coord) return "coordinamento.html";
+    if (teamMember) return "reparto.html";
+    return "dashboard.html";
+  } catch (_) {
+    return "dashboard.html";
+  }
+}
+
+(async () => {
+  const params = new URLSearchParams(location.search);
+  const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+
+  if (params.get("error_description") || hash.get("error_description")) {
+    msg("Il login non è andato a buon fine. Controlla i dettagli dell’errore e riprova.", "error");
+  } else if (params.get("reset") === "1") {
+    msg("Inserisci la nuova password per completare il reset.", "info");
+    recoveryMode = true;
+    $("passwordRules").hidden = false;
+    $("confirmWrap").hidden = false;
+    $("submitBtn").textContent = "Aggiorna password";
+    $("forgotLink").hidden = true;
+  }
+
+  if (params.get("invite") || params.get("unit_invite")) {
+    const target = "reparto.html" + (params.get("unit_invite") ? "?unit_invite=" + encodeURIComponent(params.get("unit_invite")) : "");
+    window.location.replace(target);
+    return;
+  }
+
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    const target = await nextUrl();
+    window.location.replace(target);
+  }
+})();
 </script></body></html>
