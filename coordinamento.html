@@ -260,15 +260,30 @@ function quickAssignView(a){
  const [from,to]=range();
  return '<div class="panel noprint"><h2>Assegnazione rapida</h2><p class="muted">Assegna lo stesso turno a una persona per un intervallo di date, senza aprire ogni singolo giorno. Puoi scegliere tutti i giorni o solo i feriali.</p><form id="quickAssign" class="row"><div class="field"><label for="qaPerson">Persona</label><select id="qaPerson" required><option value="">Seleziona persona</option>'+a.map(p=>'<option value="'+p.user_id+'">'+safe(p.display_name)+(p.user_id===user.id?' (tu)':'')+'</option>').join("")+'</select></div><div class="field"><label for="qaFrom">Dal</label><input id="qaFrom" type="date" value="'+from+'" required></div><div class="field"><label for="qaTo">Al</label><input id="qaTo" type="date" value="'+to+'" required></div><div class="field"><label for="qaCode">Turno</label><select id="qaCode" required><option value="M">M · Mattina</option><option value="P">P · Pomeriggio</option><option value="G">G · Giornata</option><option value="N">N · Notte</option><option value="R">R · Riposo</option></select></div><div class="field"><label for="qaDays">Giorni da assegnare</label><select id="qaDays"><option value="all">Tutti i giorni</option><option value="weekdays">Solo lunedì–venerdì</option></select></div><button class="btn" type="submit">Assegna intervallo</button></form></div>';
 }
+function swapsView(){
+ const rows=swapRequests.filter(r=>r.status==="pending_approval");
+ if(!rows.length)return '<section class="panel"><h2>Cambi turno da approvare</h2><p class="muted">Non ci sono richieste in attesa di approvazione.</p></section>';
+ return '<section class="panel"><h2>Cambi turno da approvare ('+rows.length+')</h2><p class="muted">Il calendario viene modificato soltanto dopo la tua approvazione.</p>'+rows.map(r=>{
+  const from=roster.find(p=>p.user_id===r.requester_id)?.display_name||"Collega";
+  const to=roster.find(p=>p.user_id===r.target_id)?.display_name||"Collega";
+  return '<div class="item"><span><b>'+safe(from)+' ↔ '+safe(to)+'</b><br><small class="muted">'+r.requester_shift_date+' ↔ '+r.target_shift_date+(r.message?' · '+safe(r.message):'')+'</small></span><span><button class="btn small" data-swap-review="approve" data-swap-id="'+r.id+'">Approva</button> <button class="btn small secondary" data-swap-review="reject" data-swap-id="'+r.id+'">Rifiuta</button></span></div>';
+ }).join("")+'</section>';
+}
+function expiriesView(){
+ return '<section class="panel"><h2>Scadenze del personale</h2><p class="muted">Solo nome, tipo di attestato e data; i file non sono accessibili. Sono inclusi gli attestati non sanitari in scadenza entro 90 giorni o già scaduti. Le idoneità sanitarie sono escluse in attesa delle regole privacy.</p>'+(expiryRows.length?expiryRows.map(r=>{
+  const overdue=r.due_date<new Date().toISOString().slice(0,10);
+  return '<div class="item"><span><b>'+safe(r.display_name)+'</b><br><small class="muted">'+safe(r.document_type)+'</small></span><span><b>'+new Date(r.due_date+"T12:00:00").toLocaleDateString("it-IT")+'</b><br><small class="muted">'+(overdue?'Scaduto':'In scadenza')+'</small></span></div>';
+ }).join(""):'<p class="muted">Nessuna scadenza rilevata nei prossimi 90 giorni.</p>')+'</section>';
+}
 function render(){
  const app=$("app");let h="";
  if(!unit){h='<h1>Coordinamento</h1><div class="muted">Crea il reparto, approva il personale, conferma le disponibilità e gestisci i turni.</div>'+(msg?'<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>":"")+createCard();app.innerHTML=h;bind();return}
  h+='<div id="wardBar"><h1>'+safe(unit.name)+'</h1><div class="row" style="align-items:center"><span class="muted">Codice reparto:</span><span class="code">'+safe(unit.join_code)+'</span><button class="btn secondary small" id="copyCode">Copia</button>'+(units.length>1?'<select id="wardSel" style="padding:8px;border-radius:9px;border:1px solid var(--line)">'+units.map(u=>'<option value="'+u.id+'"'+(u.id===unit.id?" selected":"")+">"+safe(u.name)+"</option>").join("")+"</select>":"")+"</div></div>";
  if(msg)h+='<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>";
  const np=pending().length;
- h+='<div class="tabs">'+[["home","Riepilogo"],["req","Richieste"+(np?'<span class="badge">'+np+"</span>":"")],["staff","Personale"],["avail","Disponibilità"],["plan","Turni"]].map(([id,l])=>'<button data-tab="'+id+'" class="'+(tab===id?"active":"")+'">'+l+"</button>").join("")+"</div>";
+ h+='<div class="tabs">'+[["home","Riepilogo"],["req","Richieste"+(np?'<span class="badge">'+np+"</span>":"")],["staff","Personale"],["avail","Disponibilità"],["plan","Turni"],["swaps","Cambi turno"+(swapRequests.some(r=>r.status==="pending_approval")?" · "+swapRequests.filter(r=>r.status==="pending_approval").length:"")],["expiries","Scadenze"+(expiryRows.length?" · "+expiryRows.length:"")]].map(([id,l])=>'<button data-tab="'+id+'" class="'+(tab===id?"active":"")+'">'+l+"</button>").join("")+"</div>";
  if(tab==="avail"||tab==="plan")h+='<div class="monthnav"><button class="nav" data-month="-1" aria-label="Mese precedente">‹</button><strong>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</strong><button class="nav" data-month="1" aria-label="Mese successivo">›</button></div>';
- h+=tab==="home"?homeView():tab==="req"?requestsView():tab==="staff"?staffView():tab==="avail"?availView():planView();
+ h+=tab==="home"?homeView():tab==="req"?requestsView():tab==="staff"?staffView():tab==="avail"?availView():tab==="plan"?planView():tab==="swaps"?swapsView():expiriesView();
  if(tab==="req")h+=inviteCard();
  if(tab==="req"||tab==="staff")h+=createCard();
  app.innerHTML=h;bind();
@@ -309,6 +324,14 @@ function bind(){
  document.querySelectorAll("[data-reject]").forEach(b=>b.onclick=()=>review(b.dataset.reject,"reject","Richiesta rifiutata."));
  document.querySelectorAll("[data-promote]").forEach(b=>b.onclick=()=>{if(confirm("Rendere questa persona coordinatore del reparto? Potrà gestire personale e turni."))review(b.dataset.promote,"promote","Ora è coordinatore del reparto.")});
  document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{if(confirm("Rimuovere questa persona dal reparto? I suoi turni e le sue disponibilità in questo reparto verranno eliminati."))review(b.dataset.remove,"remove","Persona rimossa dal reparto.")});
+ document.querySelectorAll("[data-swap-review]").forEach(b=>b.onclick=async()=>{
+  const approve=b.dataset.swapReview==="approve";
+  if(!confirm(approve?"Approvare lo scambio e aggiornare i turni pubblicati?":"Rifiutare lo scambio? I turni resteranno invariati."))return;
+  const {error}=await sb.rpc("review_unit_shift_swap",{p_request:b.dataset.swapId,p_approve:approve});
+  if(error)note("Cambio turno non gestito: "+error.message,"error");
+  else note(approve?"Cambio turno approvato e calendario aggiornato.":"Richiesta di cambio turno rifiutata.","");
+  await loadData();render();
+ });
  document.querySelectorAll("[data-confirm]").forEach(b=>b.onclick=()=>{const [from,to]=range();run(sb.rpc("review_unit_availability",{p_unit:unit.id,p_user:b.dataset.confirm,p_from:from,p_to:to,p_status:b.dataset.set}),b.dataset.set==="confirmed"?"Disponibilità confermate.":"Disponibilità riaperte.")});
  const ca=$("confirmAll");if(ca)ca.onclick=async()=>{
   const [from,to]=range(),ids=nurses().filter(p=>Object.values(av).some(r=>r.user_id===p.user_id&&!r.confirmed)).map(p=>p.user_id);
