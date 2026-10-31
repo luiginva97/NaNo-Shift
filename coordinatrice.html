@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f5f7fc">
-<title>NaNo Shift · Coordinamento</title>
+<title>NaNo Shift · Area coordinatore</title>
 <link rel="icon" type="image/png" sizes="512x512" href="favicon-512.png"><link rel="icon" type="image/x-icon" href="favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <style>
@@ -41,10 +41,13 @@ dialog{border:0;border-radius:18px;width:min(420px,calc(100% - 24px));padding:20
 .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.opts button{padding:12px 4px;border-radius:11px;border:1px solid var(--line);background:#fff;font-weight:800}.opts button.on{border-color:var(--blue);background:var(--pale);color:var(--blue)}
 .printonly{display:none}
 @media print{@page{size:landscape;margin:10mm}body{background:#fff}.top,.tabs,.noprint,.monthnav button,.legend,.warnlist,.notice,#wardBar{display:none!important}.panel{border:0;box-shadow:0;padding:0;margin:0}.scroll{overflow:visible;max-height:none;border:0}table{font-size:10px}th,td{min-width:20px;height:22px}th:first-child,td:first-child{min-width:100px;position:static}th{position:static}.cell{height:22px}.cell.unav,.cell.rest{background:transparent}.cell.warn{outline:0}.printonly{display:block;margin-bottom:8px}.pill{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+/* Responsive polish: coordinatore */
+@media(max-width:700px){.top{align-items:flex-start;flex-direction:column;padding:12px}.brand{font-size:15px;flex-wrap:wrap}.brand img{width:124px;max-height:38px}.links{width:100%}.links a{flex:1;text-align:center;font-size:13px;padding:8px 7px}.wrap{padding:12px 10px 36px}.panel{padding:12px;border-radius:13px}.scroll{max-height:65vh}th:first-child,td:first-child{min-width:108px}.monthnav strong{min-width:125px}.opts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
-<header class="top"><div class="brand"><img src="nanoshift-logo.png" alt="NaNo Shift"> · Coordinamento</div><div class="links"><a href="dashboard.html">← Dashboard</a><a href="reparto.html">Area reparto</a></div></header>
+<header class="top"><div class="brand"><img src="nanoshift-logo.png" alt="NaNo Shift"> · Area coordinatore</div><div class="links"><a href="dashboard.html">← Dashboard</a><a href="reparto.html">Reparto</a></div></header>
 <main class="wrap" id="app"><div class="panel">Caricamento…</div></main>
 <dialog id="cellDlg"></dialog>
 <script>
@@ -125,7 +128,7 @@ function requestsView(){
 }
 function staffView(){
  const a=approved();
- return '<section class="panel"><h2>Personale ('+a.length+')</h2>'+(a.map(m=>m.unit_role==="coordinator"?'<div class="item"><b>'+safe(m.display_name)+'</b><span class="muted">Coordinatrice'+(m.user_id===user.id?" (tu)":"")+'</span></div>':'<div class="item"><b>'+safe(m.display_name)+'</b><span><button class="btn small secondary" data-promote="'+m.user_id+'">Rendi coordinatrice</button> <button class="btn small danger" data-remove="'+m.user_id+'">Rimuovi</button></span></div>').join("")||'<p class="muted">Nessun infermiere nel reparto. Condividi il codice per ricevere le richieste.</p>')+'</section>';
+ return '<section class="panel"><h2>Personale ('+a.length+')</h2>'+(a.map(m=>m.unit_role==="coordinator"?'<div class="item"><b>'+safe(m.display_name)+'</b><span class="muted">Coordinatore'+(m.user_id===user.id?" (tu)":"")+'</span></div>':'<div class="item"><b>'+safe(m.display_name)+'</b><span><button class="btn small secondary" data-promote="'+m.user_id+'">Rendi coordinatore</button> <button class="btn small danger" data-remove="'+m.user_id+'">Rimuovi</button></span></div>').join("")||'<p class="muted">Nessun infermiere nel reparto. Condividi il codice per ricevere le richieste.</p>')+'</section>';
 }
 function headRow(){
  const y=cursor.getFullYear(),m=cursor.getMonth();let h="<tr><th>Persona</th>";
@@ -194,7 +197,7 @@ function bind(){
  document.querySelectorAll("[data-month]").forEach(b=>b.onclick=async()=>{cursor=new Date(cursor.getFullYear(),cursor.getMonth()+Number(b.dataset.month),1);note(null);await loadData();render()});
  document.querySelectorAll("[data-approve]").forEach(b=>b.onclick=()=>review(b.dataset.approve,"approve","Richiesta approvata."));
  document.querySelectorAll("[data-reject]").forEach(b=>b.onclick=()=>review(b.dataset.reject,"reject","Richiesta rifiutata."));
- document.querySelectorAll("[data-promote]").forEach(b=>b.onclick=()=>{if(confirm("Rendere questa persona coordinatrice del reparto? Potrà gestire personale e turni."))review(b.dataset.promote,"promote","Ora è coordinatrice del reparto.")});
+ document.querySelectorAll("[data-promote]").forEach(b=>b.onclick=()=>{if(confirm("Rendere questa persona coordinatore del reparto? Potrà gestire personale e turni."))review(b.dataset.promote,"promote","Ora è coordinatore del reparto.")});
  document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{if(confirm("Rimuovere questa persona dal reparto? I suoi turni e le sue disponibilità in questo reparto verranno eliminati."))review(b.dataset.remove,"remove","Persona rimossa dal reparto.")});
  document.querySelectorAll("[data-confirm]").forEach(b=>b.onclick=()=>{const [from,to]=range();run(sb.rpc("review_unit_availability",{p_unit:unit.id,p_user:b.dataset.confirm,p_from:from,p_to:to,p_status:b.dataset.set}),b.dataset.set==="confirmed"?"Disponibilità confermate.":"Disponibilità riaperte.")});
  const ca=$("confirmAll");if(ca)ca.onclick=async()=>{
