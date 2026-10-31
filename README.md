@@ -3,6 +3,7 @@
 Applicazione web per la gestione personale dei turni e la condivisione dei turni con gruppi di colleghi.
 
 ## Pagine
+- `demo.html`: demo pubblica interattiva, con dati sintetici e funzioni simulate, separata da Supabase.
 - `index.html`: accesso e registrazione.
 - `accesso.html`: pagina di accesso compatibile con i link di autenticazione e invito.
 - `dashboard.html`: calendario, turni, riepiloghi, impostazioni del profilo, gruppi e notifiche.
