@@ -7,6 +7,7 @@
   {id:"calendar",label:"Calendario",section:"calendarView",icon:svg('<rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/><circle cx="8" cy="14" r=".6"/><circle cx="12" cy="14" r=".6"/><circle cx="16" cy="14" r=".6"/><circle cx="8" cy="17.5" r=".6"/><circle cx="12" cy="17.5" r=".6"/>')},
   {id:"groups",label:"Gruppi",section:"groupsView",pref:"groups",icon:svg('<circle cx="9" cy="8" r="3.2"/><path d="M2.8 20v-1.5A5.5 5.5 0 0 1 8.3 13h1.4a5.5 5.5 0 0 1 5.5 5.5V20"/><path d="M16 4.9a3.2 3.2 0 0 1 0 6.2M18.5 13.4a5.5 5.5 0 0 1 2.7 5.1V20"/>')},
   {id:"ward",label:"Reparto",href:"reparto.html",pref:"ward",icon:svg('<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/>')},
+  {id:"demo",label:"Demo reparto",href:"demo-reparto.html",adminOnly:true,icon:svg('<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M8 9h8M8 13h5M8 17h3"/>')},
   {id:"coord",label:"Coordina",href:"coordinamento.html",coordOnly:true,icon:svg('<path d="M3 20V9l9-5 9 5v11"/><path d="M9 20v-6h6v6"/>')},
   {id:"list",label:"Elenco turni",section:"listView",pref:"list_view",icon:svg('<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>')},
   {id:"sites",label:"Sedi e modelli",section:"sitesView",pref:"work_sites",icon:svg('<path d="M4 21V6.5L12 3l8 3.5V21M2.5 21h19"/><path d="M9 21v-4.5h6V21M8.5 9.5h1.5M14 9.5h1.5M8.5 13h1.5M14 13h1.5"/>')},
@@ -24,7 +25,7 @@
  const PAGE_IDS={reparto:"ward",coordinamento:"coord",professional:"docs",cvs:"cvs",admin:"users"};
 
  // Una voce è disponibile per questa persona (ruolo e tipo di impiego), indipendentemente dai toggle.
- const available=(it,ctx)=>!(it.coordOnly&&!ctx.isCoord)&&!(it.adminOnly&&!ctx.isAdmin)&&!(it.notEmployee&&ctx.employee);
+ const available=(it,ctx)=>!(it.coordOnly&&!ctx.isCoord)&&!(it.adminOnly&&!ctx.isAdmin)&&!(it.notEmployee&&ctx.employee)&&!(it.id==="ward"&&ctx.isMaster)&&!(it.id==="demo"&&!ctx.isMaster);
  const enabled=(it,prefs)=>!it.pref||(prefs||{})[it.pref]!==false;
  const visible=(it,prefs,ctx)=>available(it,ctx)&&enabled(it,prefs);
 
@@ -81,7 +82,8 @@
    sb.rpc("get_my_units")
   ]);
   const profile=p.data||{},units=u.data||[];
-  return {profile,prefs:profile.feature_preferences||{},ctx:{isCoord:units.some(m=>m.unit_role==="coordinator"&&m.status==="active"),isAdmin:profile.role==="admin",employee:profile.employment_type==="employee"}};
+  const isAdmin=profile.role==="admin",isMaster=isAdmin&&units.length===0;
+  return {profile,prefs:profile.feature_preferences||{},ctx:{isCoord:units.some(m=>m.unit_role==="coordinator"&&m.status==="active"),isAdmin,isMaster,employee:profile.employment_type==="employee"}};
  }
 
  // Menu account nell'intestazione (pagine diverse dalla dashboard).
