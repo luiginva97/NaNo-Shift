@@ -75,10 +75,14 @@ async function init(){
  const {data:{session}}=await sb.auth.getSession();
  if(!session){location.href="accesso.html";return}
  user=session.user;
- const {data:profile,error}=await sb.from("profiles").select("role").eq("id",user.id).single();
- if(error||!profile||!["admin","nurse_coordinator"].includes(profile.role)){
+ const {data:profile}=await sb.from("profiles").select("role").eq("id",user.id).single();
+ // Accesso per ruolo globale oppure per appartenenza attiva come coordinatore di reparto.
+ const globalAccess=["admin","nurse_coordinator"].includes(profile?.role);
+ const {data:memberships,error:membershipError}=await sb.rpc("get_my_units");
+ const hasCoordinatorUnit=!membershipError&&(memberships||[]).some(m=>m.unit_role==="coordinator"&&m.status==="active");
+ if(!globalAccess&&!hasCoordinatorUnit){
   document.querySelector("main")?.replaceChildren();
-  document.body.innerHTML='<main style="max-width:620px;margin:12vh auto;padding:28px;font:16px/1.5 system-ui;color:#10284b"><h1>Accesso riservato</h1><p>L’Area coordinatore è disponibile solo agli amministratori globali e agli utenti con ruolo di coordinatore infermieristico.</p><p><a href="dashboard.html">Torna alla dashboard</a></p></main>';
+  document.body.innerHTML='<main style="max-width:620px;margin:12vh auto;padding:28px;font:16px/1.5 system-ui;color:#10284b"><h1>Accesso riservato</h1><p>L’Area coordinamento è disponibile solo agli amministratori e agli utenti che sono coordinatori attivi di almeno un reparto.</p><p><a href="dashboard.html">Torna alla dashboard</a></p></main>';
   return;
  }
  await loadUnits();if(unit&&pending().length)tab="req";render();
