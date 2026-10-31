@@ -151,6 +151,19 @@ function scheduleView(){
 }
 function whatsappUrl(phone){const n=String(phone||"").replace(/[^0-9]/g,"");return n?"https://wa.me/"+n:""}
 function contactsView(){return '<section class="panel"><h2>Contatta i colleghi</h2><p class="muted">Il pulsante WhatsApp compare quando il collega ha inserito il numero nel proprio profilo.</p>'+rosterContacts.filter(m=>m.status==="active"&&m.user_id!==user.id).map(m=>{const url=whatsappUrl(m.phone);return '<div class="item"><span><b>'+safe(m.display_name)+'</b> <small class="muted">'+(m.staff_role==="oss"?"OSS":"Infermiere")+'</small></span>'+(url?'<a class="btn secondary" target="_blank" rel="noopener" href="'+url+'">WhatsApp</a>':'<span class="muted">Numero non inserito</span>')+'</div>'}).join("")+'</section>'}
+
+function swapView(){
+ const mine=schedule.filter(s=>s.user_id===user.id);
+ const peers=[...new Map(schedule.filter(s=>s.user_id!==user.id).map(s=>[s.user_id,s.display_name])).entries()];
+ let h="<section class='panel'><h2>Cambio turno</h2><p class='muted'>Proponi uno scambio tra turni pubblicati. Il calendario si aggiorna solo se il collega accetta.</p><form id='swapForm' class='row'><div class='field'><label for='swapMine'>Il mio turno</label><select id='swapMine' required><option value=''>Scegli data</option>";
+ mine.forEach(s=>h+="<option value='"+s.day+"'>"+s.day+" · "+s.code+"</option>");
+ h+="</select></div><div class='field'><label for='swapTarget'>Collega</label><select id='swapTarget' required><option value=''>Scegli collega</option>";
+ peers.forEach(p=>h+="<option value='"+p[0]+"'>"+safe(p[1])+"</option>");
+ h+="</select></div><div class='field'><label for='swapTargetDate'>Turno del collega</label><select id='swapTargetDate' required><option value=''>Scegli prima il collega</option></select></div><div class='field'><label for='swapMessage'>Messaggio (facoltativo)</label><input id='swapMessage' maxlength='300'></div><button class='btn' type='submit'>Invia richiesta</button></form><div class='small-list'>";
+ swapRequests.filter(s=>s.requester_id===user.id||s.target_id===user.id).forEach(s=>{const other=rosterContacts.find(m=>m.user_id===(s.requester_id===user.id?s.target_id:s.requester_id));h+="<div class='item'><span><b>"+(s.requester_id===user.id?"A ":"Da ")+safe(other?.display_name||"collega")+"</b><br><small class='muted'>"+s.requester_shift_date+" ↔ "+s.target_shift_date+" · "+s.status+"</small></span>";if(s.target_id===user.id&&s.status==="pending")h+="<span><button type='button' data-swap-accept='"+s.id+"'>Accetta</button> <button type='button' data-swap-decline='"+s.id+"'>Rifiuta</button></span>";h+="</div>"});
+ return h+"</div></section>";
+}
+
 function render(){
  const app=$("app");
  let h='<h1>'+(unit?safe(unit.name):"Reparto")+'</h1><div class="muted">Disponibilità e turni pubblicati dalla coordinatrice.</div>';
@@ -164,6 +177,7 @@ function render(){
  h+='<div class="tabs"><button data-tab="avail" class="'+(tab==="avail"?"active":"")+'">Disponibilità</button><button data-tab="sched" class="'+(tab==="sched"?"active":"")+'">Turni pubblicati</button></div>';
  h+='<div class="monthnav"><button data-month="-1" aria-label="Mese precedente">‹</button><strong>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</strong><button data-month="1" aria-label="Mese successivo">›</button></div>';
  h+=tab==="avail"?availView():scheduleView();
+ if(tab==="sched")h+=swapView();
  h+=contactsView();
  h+=joinCard().replace('<section class="panel"><h2>Entra in un reparto</h2>','<section class="panel"><h2>Entra in un altro reparto</h2>');
  app.innerHTML=h;bind();
@@ -184,6 +198,11 @@ function bind(){
  const fill=$("fillPref");if(fill)fill.onchange=()=>{if(!fill.value)return;for(let d=1;d<=dim();d++){const k=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(!locked(k))avail[k]=fill.value}render()};
  const sv=$("saveAvail");if(sv)sv.onclick=saveAvail;
  const im=$("importShifts");if(im)im.onclick=importShifts;
+
+ const swapTarget=$("swapTarget");if(swapTarget)swapTarget.onchange=()=>{const options=schedule.filter(s=>s.user_id===swapTarget.value);$("swapTargetDate").innerHTML="<option value=''>Scegli data</option>"+options.map(s=>"<option value='"+s.day+"'>"+s.day+" · "+s.code+"</option>").join("")};
+ const swapForm=$("swapForm");if(swapForm)swapForm.onsubmit=async e=>{e.preventDefault();const {error}=await sb.rpc("create_unit_shift_swap",{p_unit:unit.id,p_target:$("swapTarget").value,p_requester_date:$("swapMine").value,p_target_date:$("swapTargetDate").value,p_message:$("swapMessage").value});if(error)note("Richiesta non inviata: "+error.message,"error");else note("Richiesta di cambio turno inviata.","");await loadMonth();render()};
+ document.querySelectorAll("[data-swap-accept],[data-swap-decline]").forEach(b=>b.onclick=async()=>{const {error}=await sb.rpc("respond_unit_shift_swap",{p_request:b.dataset.swapAccept||b.dataset.swapDecline,p_accept:!!b.dataset.swapAccept});if(error)note("Cambio turno non completato: "+error.message,"error");else note(b.dataset.swapAccept?"Cambio turno confermato.":"Richiesta rifiutata.","");await loadMonth();render()});
+
  const rm=$("removeImportedShifts");if(rm)rm.onclick=removeImportedShifts;
 }
 async function saveAvail(){
