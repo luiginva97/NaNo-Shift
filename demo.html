@@ -58,7 +58,7 @@ main#main{padding:24px 18px 48px;min-width:0}
 </head>
 <body class="has-nav">
 <div class="demo-banner">DEMO INTERATTIVA · DATI DI FANTASIA · NESSUNA INFORMAZIONE VIENE SALVATA O INVIATA</div>
-<header class="top"><div class="brand"><img src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small>Demo interattiva</small></span></div><div class="links"><label class="demo-role-label" for="demoRoleSwitch">Modalità</label><select id="demoRoleSwitch" aria-label="Scegli il ruolo demo"><option value="operator">Operatrice</option><option value="coordinator">Coordinatrice</option></select><a href="index.html">← Torna al sito</a><a href="accesso.html?registrati=1">Crea account</a></div></header>
+<header class="top"><div class="brand"><img src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small>Demo interattiva</small></span></div><div class="links"><label class="demo-role-label" for="demoRoleSwitch">Modalità</label><select id="demoRoleSwitch" aria-label="Scegli la modalità demo"><option value="operator">Utente</option><option value="coordinator">Area coordinamento</option></select><a href="index.html">← Torna al sito</a><a href="accesso.html?registrati=1">Crea account</a></div></header>
 <nav class="side-nav" id="demoNav" aria-label="Navigazione demo"></nav>
 <main class="wrap" id="main"></main>
 <footer>NaNoShift · Demo esplorativa. Nomi, turni, importi e richieste sono inventati e non rappresentano dati reali.</footer>
@@ -88,7 +88,7 @@ function mountDemoNavigation(){
 }
 const $=id=>document.getElementById(id);
 const people=[
- {id:"p1",name:"Giulia Demo",role:"Infermiera",tag:"Coordinatrice",initials:"GD"},
+ {id:"p1",name:"Giulia Demo",role:"Infermiera",tag:"Coordinamento",initials:"GD"},
  {id:"p2",name:"Marco Esempio",role:"Infermiere",tag:"",initials:"ME"},
  {id:"p3",name:"Sara Fittizia",role:"OSS",tag:"",initials:"SF"},
  {id:"p4",name:"Luca Campione",role:"Infermiere",tag:"",initials:"LC"},
@@ -127,7 +127,7 @@ function coord(){
  const rows=people.map((p,i)=>{const approved=i!==4||state.approvedMembers.includes(p.id);return '<tr><td>'+p.name+'</td><td>'+p.role+'</td><td><span class="pill '+(approved?"green":"yellow")+'">'+(approved?"Attiva":"Richiesta in attesa")+'</span></td><td>'+(approved?'<button class="btn alt small" data-member="'+p.id+'">Scheda</button>':'<button class="btn small" data-member="'+p.id+'">Approva</button> <button class="btn alt small" data-reject-member="'+p.id+'">Rifiuta</button>')+'</td></tr>';});
  const avRows=people.filter(p=>p.id!=="p1").map(p=>'<tr><td>'+p.name+'</td><td>'+p.role+'</td><td><span class="pill '+(state.confirmedAvailability.includes(p.id)?"green":"yellow")+'">'+(state.confirmedAvailability.includes(p.id)?"Confermata":"Da verificare")+'</span></td><td><button class="btn alt small" data-confirm-person="'+p.id+'">'+(state.confirmedAvailability.includes(p.id)?"Rivedi":"Conferma")+'</button></td></tr>');
  const swapRows=state.swaps.map(x=>'<tr><td>'+x.who+'</td><td>'+x.to+'</td><td>'+x.date+'</td><td>'+x.from+' ⇄ '+x.target+'</td><td><span class="pill '+(x.status.includes("Approvato")?"green":"yellow")+'">'+x.status+'</span></td><td>'+(x.status.startsWith("Accettato dal collega")||x.status==="Da approvare"?'<button class="btn small" data-swap-approve="'+x.id+'">Approva</button> <button class="btn alt small" data-swap-reject="'+x.id+'">Rifiuta</button>':'—')+'</td></tr>');
- return pageHead("Coordinamento","Area coordinatrice: personale, richieste, disponibilità, turni, cambi, scadenze e pubblicazione.",'<button class="btn alt" data-print>Stampa turni</button>')+
+ return pageHead("Area coordinamento","Gestione del personale, richieste, disponibilità, turni, cambi, scadenze e pubblicazione.",'<button class="btn alt" data-print>Stampa turni</button>')+
  '<div class="notice"><b>Modalità coordinatrice.</b> Tutte le operazioni qui sotto sono simulate con persone e dati inventati; non viene contattato nessuno e nulla viene salvato.</div>'+
  '<div class="grid">'+stat("Operatori attivi",active,"1 richiesta di ingresso")+stat("Disponibilità confermate",state.confirmedAvailability.length+"/"+(people.length-1),"Novembre 2026")+stat("Turni pubblicati",state.published?"Sì":"No","Stato del calendario demo")+stat("Cambi da approvare",state.swaps.filter(x=>x.status.startsWith("Accettato dal collega")||x.status==="Da approvare").length,"Richieste in coda")+'</div>'+
  panel("Richieste di ingresso e personale",'<p class="muted">Approva o rifiuta le richieste e consulta le schede dimostrative del personale.</p>'+table(["Nome","Mansione","Stato","Gestione"],rows))+
