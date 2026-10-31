@@ -40,3 +40,10 @@ Migrazione `20261031140000_unit_invitations_and_staff_roles.sql`: colonna `unit_
 
 ### Menu condiviso
 `nav.js` + `nav.css` definiscono un solo menu (colonna laterale su desktop, barra in basso con "Altro" su telefono) usato da dashboard, reparto e coordinamento. L'ordine delle voci si cambia da Dati utente → Ordine del menu (salvato in `profiles.feature_preferences.nav_order`) e i toggle di Funzionalità nascondono le voci in tutte le pagine. Le coordinatrici aprono su Coordinamento; l'area personale è `dashboard.html?area=personale`.
+
+
+### Master amministrativo e uscita dal reparto
+Migrazione `20261031220000_master_account_and_leave_unit.sql`: definisce `private.is_master()` (admin senza alcuna iscrizione a reparti), estende `is_unit_coordinator()` al master, aggiunge la policy `units_select_master`, fa restituire a `get_my_units()` tutti i reparti al master senza creare iscrizioni e introduce `leave_unit(p_unit)`. La RPC di uscita elimina le disponibilità e i turni di reparto della persona, ma non i turni già importati nel calendario personale; impedisce alla sola coordinatrice di uscire finché non viene nominata un'altra coordinatrice. Il master che è anche membro resta un membro ordinario.
+
+### Preferenze, contatti e dashboard personale
+La voce Documenti del menu usa ora la preferenza `documents`; in Dati utente è disponibile il toggle “Documenti e scadenze”. Le preferenze non presenti restano abilitate (`!== false`). La descrizione di Reparto include disponibilità, turni pubblicati e contatti. La dashboard saluta la persona usando nome e, in fallback, nome visualizzato. I pulsanti WhatsApp in Reparto e Coordinamento mostrano un'icona SVG accessibile. Reparto offre “Lascia il reparto” con conferma e gestione dell'errore restituito dalla RPC.
