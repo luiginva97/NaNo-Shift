@@ -12,7 +12,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--navy);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 button,input,select{font:inherit}button{cursor:pointer}
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px max(16px,calc((100% - 1280px)/2));background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
-.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:17px;color:#0057B7}.brand img{width:142px;height:auto;max-height:42px;object-fit:contain}.brand span{color:#f2bd36}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:17px;color:#0057B7}.brand img{width:220px;height:auto;max-height:66px;object-fit:contain}.brand span{color:#f2bd36}
 .links{display:flex;gap:8px;flex-wrap:wrap}.links a{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--navy);text-decoration:none;font-weight:650;font-size:14px}
 .wrap{max-width:1280px;margin:auto;padding:18px 14px 60px}
 h1{margin:0 0 4px;font-size:clamp(22px,4vw,29px);letter-spacing:-.4px}h2{margin:0 0 8px;font-size:18px}
@@ -74,7 +74,14 @@ const note=(t,type="")=>{msg=t?{t,type}:null};
 async function init(){
  const {data:{session}}=await sb.auth.getSession();
  if(!session){location.href="accesso.html";return}
- user=session.user;await loadUnits();if(unit&&pending().length)tab="req";render();
+ user=session.user;
+ const {data:profile,error}=await sb.from("profiles").select("role").eq("id",user.id).single();
+ if(error||!profile||!["admin","nurse_coordinator"].includes(profile.role)){
+  document.querySelector("main")?.replaceChildren();
+  document.body.innerHTML='<main style="max-width:620px;margin:12vh auto;padding:28px;font:16px/1.5 system-ui;color:#10284b"><h1>Accesso riservato</h1><p>L’Area coordinatore è disponibile solo agli amministratori globali e agli utenti con ruolo di coordinatore infermieristico.</p><p><a href="dashboard.html">Torna alla dashboard</a></p></main>';
+  return;
+ }
+ await loadUnits();if(unit&&pending().length)tab="req";render();
 }
 async function loadUnits(keepId){
  const {data,error}=await sb.rpc("get_my_units");
