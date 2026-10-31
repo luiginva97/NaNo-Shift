@@ -333,4 +333,49 @@ async function bulkAdd(){const raw=prompt("Inserisci turni per il mese visualizz
 async function importCsv(text){const rows=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),arr=[];for(const line of rows){const p=line.split(/[;,\t]/).map(x=>x.trim()),date=p[0],code=(p[1]||"").toUpperCase();if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!types[code])continue;arr.push({user_id:user.id,shift_date:date,code,start_time:/^\d{1,2}:\d{2}$/.test(p[2]||"")?p[2]:types[code].start,end_time:code==="R"?"00:00":(/^\d{1,2}:\d{2}$/.test(p[3]||"")?p[3]:types[code].end),actual_hours:code==="R"?0:null,notes:p[4]||""})}if(!arr.length){alert("Nessuna riga valida. Formato: 2026-11-03;M;07:00;14:00;note (tipi: M/P/G/N/R)");return}const {error}=await sb.from("shifts").insert(arr);if(error)alert("Importazione non riuscita: "+error.message);else{alert("Importati "+arr.length+" turni.");await load()}}
 $("accountMenuButton").onclick=()=>{const menu=$("accountMenu"),open=menu.hidden;menu.hidden=!open;$("accountMenuButton").setAttribute("aria-expanded",String(open))};document.addEventListener("click",e=>{if(!e.target.closest(".account-menu-wrap")){$("accountMenu").hidden=true;$("accountMenuButton").setAttribute("aria-expanded","false")}});$("openAccount").onclick=()=>{const button=document.querySelector('.side-nav [data-section="profileView"]');if(button)button.click();$("accountMenu").hidden=true;$("accountMenuButton").setAttribute("aria-expanded","false")};$("logout").onclick=async()=>{await sb.auth.signOut();location.href="accesso.html"};
 init().catch(e=>{$("app").innerHTML='<div class="panel"><h2>Errore</h2><p>'+safe(e.message||e)+'</p></div>'});
-</script></main></body></html>
+</script></main>
+<script>
+(function(){
+ let wardOverlay=[];
+ const originalLoad=load;
+ load=async function(){
+  await originalLoad();
+  try{
+   const {data:members}=await sb.rpc("get_my_units");
+   const units=(members||[]).filter(m=>m.status==="active"&&(m.unit_role==="nurse"||m.unit_role==="coordinator"));
+   const from=fmtDate(new Date(cursor.getFullYear(),0,1)),to=fmtDate(new Date(cursor.getFullYear()+1,0,1));
+   const results=await Promise.all(units.map(m=>sb.from("unit_shifts").select("unit_id,user_id,shift_date,code").eq("unit_id",m.unit_id).eq("user_id",user.id).eq("published",true).gte("shift_date",from).lt("shift_date",to)));
+   wardOverlay=results.flatMap((res,i)=>(res.data||[]).map(s=>({...s,ward_name:units[i].name})));
+   drawCalendar();
+  }catch(e){console.warn("Turni del reparto non caricati",e)}
+ };
+ const originalDraw=drawCalendar;
+ drawCalendar=function(){
+  originalDraw();
+  if(selectedCalendar!=="self"||view==="list"||!wardOverlay.length)return;
+  document.querySelectorAll(".day[data-date],.week-day[data-date]").forEach(cell=>{
+   const date=cell.dataset.date;
+   if(shifts.some(s=>s.user_id===user.id&&s.shift_date===date))return;
+   wardOverlay.filter(s=>s.shift_date===date).forEach(s=>{
+    const item=document.createElement("button");
+    item.type="button";item.className="shift ward-ghost "+(s.code||"G");
+    item.style.cssText="opacity:.45;border:1px dashed #0057b7;width:100%;text-align:left;cursor:pointer";
+    item.title="Turno pubblicato da "+s.ward_name+" · tocca per importare nel calendario personale";
+    item.innerHTML="<b>"+safe(s.code)+"</b><span>"+safe(s.ward_name)+" · "+(s.code==="R"?"Riposo":types[s.code].start.slice(0,5)+"–"+types[s.code].end.slice(0,5))+"</span>";
+    item.addEventListener("click",async ev=>{
+     ev.stopPropagation();
+     const exists=shifts.some(p=>p.user_id===user.id&&p.shift_date===s.shift_date);
+     if(exists){alert("Hai già un turno personale in questa data.");return}
+     const {error}=await sb.from("shifts").insert({user_id:user.id,shift_date:s.shift_date,code:s.code,start_time:types[s.code].start,end_time:types[s.code].end,actual_hours:s.code==="R"?0:null,availability_hours:0,notes:"Reparto: "+s.ward_name,updated_at:new Date().toISOString()});
+     if(error){alert("Importazione non riuscita: "+error.message);return}
+     alert("Turno importato nel calendario personale.");
+     await load();
+    });
+    cell.appendChild(item);
+   });
+  });
+ };
+})();
+</script>
+
+</body></html>
