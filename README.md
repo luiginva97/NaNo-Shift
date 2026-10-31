@@ -7,7 +7,8 @@ Applicazione web per la gestione personale dei turni e la condivisione dei turni
 - `accesso.html`: pagina di accesso compatibile con i link di autenticazione e invito.
 - `dashboard.html`: calendario, turni, riepiloghi, impostazioni del profilo, gruppi e notifiche.
 - `reparto.html`: area del personale. Ingresso in un reparto con codice, disponibilità mensili, turni pubblicati e importazione nel calendario personale.
-- `coordinatrice.html`: area della coordinatrice. Creazione reparto, approvazione del personale, conferma delle disponibilità, pianificazione e pubblicazione dei turni, avvisi (non disponibilità, riposo dopo la notte, oltre 6 giorni di fila) e stampa.
+- `coordinamento.html`: area della coordinatrice/coordinatore. Creazione reparto, approvazione del personale, conferma delle disponibilità, generazione bozza e pianificazione dei turni, pubblicazione, avvisi (non disponibilità, riposo dopo la notte, oltre 6 giorni di fila), totali ore e stampa.
+- `ui.css`: stile condiviso (intestazione, navigazione mobile con menu «Altro», menu «Strumenti» del calendario, tabelle, accessibilità). Viene caricato dopo gli stili inline delle pagine.
 
 ## Tipi di turno
 - `M`: Mattina (07:00–14:00 come orario predefinito).
@@ -19,10 +20,9 @@ Applicazione web per la gestione personale dei turni e la condivisione dei turni
 Gli orari predefiniti possono essere adattati per i singoli turni; il riposo viene sempre conteggiato come zero ore.
 
 ## Identità visiva
-- `nanoshift-logo.svg`: logo completo blu e giallo, vettoriale.
-- `favicon.svg`, `favicon.ico`, `favicon-16.png`, `favicon-32.png`, `favicon-192.png`, `favicon-512.png`: icone browser.
-- `nanoshift-icon.png`: icona ad alta risoluzione.
-- `apple-touch-icon.png`: icona per i dispositivi Apple.
+- `nanoshift-logo.png`: logo completo (icona, nome e payoff), usato nelle pagine di accesso.
+- `favicon-192.png`: solo icona, usata nelle intestazioni interne.
+- `favicon.ico`, `favicon-16.png`, `favicon-32.png`, `favicon-512.png`, `apple-touch-icon.png`: icone browser e dispositivi Apple.
 
 ## Backend
 Il progetto usa Supabase Auth e Postgres con policy RLS. Le migrazioni versionate si trovano in `supabase/migrations/`. In particolare, le migrazioni più recenti aggiungono le notifiche/inviti ai gruppi, correggono la ricorsione delle policy RLS e introducono il tipo di turno `R`.

@@ -1,0 +1,109 @@
+/* NaNoShift · rifiniture UI condivise: intestazione, navigazione, tabelle, accessibilità.
+   Caricato dopo gli stili inline di dashboard.html, reparto.html e coordinamento.html. */
+
+:root{--gold:#f2bd36;--focus:#2463eb}
+
+/* Accessibilità: focus sempre visibile, movimento ridotto */
+:where(button,a,input,select,textarea,summary):focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+@media (pointer:coarse){.btn,.tabs button,.links a,.nav button,.chip{min-height:40px}}
+
+/* Intestazione: icona + nome + sottotitolo, senza logo sproporzionato */
+.top{padding-top:10px;padding-bottom:10px;min-height:64px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1 1 auto;font-size:17px;font-weight:800;letter-spacing:-.3px;color:#0057b7;line-height:1.15}
+.brand .logo-mark{width:42px;height:42px;max-height:none;flex:none;object-fit:contain;margin:0}
+.brand .brand-text{display:flex;flex-direction:column;min-width:0}
+.brand .brand-name{display:block;white-space:nowrap}
+.brand .brand-shift{color:var(--gold)}
+.brand .brand-text small{display:block;font-size:12px;line-height:1.3;font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.links{flex:none}
+.links a{display:inline-flex;align-items:center}
+@media(max-width:520px){.links a{padding:8px 10px;font-size:13px}.brand{font-size:16px}}
+@media(max-width:380px){.brand .brand-text small{max-width:36vw}}
+
+/* Dashboard: sulla colonna laterale il marchio c'è già, l'intestazione mostra solo l'utente */
+@media(min-width:1000px){
+ body:has(.side-nav) .top .logo-mark,body:has(.side-nav) .top .brand-name{display:none}
+ body:has(.side-nav) .top .brand-text small{font-size:14px;color:var(--navy);font-weight:650}
+}
+
+/* Navigazione: ordine fisso su desktop, 4 voci + "Altro" su telefono */
+.side-nav button[hidden]{display:none!important}
+.side-nav .nav-more-btn{display:none}
+.side-nav .nav-more{display:contents}
+@media(min-width:1000px){
+ .side-nav [data-section="overviewView"]{order:1}
+ .side-nav [data-section="calendarView"]{order:2}
+ .side-nav [data-section="listView"]{order:3}
+ .side-nav [data-section="groupsView"]{order:4}
+ .side-nav [data-section="sitesView"]{order:5}
+ .side-nav [data-section="taxView"]{order:6}
+ .side-nav [data-href]{order:7}
+ .side-nav [data-section="profileView"]{order:8}
+ .side-nav .side-caption{order:99;margin-top:auto}
+}
+@media(max-width:999px){
+ .side-nav{justify-content:stretch;gap:2px;overflow:visible}
+ .side-nav>button{flex:1 1 0;min-width:0;font-size:11px;line-height:1.15;padding:8px 2px}
+ .side-nav>button span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .side-nav .nav-more-btn{display:flex}
+ .side-nav .nav-more{display:none}
+ .side-nav.more-open .nav-more{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;position:fixed;left:10px;right:10px;bottom:calc(76px + env(safe-area-inset-bottom));padding:8px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 48px #102b4e2e;z-index:25}
+ .side-nav.more-open .nav-more button{flex:none;flex-direction:row;justify-content:flex-start;gap:10px;width:100%;min-width:0;padding:12px;font-size:14px;border-radius:11px;background:#f7f9fd;border:0}
+ .side-nav.more-open .nav-more button svg{width:20px;height:20px}
+}
+
+/* Notifiche: il pannello non esce mai dallo schermo */
+@media(max-width:600px){
+ .notification-wrap{position:static}
+ .notification-panel{position:fixed;left:10px;right:10px;top:70px;width:auto;max-height:calc(100vh - 150px)}
+}
+.notification-panel .small-row{align-items:flex-start}
+
+/* Calendario: viste a sinistra, import/export in un menu "Strumenti" */
+.cal-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:15px 0}
+.cal-controls .tabs{margin:0}
+.tools{position:relative}
+.tools>summary{list-style:none;cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px;font-weight:650;display:inline-flex;gap:8px;align-items:center;user-select:none}
+.tools>summary::-webkit-details-marker{display:none}
+.tools>summary::after{content:"";width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px)}
+.tools[open]>summary{background:var(--pale);border-color:#b9cdfb;color:var(--blue)}
+.tools-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:8;min-width:220px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 48px #102b4e24;padding:6px;display:grid;gap:2px}
+.tools-menu button{border:0;background:transparent;text-align:left;border-radius:9px;padding:10px 12px;font-weight:600;color:var(--navy)}
+.tools-menu button:hover{background:var(--pale)}
+.tools-menu .tools-sep{height:1px;background:var(--line);margin:4px 6px}
+@media(max-width:600px){
+ .cal-controls{display:grid;grid-template-columns:1fr}
+ .tools>summary{width:100%;justify-content:space-between}
+ .tools-menu{position:static;box-shadow:none;margin-top:6px}
+}
+
+/* Tabelle dei turni: su telefono il totale non copre più i giorni */
+@media(max-width:700px){th.totalcol,td.totalcol{position:static}}
+
+/* Reparto: pulsanti di disponibilità leggibili e comodi da toccare */
+.chips .chip{min-height:34px}
+@media(max-width:560px){.day .chips{gap:6px}.day .d{width:100%}}
+
+/* Colonna laterale: marchio compatto */
+.side-nav .side-brand .sb-name{color:#0057b7;display:inline;white-space:nowrap}
+.side-nav .side-brand .sb-name span{color:var(--gold)}
+
+/* Gruppi: riquadri equilibrati */
+.group-grid{align-items:start;margin-top:14px}
+.group-card{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff;min-width:0}
+#groupsSection .group-card h3:first-child{margin-top:0}
+#groupsSection .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* Pannelli annidati (es. proiezione nel simulatore): niente doppio bordo né margini */
+#taxSection .panel{margin-top:0;margin-bottom:16px;box-shadow:none;padding:16px;border-radius:14px}
+#taxSection table th,#taxSection table td{padding:8px 12px;text-align:left;white-space:nowrap}
+
+/* Coordinamento: su schermi larghi tutto il mese entra senza coprire l'ultimo giorno */
+@media(min-width:1100px){
+ .scroll th,.scroll td{min-width:28px}
+ .scroll th:first-child,.scroll td:first-child{min-width:124px}
+ .scroll th.totalcol,.scroll td.totalcol{min-width:84px}
+}
+/* Distanza fra tabella e pannelli che la seguono */
+.scroll+.panel,.scroll+section{margin-top:16px}

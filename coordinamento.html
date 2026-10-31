@@ -45,9 +45,10 @@ dialog{border:0;border-radius:18px;width:min(420px,calc(100% - 24px));padding:20
 /* Responsive polish: coordinatore */
 @media(max-width:700px){.top{align-items:flex-start;flex-direction:column;padding:12px}.brand{font-size:15px;flex-wrap:wrap}.brand img{width:124px;max-height:38px}.links{width:100%}.links a{flex:1;text-align:center;font-size:13px;padding:8px 7px}.wrap{padding:12px 10px 36px}.panel{padding:12px;border-radius:13px}.scroll{max-height:65vh}th:first-child,td:first-child{min-width:108px}.monthnav strong{min-width:125px}.opts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
+<link rel="stylesheet" href="ui.css">
 </head>
 <body>
-<header class="top"><div class="brand"><img src="nanoshift-logo.png" alt="NaNo Shift"> · Area coordinamento</div><div class="links"><a href="dashboard.html">← Dashboard</a><a href="reparto.html">Reparto</a></div></header>
+<header class="top"><div class="brand"><img class="logo-mark" src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small>Area coordinamento</small></span></div><div class="links"><a href="dashboard.html">← Dashboard</a><a href="reparto.html">Reparto</a></div></header>
 <main class="wrap" id="app"><div class="panel">Caricamento…</div></main>
 <dialog id="cellDlg"></dialog>
 <script>
