@@ -28,12 +28,17 @@ h1{margin:0 0 4px;font-size:clamp(22px,4vw,29px);letter-spacing:-.4px}h2{margin:
 .notice{padding:11px 13px;border-radius:10px;background:#eaf7f0;color:#146543;margin:12px 0}.notice.error{background:#fff0ef;color:var(--red)}.notice.warn{background:#fff8e6;color:#7a5200}
 .tabs{display:flex;gap:7px;margin:14px 0 0;flex-wrap:wrap}.tabs button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;font-weight:650}.tabs button.active{background:var(--pale);border-color:#b9cdfb;color:var(--blue)}
 .monthnav{display:flex;align-items:center;gap:8px;margin:14px 0 6px}.monthnav strong{min-width:150px;text-align:center;text-transform:capitalize}.monthnav button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 12px}
-.day{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}.day:last-child{border-bottom:0}
-.day .d{width:62px;font-weight:700;font-size:14px}.day.we .d{color:var(--red)}.day.dirty{background:#f8faff}
-.chips{display:flex;gap:5px;flex-wrap:wrap;flex:1}.chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:5px 11px;font-size:13px;font-weight:650;color:var(--navy)}
-.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}.chip.on.rest{background:#7754c8;border-color:#7754c8}.chip.on.unavailable{background:var(--red);border-color:var(--red)}.chip.on.free{background:var(--green);border-color:var(--green)}
-.chip:disabled{opacity:.55;cursor:default}.lock{font-size:12px;color:var(--green);font-weight:700}
-.savebar{position:sticky;bottom:0;background:#fffffff0;border-top:1px solid var(--line);padding:10px 0;margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+/* Disponibilità in schede mensili */
+.day{display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:12px;background:#fff;border:1px solid var(--line);border-radius:13px;min-width:0;box-shadow:0 2px 8px #18345b08}
+.day .d{width:auto;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:14px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+.day.we .d{color:var(--red)}.day.dirty{background:#f2f7ff;border-color:#9bb8f4;box-shadow:0 0 0 1px #9bb8f455}
+.chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;flex:1}
+.chip{min-width:0;border:1px solid var(--line);background:#f8faff;border-radius:9px;padding:8px 5px;font-size:12px;line-height:1.2;font-weight:700;color:var(--navy);white-space:normal}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 2px 5px #2463eb30}.chip.on.rest{background:#7754c8;border-color:#7754c8}.chip.on.unavailable{background:var(--red);border-color:var(--red)}.chip.on.free{background:var(--green);border-color:var(--green)}
+.chip:disabled{opacity:.62;cursor:default}.lock{display:block;font-size:11px;color:var(--green);font-weight:750;margin-top:auto}
+#availabilityGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px}
+@media(max-width:900px){#availabilityGrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:620px){#availabilityGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.day{padding:10px}.chip{padding:9px 4px;font-size:12px}}
 .pill{display:inline-block;min-width:26px;text-align:center;padding:3px 7px;border-radius:7px;color:#fff;font-weight:800;font-size:12px}.M{background:#c58a12}.P{background:#3478d4}.G{background:#13845b}.N{background:#7754c8}.R{background:#fff4bf;color:#0755b7;border:1px solid #0057b7}
 .item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.item:last-child{border-bottom:0}
 .scroll{overflow-x:auto;margin-top:8px;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;font-size:12px;min-width:100%}th,td{border:1px solid var(--line);padding:4px 3px;text-align:center;min-width:28px}th:first-child,td:first-child{position:sticky;left:0;background:#fff;text-align:left;min-width:110px;padding-left:8px;font-weight:700;z-index:1}tr.me td:first-child{color:var(--blue)}th.we{color:var(--red)}
@@ -125,12 +130,13 @@ function joinCard(){
  return '<section class="panel"><h2>Entra in un reparto</h2><p class="muted">Apri il link personale ricevuto dalla coordinatrice oppure inserisci qui il codice del reparto. Con il codice potrai indicare le disponibilità dopo la sua approvazione.</p><form id="joinForm" class="row"><div class="field"><label for="code">Codice reparto</label><input id="code" maxlength="8" autocapitalize="characters" autocomplete="off" required placeholder="Es. K7M2QX9A"></div><div class="field"><label for="joinRole">Il tuo ruolo</label><select id="joinRole"><option value="infermiere">Infermiere</option><option value="oss">OSS</option></select></div><button class="btn" type="submit">Invia richiesta</button></form>'+(pending?'<div style="margin-top:12px">'+pending+'</div>':"")+'</section>';
 }
 function availView(){
- const y=cursor.getFullYear(),m=cursor.getMonth();let h="";
+ const y=cursor.getFullYear(),m=cursor.getMonth();let h='<div id="availabilityGrid">';
  for(let d=1;d<=dim();d++){
   const key=ymd(y,m,d),wd=new Date(y,m,d).getDay(),cur=avail[key]||"ANY",lock=locked(key);
-  h+='<div class="day'+(wd===0||wd===6?" we":"")+(avail[key]!==orig[key]?" dirty":"")+'"><div class="d">'+WD[wd]+" "+d+'</div><div class="chips">'+PREFS.map(([v,l,cls])=>'<button type="button" class="chip '+cls+(cur===v?" on":"")+'" data-day="'+key+'" data-pref="'+v+'"'+(lock?" disabled":"")+'>'+l+'</button>').join("")+'</div>'+(lock?'<span class="lock">✓ confermata</span>':review[key]==="rejected"?'<span class="lock" style="color:var(--red)">non accettata: puoi modificarla</span>':"")+'</div>';
+  h+='<div class="day'+(wd===0||wd===6?" we":"")+(avail[key]!==orig[key]?" dirty":"")+'"><div class="d"><span>'+WD[wd]+'</span><span>'+d+'</span></div><div class="chips">'+PREFS.map(([v,l,cls])=>'<button type="button" class="chip '+cls+(cur===v?" on":"")+'" data-day="'+key+'" data-pref="'+v+'"'+(lock?" disabled":"")+'>'+l+'</button>').join("")+'</div>'+(lock?'<span class="lock">✓ Confermata</span>':review[key]==="rejected"?'<span class="lock" style="color:var(--red)">Da modificare</span>':"")+'</div>';
  }
- return '<section class="panel"><h2>Le tue disponibilità</h2><p class="muted">Per ogni giorno scegli: libero, preferenza per un turno, vorrei riposo oppure non disponibile. Dopo la conferma della coordinatrice un giorno non è più modificabile.</p>'+h+'<div class="savebar"><button class="btn" id="saveAvail"'+(dirty()&&!busy?"":" disabled")+'>'+(busy?"Salvataggio…":"Salva disponibilità")+'</button><select id="fillPref" class="inline" style="width:auto"><option value="">Imposta i giorni non confermati…</option>'+PREFS.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("")+'</select>'+(dirty()?'<span class="muted">Modifiche non salvate</span>':"")+'</div></section>';
+ h+='</div>';
+ return '<section class="panel"><h2>Le tue disponibilità</h2><p class="muted">Tocca una scelta per ogni giorno. Le date già confermate dalla coordinatrice sono bloccate.</p>'+h+'<div class="savebar"><button class="btn" id="saveAvail"'+(dirty()&&!busy?"":" disabled")+'>'+(busy?"Salvataggio…":"Salva disponibilità")+'</button><select id="fillPref" class="inline" style="width:auto"><option value="">Imposta i giorni non confermati…</option>'+PREFS.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("")+'</select>'+(dirty()?'<span class="muted">Modifiche non salvate</span>':"")+'</div></section>';
 }
 function scheduleView(){
  const y=cursor.getFullYear(),m=cursor.getMonth(),n=dim();
