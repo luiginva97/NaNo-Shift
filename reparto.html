@@ -110,7 +110,7 @@ function scheduleView(){
  let head="<tr><th>Persona</th>";for(let d=1;d<=n;d++){const wd=new Date(y,m,d).getDay();head+='<th class="'+(wd===0||wd===6?"we":"")+'">'+d+"</th>"}head+="</tr>";
  const body=people.map(([id,name])=>'<tr class="'+(id===user.id?"me":"")+'"><td>'+safe(name)+(id===user.id?" (tu)":"")+"</td>"+Array.from({length:n},(_,i)=>{const c=by[id+"|"+ymd(y,m,i+1)];return "<td>"+(c?'<span class="pill '+c+'">'+c+"</span>":"")+"</td>"}).join("")+"</tr>").join("");
  const list=mine.map(r=>'<div class="item"><span><b>'+new Date(r.day+"T12:00:00").toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"})+'</b></span><span class="pill '+r.code+'">'+r.code+'</span></div>').join("")||'<p class="muted">Nessun turno assegnato a te questo mese.</p>';
- return '<section class="panel"><h2>I tuoi turni</h2>'+list+(mine.length?'<div class="savebar"><button class="btn" id="importShifts">Importa nel mio calendario</button></div>':"")+'</section><section class="panel"><h2>Turni del reparto</h2><div class="scroll"><table>'+head+body+'</table></div></section>';
+ return '<section class="panel"><h2>I tuoi turni</h2>'+list+(mine.length?'<div class="savebar"><button class="btn" id="importShifts">Importa nel mio calendario</button> <button class="btn danger" id="removeImportedShifts">Rimuovi turni importati</button></div><p class="muted">Puoi rimuovere dal calendario personale solo i turni importati da questo reparto; gli altri turni resteranno invariati.</p>':"")+'</section><section class="panel"><h2>Turni del reparto</h2><div class="scroll"><table>'+head+body+'</table></div></section>';
 }
 function render(){
  const app=$("app");
@@ -144,6 +144,7 @@ function bind(){
  const fill=$("fillPref");if(fill)fill.onchange=()=>{if(!fill.value)return;for(let d=1;d<=dim();d++){const k=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(!locked(k))avail[k]=fill.value}render()};
  const sv=$("saveAvail");if(sv)sv.onclick=saveAvail;
  const im=$("importShifts");if(im)im.onclick=importShifts;
+ const rm=$("removeImportedShifts");if(rm)rm.onclick=removeImportedShifts;
 }
 async function saveAvail(){
  const rows=Object.keys(avail).filter(d=>avail[d]!==orig[d]&&!locked(d)).map(d=>({unit_id:unit.id,user_id:user.id,day:d,choice:avail[d],review_status:"pending",updated_at:new Date().toISOString()}));
@@ -152,6 +153,18 @@ async function saveAvail(){
  const {error}=await sb.from("unit_availability").upsert(rows,{onConflict:"unit_id,user_id,day"});
  busy=false;
  if(error)note("Salvataggio non riuscito: "+error.message,"error");else note("Disponibilità salvate.","");
+ await loadMonth();render();
+}
+async function removeImportedShifts(){
+ const [from,to]=range(),prefix="Reparto: "+unit.name;
+ if(!confirm("Vuoi eliminare dal tuo calendario personale i turni importati da questo reparto per "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+"? Gli altri turni personali non verranno modificati."))return;
+ const {data,error}=await sb.from("shifts").select("id,notes").eq("user_id",user.id).gte("shift_date",from).lte("shift_date",to);
+ if(error){note("Non riesco a caricare i turni da rimuovere: "+error.message,"error");render();return}
+ const ids=(data||[]).filter(r=>String(r.notes||"").startsWith(prefix)).map(r=>r.id);
+ if(!ids.length){note("Non ci sono turni importati da questo reparto nel mese selezionato.","warn");render();return}
+ const {error:delError}=await sb.from("shifts").delete().eq("user_id",user.id).in("id",ids);
+ if(delError)note("Eliminazione non riuscita: "+delError.message,"error");
+ else note("Eliminati "+ids.length+" turni importati da "+unit.name+". Gli altri turni personali sono rimasti invariati.","");
  await loadMonth();render();
 }
 async function importShifts(){
