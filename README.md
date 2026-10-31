@@ -27,8 +27,8 @@ Gli orari predefiniti possono essere adattati per i singoli turni; il riposo vie
 ## Backend
 Il progetto usa Supabase Auth e Postgres con policy RLS. Le migrazioni versionate si trovano in `supabase/migrations/`. In particolare, le migrazioni più recenti aggiungono le notifiche/inviti ai gruppi, correggono la ricorsione delle policy RLS e introducono il tipo di turno `R`.
 
-## Sezione coordinatrice: migrazione da applicare
-La migrazione `supabase/migrations/20261031120000_coordinator_section.sql` crea le tabelle `coord_*` (reparti, personale, disponibilità, turni assegnati), le policy RLS e le funzioni RPC. Va eseguita sul database Supabase del progetto (SQL Editor o `supabase db push`) prima di usare `reparto.html` e `coordinatrice.html`; finché non è applicata le due pagine mostrano un errore esplicito.
+## Sezione coordinatrice
+Usa le tabelle `units`, `unit_members`, `unit_availability` e `unit_shifts` e le funzioni `create_unit`, `request_join_unit`, `get_my_units`, `get_unit_roster`, `review_unit_member`, `review_unit_availability`, `publish_unit_shifts`, già presenti nel database Supabase (migrazione `unit_planning`, applicata direttamente sul progetto e non ancora versionata in `supabase/migrations/`). Il codice di ingresso del reparto è di 8 caratteri.
 
 ## Pubblicazione
 Cloudflare Pages è collegato alla repository GitHub `luiginva97/NaNo-Shift`, con ramo di produzione `main` e directory radice `/`. I push su `main` avviano il deployment automatico.

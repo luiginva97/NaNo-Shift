@@ -54,44 +54,46 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id),pad=n=>String(n).padStart(2,"0");
 const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const WD=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"],WORK=["M","P","G","N"];
-const PREF_TXT={free:"Libero",M:"Preferisce M",P:"Preferisce P",G:"Preferisce G",N:"Preferisce N",rest:"Vorrebbe riposo",unavailable:"Non disponibile"};
-const PREF_SYM={free:"L",M:"M",P:"P",G:"G",N:"N",rest:"Ri",unavailable:"✕"};
-let user=null,wards=[],ward=null,members=[],av={},as={},tab="plan",cursor=new Date(),msg=null,monthPub=false;
+const PREF_TXT={ANY:"Libero",M:"Preferisce M",P:"Preferisce P",G:"Preferisce G",N:"Preferisce N",R:"Vorrebbe riposo",OFF:"Non disponibile"};
+const PREF_SYM={ANY:"L",M:"M",P:"P",G:"G",N:"N",R:"Ri",OFF:"✕"};
+const PREF_CLS={ANY:"free",M:"M",P:"P",G:"G",N:"N",R:"rest",OFF:"unavailable"};
+let user=null,units=[],unit=null,roster=[],av={},as={},tab="plan",cursor=new Date(),msg=null,monthPub=false;
 cursor.setDate(1);
 const ymd=(y,m,d)=>y+"-"+pad(m+1)+"-"+pad(d);
 const keyOf=t=>ymd(t.getFullYear(),t.getMonth(),t.getDate());
 const dim=()=>new Date(cursor.getFullYear(),cursor.getMonth()+1,0).getDate();
 const range=()=>[ymd(cursor.getFullYear(),cursor.getMonth(),1),ymd(cursor.getFullYear(),cursor.getMonth(),dim())];
 const recalcPub=()=>{const f=range()[0],r=Object.values(as).filter(x=>x.day>=f);monthPub=r.length>0&&r.every(x=>x.published)};
-const approved=()=>members.filter(m=>m.status==="approved");
-const pending=()=>members.filter(m=>m.status==="pending");
+const approved=()=>roster.filter(m=>m.status==="active");
+const nurses=()=>roster.filter(m=>m.status==="active"&&m.unit_role==="nurse");
+const pending=()=>roster.filter(m=>m.status==="pending"&&m.unit_role==="nurse");
 const note=(t,type="")=>{msg=t?{t,type}:null};
 async function init(){
  const {data:{session}}=await sb.auth.getSession();
  if(!session){location.href="accesso.html";return}
- user=session.user;await loadWards();if(ward&&pending().length)tab="req";render();
+ user=session.user;await loadUnits();if(unit&&pending().length)tab="req";render();
 }
-async function loadWards(){
- const {data,error}=await sb.from("coord_wards").select("id,name,join_code").eq("coordinator_id",user.id).order("name");
- if(error){note("Non riesco a caricare i reparti: "+error.message+" (la migrazione coordinatrice è stata applicata al database?)","error");wards=[];ward=null;return}
- wards=data||[];
- if(!ward||!wards.some(w=>w.id===ward.id))ward=wards[0]||null;else ward=wards.find(w=>w.id===ward.id);
- if(ward)await loadData();
+async function loadUnits(keepId){
+ const {data,error}=await sb.rpc("get_my_units");
+ if(error){note("Non riesco a caricare i reparti: "+error.message,"error");units=[];unit=null;return}
+ units=(data||[]).filter(m=>m.unit_role==="coordinator"&&m.status==="active").map(m=>({id:m.unit_id,name:m.name,join_code:m.join_code}));
+ const want=keepId||unit?.id;
+ unit=units.find(u=>u.id===want)||units[0]||null;
+ if(unit)await loadData();
 }
 async function loadData(){
  const [from,to]=range(),prev=new Date(cursor.getFullYear(),cursor.getMonth(),-6);
- const [m,a,s]=await Promise.all([
-  sb.from("coord_members").select("id,user_id,display_name,status").eq("ward_id",ward.id).order("display_name"),
-  sb.from("coord_availability").select("user_id,day,preference,confirmed").eq("ward_id",ward.id).gte("day",from).lte("day",to),
-  sb.from("coord_assignments").select("user_id,day,code,published").eq("ward_id",ward.id).gte("day",keyOf(prev)).lte("day",to)
+ const [r,a,s]=await Promise.all([
+  sb.rpc("get_unit_roster",{p_unit:unit.id}),
+  sb.from("unit_availability").select("user_id,day,choice,review_status").eq("unit_id",unit.id).gte("day",from).lte("day",to),
+  sb.from("unit_shifts").select("user_id,shift_date,code,published").eq("unit_id",unit.id).gte("shift_date",keyOf(prev)).lte("shift_date",to)
  ]);
- const errs=[m.error,a.error,s.error].filter(Boolean).map(e=>e.message);
+ const errs=[r.error,a.error,s.error].filter(Boolean).map(e=>e.message);
  if(errs.length)note("Errore di caricamento: "+errs.join(" · "),"error");
- members=m.data||[];av={};as={};
- (a.data||[]).forEach(r=>{av[r.user_id+"|"+r.day]=r});
- (s.data||[]).forEach(r=>{as[r.user_id+"|"+r.day]=r});
- const inMonth=(s.data||[]).filter(r=>r.day>=from);
- monthPub=inMonth.length>0&&inMonth.every(r=>r.published);
+ roster=r.data||[];av={};as={};
+ (a.data||[]).forEach(x=>{av[x.user_id+"|"+x.day]={user_id:x.user_id,day:x.day,choice:x.choice,confirmed:x.review_status==="confirmed"}});
+ (s.data||[]).forEach(x=>{as[x.user_id+"|"+x.shift_date]={user_id:x.user_id,day:x.shift_date,code:x.code,published:x.published}});
+ recalcPub();
 }
 function warnings(){
  const out={},y=cursor.getFullYear(),m=cursor.getMonth(),from=range()[0];
@@ -102,9 +104,9 @@ function warnings(){
    const k=keyOf(t),code=as[p.user_id+"|"+k]?.code,work=WORK.includes(code);
    streak=work?streak+1:0;
    if(work&&k>=from){
-    const w=[],pr=av[p.user_id+"|"+k]?.preference;
-    if(pr==="unavailable")w.push("segnata come non disponibile");
-    if(pr==="rest")w.push("aveva chiesto riposo");
+    const w=[],pr=av[p.user_id+"|"+k]?.choice;
+    if(pr==="OFF")w.push("segnata come non disponibile");
+    if(pr==="R")w.push("aveva chiesto riposo");
     if(prev==="N"&&code!=="N")w.push("turno dopo una notte senza riposo");
     if(streak>6)w.push("oltre 6 giorni di fila ("+streak+")");
     if(w.length)out[p.user_id+"|"+k]=w;
@@ -115,15 +117,15 @@ function warnings(){
  return out;
 }
 function createCard(){
- return '<section class="panel"><h2>'+(wards.length?"Crea un altro reparto":"Crea il tuo reparto")+'</h2><p class="muted">Otterrai un codice da dare agli infermieri per chiedere di entrare.</p><form id="wardForm" class="row"><div class="field"><label for="wardName">Nome del reparto</label><input id="wardName" maxlength="100" required placeholder="Es. Medicina Generale"></div><button class="btn" type="submit">Crea reparto</button></form></section>';
+ return '<section class="panel"><h2>'+(units.length?"Crea un altro reparto":"Crea il tuo reparto")+'</h2><p class="muted">Otterrai un codice da dare agli infermieri per chiedere di entrare.</p><form id="wardForm" class="row"><div class="field"><label for="wardName">Nome del reparto</label><input id="wardName" minlength="2" maxlength="80" required placeholder="Es. Medicina Generale"></div><button class="btn" type="submit">Crea reparto</button></form></section>';
 }
 function requestsView(){
  const p=pending();
- return '<section class="panel"><h2>Richieste di ingresso</h2>'+(p.map(m=>'<div class="item"><b>'+safe(m.display_name)+'</b><span><button class="btn small" data-approve="'+m.id+'">Approva</button> <button class="btn small danger" data-reject="'+m.id+'">Rifiuta</button></span></div>').join("")||'<p class="muted">Nessuna richiesta in attesa.</p>')+'</section>';
+ return '<section class="panel"><h2>Richieste di ingresso</h2>'+(p.map(m=>'<div class="item"><b>'+safe(m.display_name)+'</b><span><button class="btn small" data-approve="'+m.user_id+'">Approva</button> <button class="btn small danger" data-reject="'+m.user_id+'">Rifiuta</button></span></div>').join("")||'<p class="muted">Nessuna richiesta in attesa.</p>')+'</section>';
 }
 function staffView(){
  const a=approved();
- return '<section class="panel"><h2>Personale ('+a.length+')</h2>'+(a.map(m=>'<div class="item"><b>'+safe(m.display_name)+'</b><button class="btn small danger" data-remove="'+m.id+'" data-uid="'+m.user_id+'">Rimuovi</button></div>').join("")||'<p class="muted">Nessun infermiere nel reparto. Condividi il codice per ricevere le richieste.</p>')+'</section>';
+ return '<section class="panel"><h2>Personale ('+a.length+')</h2>'+(a.map(m=>m.unit_role==="coordinator"?'<div class="item"><b>'+safe(m.display_name)+'</b><span class="muted">Coordinatrice'+(m.user_id===user.id?" (tu)":"")+'</span></div>':'<div class="item"><b>'+safe(m.display_name)+'</b><span><button class="btn small secondary" data-promote="'+m.user_id+'">Rendi coordinatrice</button> <button class="btn small danger" data-remove="'+m.user_id+'">Rimuovi</button></span></div>').join("")||'<p class="muted">Nessun infermiere nel reparto. Condividi il codice per ricevere le richieste.</p>')+'</section>';
 }
 function headRow(){
  const y=cursor.getFullYear(),m=cursor.getMonth();let h="<tr><th>Persona</th>";
@@ -131,12 +133,12 @@ function headRow(){
  return h+"</tr>";
 }
 function availView(){
- const a=approved(),y=cursor.getFullYear(),m=cursor.getMonth(),n=dim();
+ const a=nurses(),y=cursor.getFullYear(),m=cursor.getMonth(),n=dim();
  const rows=a.map(p=>{
   const mine=Object.keys(av).filter(k=>k.startsWith(p.user_id+"|")).map(k=>av[k]),all=mine.length>0&&mine.every(r=>r.confirmed);
-  return '<tr><td>'+safe(p.display_name)+'<br><button class="btn small'+(all?" secondary":"")+'" data-confirm="'+p.user_id+'" data-set="'+(all?"0":"1")+'"'+(mine.length?"":" disabled")+' style="margin-top:2px">'+(all?"Riapri":"Conferma")+'</button></td>'+Array.from({length:n},(_,i)=>{
+  return '<tr><td>'+safe(p.display_name)+'<br><button class="btn small'+(all?" secondary":"")+'" data-confirm="'+p.user_id+'" data-set="'+(all?"pending":"confirmed")+'"'+(mine.length?"":" disabled")+' style="margin-top:2px">'+(all?"Riapri":"Conferma")+'</button></td>'+Array.from({length:n},(_,i)=>{
    const r=av[p.user_id+"|"+ymd(y,m,i+1)];
-   return '<td class="a '+(r?r.preference:"none")+(r&&r.confirmed?" conf":"")+'" title="'+(r?PREF_TXT[r.preference]+(r.confirmed?" · confermata":""):"Nessuna indicazione")+'">'+(r?PREF_SYM[r.preference]:"–")+"</td>";
+   return '<td class="a '+(r?PREF_CLS[r.choice]:"none")+(r&&r.confirmed?" conf":"")+'" title="'+(r?PREF_TXT[r.choice]+(r.confirmed?" · confermata":""):"Nessuna indicazione")+'">'+(r?PREF_SYM[r.choice]:"–")+"</td>";
   }).join("")+"</tr>";
  }).join("");
  const any=Object.values(av).some(r=>!r.confirmed);
@@ -145,8 +147,8 @@ function availView(){
 function planView(){
  const a=approved(),y=cursor.getFullYear(),m=cursor.getMonth(),n=dim(),w=warnings();
  const body=a.map(p=>'<tr><td>'+safe(p.display_name)+"</td>"+Array.from({length:n},(_,i)=>{
-  const k=ymd(y,m,i+1),cur=as[p.user_id+"|"+k],pr=av[p.user_id+"|"+k]?.preference,bad=w[p.user_id+"|"+k];
-  return '<td><button class="cell'+(pr==="unavailable"?" unav":pr==="rest"?" rest":"")+(bad?" warn":"")+'" data-cell="'+p.user_id+'" data-day="'+k+'" title="'+safe(bad?bad.join(" · "):(pr?PREF_TXT[pr]:""))+'">'+(cur?'<span class="pill '+cur.code+'">'+cur.code+"</span>":"")+"</button></td>";
+  const k=ymd(y,m,i+1),cur=as[p.user_id+"|"+k],pr=av[p.user_id+"|"+k]?.choice,bad=w[p.user_id+"|"+k];
+  return '<td><button class="cell'+(pr==="OFF"?" unav":pr==="R"?" rest":"")+(bad?" warn":"")+'" data-cell="'+p.user_id+'" data-day="'+k+'" title="'+safe(bad?bad.join(" · "):(pr?PREF_TXT[pr]:""))+'">'+(cur?'<span class="pill '+cur.code+'">'+cur.code+"</span>":"")+"</button></td>";
  }).join("")+"</tr>").join("");
  const cov=["M","P","G","N"].map(c=>'<tr class="covrow"><td>'+c+' coperti</td>'+Array.from({length:n},(_,i)=>{
   const k=ymd(y,m,i+1),cnt=a.filter(p=>as[p.user_id+"|"+k]?.code===c).length;
@@ -154,12 +156,12 @@ function planView(){
  }).join("")+"</tr>").join("");
  const wl=Object.keys(w).map(k=>{const [uid,day]=k.split("|"),p=a.find(x=>x.user_id===uid);return '<li>⚠ '+safe(p?p.display_name:"?")+", "+Number(day.slice(8))+"/"+Number(day.slice(5,7))+": "+safe(w[k].join(", "))+"</li>"}).join("");
  const total=Object.keys(as).filter(k=>k.split("|")[1]>=range()[0]).length;
- return '<section class="panel"><div class="printonly"><h2>'+safe(ward.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2></div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Turni del mese</h2><span><button class="btn secondary" id="printPlan">Stampa</button> <button class="btn" id="togglePub"'+(total?"":" disabled")+'>'+(monthPub?"Ritira pubblicazione":"Pubblica turni")+'</button></span></div><div class="legend"><span>Tocca una cella per assegnare il turno</span><span><b style="color:#d92d20">riquadro rosso</b> = avviso</span><span>sfondo rosa = non disponibile · lilla = vorrebbe riposo</span><span>Stato: <b>'+(monthPub?"pubblicato":"non pubblicato")+'</b></span></div>'+(a.length?'<div class="scroll"><table>'+headRow()+body+cov+'</table></div>':'<p class="muted">Approva almeno un infermiere per iniziare a pianificare.</p>')+(wl?'<ul class="warnlist">'+wl+"</ul>":"")+'</section>';
+ return '<section class="panel"><div class="printonly"><h2>'+safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2></div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Turni del mese</h2><span><button class="btn secondary" id="printPlan">Stampa</button> <button class="btn" id="togglePub"'+(total?"":" disabled")+'>'+(monthPub?"Ritira pubblicazione":"Pubblica turni")+'</button></span></div><div class="legend"><span>Tocca una cella per assegnare il turno</span><span><b style="color:#d92d20">riquadro rosso</b> = avviso</span><span>sfondo rosa = non disponibile · lilla = vorrebbe riposo</span><span>Stato: <b>'+(monthPub?"pubblicato":"non pubblicato")+'</b></span></div>'+(a.length?'<div class="scroll"><table>'+headRow()+body+cov+'</table></div>':'<p class="muted">Approva almeno un infermiere per iniziare a pianificare.</p>')+(wl?'<ul class="warnlist">'+wl+"</ul>":"")+'</section>';
 }
 function render(){
  const app=$("app");let h="";
- if(!ward){h='<h1>Area coordinatrice</h1><div class="muted">Crea il reparto, approva il personale, conferma le disponibilità e gestisci i turni.</div>'+(msg?'<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>":"")+createCard();app.innerHTML=h;bind();return}
- h+='<div id="wardBar"><h1>'+safe(ward.name)+'</h1><div class="row" style="align-items:center"><span class="muted">Codice per entrare:</span><span class="code">'+safe(ward.join_code)+'</span><button class="btn secondary small" id="copyCode">Copia</button>'+(wards.length>1?'<select id="wardSel" style="padding:8px;border-radius:9px;border:1px solid var(--line)">'+wards.map(w=>'<option value="'+w.id+'"'+(w.id===ward.id?" selected":"")+">"+safe(w.name)+"</option>").join("")+"</select>":"")+"</div></div>";
+ if(!unit){h='<h1>Area coordinatrice</h1><div class="muted">Crea il reparto, approva il personale, conferma le disponibilità e gestisci i turni.</div>'+(msg?'<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>":"")+createCard();app.innerHTML=h;bind();return}
+ h+='<div id="wardBar"><h1>'+safe(unit.name)+'</h1><div class="row" style="align-items:center"><span class="muted">Codice per entrare:</span><span class="code">'+safe(unit.join_code)+'</span><button class="btn secondary small" id="copyCode">Copia</button>'+(units.length>1?'<select id="wardSel" style="padding:8px;border-radius:9px;border:1px solid var(--line)">'+units.map(u=>'<option value="'+u.id+'"'+(u.id===unit.id?" selected":"")+">"+safe(u.name)+"</option>").join("")+"</select>":"")+"</div></div>";
  if(msg)h+='<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>";
  const np=pending().length;
  h+='<div class="tabs">'+[["req","Richieste"+(np?'<span class="badge">'+np+"</span>":"")],["staff","Personale"],["avail","Disponibilità"],["plan","Turni"]].map(([id,l])=>'<button data-tab="'+id+'" class="'+(tab===id?"active":"")+'">'+l+"</button>").join("")+"</div>";
@@ -174,47 +176,52 @@ async function run(p,okText){
  if(okText)note(okText,"");
  await loadData();render();return true;
 }
+const review=(uid,action,okText)=>run(sb.rpc("review_unit_member",{p_unit:unit.id,p_user:uid,p_action:action}),okText);
 function bind(){
  const wf=$("wardForm");if(wf)wf.onsubmit=async e=>{
-  e.preventDefault();const {data,error}=await sb.rpc("coord_create_ward",{p_name:$("wardName").value});
+  e.preventDefault();const {data,error}=await sb.rpc("create_unit",{p_name:$("wardName").value});
   if(error){note("Creazione non riuscita: "+error.message,"error");render();return}
-  note("Reparto creato. Dai il codice "+data.join_code+" ai tuoi infermieri.","");ward={id:data.id};tab="req";await loadWards();render();
+  tab="req";await loadUnits(data);const u=units.find(x=>x.id===data);
+  note(u?"Reparto creato. Dai il codice "+u.join_code+" ai tuoi infermieri.":"Reparto creato.","");render();
  };
- const ws=$("wardSel");if(ws)ws.onchange=async()=>{ward=wards.find(w=>w.id===ws.value);note(null);await loadData();render()};
- const cc=$("copyCode");if(cc)cc.onclick=async()=>{try{await navigator.clipboard.writeText(ward.join_code);cc.textContent="Copiato ✓"}catch(_){cc.textContent=ward.join_code}};
+ const ws=$("wardSel");if(ws)ws.onchange=async()=>{unit=units.find(u=>u.id===ws.value);note(null);await loadData();render()};
+ const cc=$("copyCode");if(cc)cc.onclick=async()=>{try{await navigator.clipboard.writeText(unit.join_code);cc.textContent="Copiato ✓"}catch(_){cc.textContent=unit.join_code}};
  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;note(null);render()});
  document.querySelectorAll("[data-month]").forEach(b=>b.onclick=async()=>{cursor=new Date(cursor.getFullYear(),cursor.getMonth()+Number(b.dataset.month),1);note(null);await loadData();render()});
- document.querySelectorAll("[data-approve]").forEach(b=>b.onclick=()=>run(sb.from("coord_members").update({status:"approved"}).eq("id",b.dataset.approve),"Richiesta approvata."));
- document.querySelectorAll("[data-reject]").forEach(b=>b.onclick=()=>run(sb.from("coord_members").update({status:"rejected"}).eq("id",b.dataset.reject),"Richiesta rifiutata."));
- document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=async()=>{
-  if(!confirm("Rimuovere questa persona dal reparto? I suoi turni assegnati verranno eliminati."))return;
-  const r=await sb.from("coord_assignments").delete().eq("ward_id",ward.id).eq("user_id",b.dataset.uid);
-  if(r.error){note("Operazione non riuscita: "+r.error.message,"error");render();return}
-  await run(sb.from("coord_members").delete().eq("id",b.dataset.remove),"Persona rimossa dal reparto.");
- });
- document.querySelectorAll("[data-confirm]").forEach(b=>b.onclick=()=>{const [from,to]=range();run(sb.from("coord_availability").update({confirmed:b.dataset.set==="1"}).eq("ward_id",ward.id).eq("user_id",b.dataset.confirm).gte("day",from).lte("day",to),b.dataset.set==="1"?"Disponibilità confermate.":"Disponibilità riaperte.")});
- const ca=$("confirmAll");if(ca)ca.onclick=()=>{const [from,to]=range();run(sb.from("coord_availability").update({confirmed:true}).eq("ward_id",ward.id).gte("day",from).lte("day",to),"Tutte le disponibilità del mese sono confermate.")};
+ document.querySelectorAll("[data-approve]").forEach(b=>b.onclick=()=>review(b.dataset.approve,"approve","Richiesta approvata."));
+ document.querySelectorAll("[data-reject]").forEach(b=>b.onclick=()=>review(b.dataset.reject,"reject","Richiesta rifiutata."));
+ document.querySelectorAll("[data-promote]").forEach(b=>b.onclick=()=>{if(confirm("Rendere questa persona coordinatrice del reparto? Potrà gestire personale e turni."))review(b.dataset.promote,"promote","Ora è coordinatrice del reparto.")});
+ document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{if(confirm("Rimuovere questa persona dal reparto? I suoi turni e le sue disponibilità in questo reparto verranno eliminati."))review(b.dataset.remove,"remove","Persona rimossa dal reparto.")});
+ document.querySelectorAll("[data-confirm]").forEach(b=>b.onclick=()=>{const [from,to]=range();run(sb.rpc("review_unit_availability",{p_unit:unit.id,p_user:b.dataset.confirm,p_from:from,p_to:to,p_status:b.dataset.set}),b.dataset.set==="confirmed"?"Disponibilità confermate.":"Disponibilità riaperte.")});
+ const ca=$("confirmAll");if(ca)ca.onclick=async()=>{
+  const [from,to]=range(),ids=nurses().filter(p=>Object.values(av).some(r=>r.user_id===p.user_id&&!r.confirmed)).map(p=>p.user_id);
+  const res=await Promise.all(ids.map(id=>sb.rpc("review_unit_availability",{p_unit:unit.id,p_user:id,p_from:from,p_to:to,p_status:"confirmed"})));
+  const bad=res.find(r=>r.error);
+  if(bad){note("Operazione non riuscita: "+bad.error.message,"error");await loadData();render();return}
+  note("Tutte le disponibilità del mese sono confermate.","");await loadData();render();
+ };
  document.querySelectorAll("[data-cell]").forEach(b=>b.onclick=()=>openCell(b.dataset.cell,b.dataset.day));
  const pp=$("printPlan");if(pp)pp.onclick=()=>window.print();
  const tp=$("togglePub");if(tp)tp.onclick=()=>{
   const [from,to]=range(),next=!monthPub;
   if(next&&!confirm("Pubblicare i turni del mese? Gli infermieri potranno vederli."))return;
-  run(sb.from("coord_assignments").update({published:next}).eq("ward_id",ward.id).gte("day",from).lte("day",to),next?"Turni pubblicati.":"Pubblicazione ritirata.");
+  run(sb.rpc("publish_unit_shifts",{p_unit:unit.id,p_from:from,p_to:to,p_published:next}),next?"Turni pubblicati.":"Pubblicazione ritirata.");
  };
 }
 function openCell(uid,day){
- const p=members.find(x=>x.user_id===uid),cur=as[uid+"|"+day]?.code||"",r=av[uid+"|"+day],d=new Date(day+"T12:00:00");
+ const p=roster.find(x=>x.user_id===uid),cur=as[uid+"|"+day]?.code||"",r=av[uid+"|"+day],d=new Date(day+"T12:00:00");
  const dlg=$("cellDlg");
- dlg.innerHTML='<h2 style="margin:0">'+safe(p.display_name)+'</h2><div class="muted">'+d.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"})+'</div><p>'+(r?"Disponibilità: <b>"+PREF_TXT[r.preference]+"</b>"+(r.confirmed?" (confermata)":" (non ancora confermata)"):"Nessuna disponibilità indicata.")+'</p><div class="opts">'+[["","Nessuno"],["M","M Mattina"],["P","P Pomeriggio"],["G","G Giornata"],["N","N Notte"],["R","R Riposo"]].map(([c,l])=>'<button type="button" data-code="'+c+'" class="'+(cur===c?"on":"")+'">'+l+"</button>").join("")+'</div><button class="btn secondary" type="button" id="cellClose">Chiudi</button>';
+ dlg.innerHTML='<h2 style="margin:0">'+safe(p.display_name)+'</h2><div class="muted">'+d.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"})+'</div><p>'+(r?"Disponibilità: <b>"+PREF_TXT[r.choice]+"</b>"+(r.confirmed?" (confermata)":" (non ancora confermata)"):"Nessuna disponibilità indicata.")+'</p><div class="opts">'+[["","Nessuno"],["M","M Mattina"],["P","P Pomeriggio"],["G","G Giornata"],["N","N Notte"],["R","R Riposo"]].map(([c,l])=>'<button type="button" data-code="'+c+'" class="'+(cur===c?"on":"")+'">'+l+"</button>").join("")+'</div><button class="btn secondary" type="button" id="cellClose">Chiudi</button>';
  dlg.querySelectorAll("[data-code]").forEach(b=>b.onclick=async()=>{dlg.close();await setCell(uid,day,b.dataset.code)});
  $("cellClose").onclick=()=>dlg.close();
  dlg.showModal();
 }
 async function setCell(uid,day,code){
  const existing=as[uid+"|"+day];let res;
- if(!code){if(!existing)return;res=await sb.from("coord_assignments").delete().eq("ward_id",ward.id).eq("user_id",uid).eq("day",day)}
- else if(existing){if(existing.code===code)return;res=await sb.from("coord_assignments").update({code}).eq("ward_id",ward.id).eq("user_id",uid).eq("day",day)}
- else res=await sb.from("coord_assignments").insert({ward_id:ward.id,user_id:uid,day,code,published:monthPub});
+ const where=q=>q.eq("unit_id",unit.id).eq("user_id",uid).eq("shift_date",day);
+ if(!code){if(!existing)return;res=await where(sb.from("unit_shifts").delete())}
+ else if(existing){if(existing.code===code)return;res=await where(sb.from("unit_shifts").update({code,updated_at:new Date().toISOString()}))}
+ else res=await sb.from("unit_shifts").insert({unit_id:unit.id,user_id:uid,shift_date:day,code,published:monthPub});
  if(res.error){note("Salvataggio non riuscito: "+res.error.message,"error");render();return}
  note(null);
  const k=uid+"|"+day;
