@@ -39,8 +39,8 @@ body.has-nav{min-width:0;overflow-x:hidden;background:var(--bg);color:var(--navy
 .top .brand{display:flex;align-items:center;gap:9px;color:#0057B7;font-size:17px;font-weight:800;text-decoration:none}
 .top .brand img{width:42px;height:42px;object-fit:contain}
 .brand-text{display:flex;flex-direction:column;line-height:1.1}
-.brand-name{font-size:18px;font-weight:850;color:var(--navy)}
-.brand-shift{color:var(--gold,#f2bd36)}
+.top .brand .brand-name{font-size:18px;font-weight:850;color:var(--navy)}
+.top .brand .brand-shift{color:var(--gold,#f2bd36)}
 .brand-text small{font-size:10px;letter-spacing:.06em;color:var(--muted);font-weight:650;margin-top:4px}
 .top .links{display:flex;gap:8px;flex-wrap:wrap}
 .top .links a{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--navy);text-decoration:none;font-weight:650;font-size:13px}
@@ -81,6 +81,8 @@ function mountDemoNavigation(){
   +'<div class="side-account"><button type="button" class="side-account-btn"><span class="sa-avatar">GD</span><span class="sa-name">Giulia Demo</span></button></div>';
  nav.querySelectorAll("[data-page]").forEach(b=>b.addEventListener("click",()=>{go(b.dataset.page);nav.classList.remove("more-open");nav.querySelector(".nav-more-btn").setAttribute("aria-expanded","false");}));
  const more=nav.querySelector(".nav-more-btn");more.addEventListener("click",()=>{const open=nav.classList.toggle("more-open");more.setAttribute("aria-expanded",String(open));});
+ const brand=nav.querySelector(".side-brand");brand.addEventListener("click",()=>go("home"));brand.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go("home");}});
+ nav.querySelector(".side-account-btn").addEventListener("click",()=>go("profile"));
 }
 const $=id=>document.getElementById(id);
 const people=[
