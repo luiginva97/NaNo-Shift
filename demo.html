@@ -180,7 +180,7 @@ function bind(){
  document.querySelectorAll("[data-swap-approve]").forEach(b=>b.onclick=()=>{const s=state.swaps.find(x=>x.id===Number(b.dataset.swapApprove));if(s)s.status="Approvato · calendario aggiornato nella demo";render();toast("Cambio turno approvato dal coordinatore.");});
  const pf=$("profileform");if(pf)pf.onsubmit=e=>{e.preventDefault();toast("Profilo aggiornato nella demo.");};
  const qf=$("quickform");if(qf)qf.onsubmit=e=>{e.preventDefault();state.shifts[$("quickperson").value+"|"+$("quickdate").value]=$("quickcode").value;toast("Turno assegnato nella demo.");};
- document.querySelectorAll("[data-confirm-av]").forEach(b=>b.onclick=()=>toast("Disponibilità confermate nella demo."));
+ document.querySelectorAll("[data-confirm-av]").forEach(b=>b.onclick=()=>{state.confirmedAvailability=people.filter(p=>p.id!=="p1").map(p=>p.id);render();toast("Disponibilità di reparto confermate nella demo.");});
  const uf=$("unitform");if(uf)uf.onsubmit=e=>{e.preventDefault();state.unitRequest=true;render();toast("Richiesta struttura inviata al Master (demo).");};
  document.querySelectorAll("[data-unit-approve]").forEach(b=>b.onclick=()=>{state.unitRequest=false;render();toast("Struttura approvata dal Master nella demo.");});
  const sf=$("swapform");if(sf)sf.onsubmit=e=>{e.preventDefault();const to=people.find(p=>p.id===$("swapto").value);state.swaps.push({id:Date.now(),who:"Giulia Demo",to:to.name,date:"24/11",from:"N",target:"M",status:"In attesa del collega"});render();toast("Richiesta demo inviata.");};
