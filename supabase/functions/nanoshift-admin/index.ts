@@ -97,21 +97,12 @@ Deno.serve(async (req: Request) => {
     const { data: unit, error: unitError } = await admin.from("units")
       .select("id,approval_status").eq("id", unitId).maybeSingle();
     if (unitError || !unit || unit.approval_status !== "pending") return json({ error: "Richiesta non più disponibile" }, 409);
-    if (decision === "approve") {
-      const { error: approveError } = await admin.from("units")
-        .update({ approval_status: "approved" }).eq("id", unitId);
-      if (approveError) return json({ error: "Approvazione struttura non riuscita" }, 500);
-      const { error: memberError } = await admin.from("unit_members")
-        .update({ status: "active" }).eq("unit_id", unitId).eq("unit_role", "coordinator").eq("status", "pending");
-      if (memberError) return json({ error: "Struttura approvata, ma attivazione coordinatore da verificare" }, 500);
-    } else {
-      const { error: rejectError } = await admin.from("units")
-        .update({ approval_status: "rejected" }).eq("id", unitId);
-      if (rejectError) return json({ error: "Rifiuto struttura non riuscito" }, 500);
-      const { error: memberError } = await admin.from("unit_members")
-        .delete().eq("unit_id", unitId).eq("unit_role", "coordinator").eq("status", "pending");
-      if (memberError) return json({ error: "Struttura rifiutata, ma richiesta coordinatore da verificare" }, 500);
-    }
+    const { error: reviewError } = await admin.rpc("review_unit_approval", {
+      p_unit: unitId,
+      p_approve: decision === "approve",
+      p_master: user.id
+    });
+    if (reviewError) return json({ error: reviewError.message || "Revisione struttura non riuscita" }, 409);
     return json({ success: true });
   }
 
