@@ -3,7 +3,7 @@
 Applicazione web per la gestione personale dei turni e la condivisione dei turni con gruppi di colleghi.
 
 ## Pagine
-- `demo.html`: demo pubblica interattiva, con dati sintetici e funzioni simulate, separata da Supabase. Riutilizza le icone SVG, il marchio e la navigazione responsive condivisi (`nav.js`, `nav.css`, `ui.css`) per mantenere la stessa cornice grafica dell'app reale.
+- `demo.html`: demo pubblica interattiva, con dati sintetici e funzioni simulate, separata da Supabase. Riutilizza le icone SVG, il marchio e la navigazione responsive condivisi (`nav.js`, `nav.css`, `ui.css`) per mantenere la stessa cornice grafica dell'app reale. Include un selettore di ruolo **Operatrice / Coordinatrice**: la modalità coordinatrice mostra gestione e approvazione del personale, conferma disponibilità, pianificazione e assegnazione rapida dei turni, controlli di copertura, pubblicazione e stampa, approvazione cambi turno, scadenze professionali, inviti e modelli di sede. Tutte le azioni usano dati fittizi e restano locali alla demo.
 - `index.html`: accesso e registrazione.
 - `accesso.html`: pagina di accesso compatibile con i link di autenticazione e invito.
 - `dashboard.html`: calendario, turni, riepiloghi, impostazioni del profilo, gruppi e notifiche.
