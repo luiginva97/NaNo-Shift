@@ -17,7 +17,7 @@
   {id:"users",label:"Utenti",href:"admin.html",adminOnly:true,icon:svg('<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><circle cx="12" cy="10" r="2.2"/><path d="M8.5 16.5c.8-1.6 2-2.3 3.5-2.3s2.7.7 3.5 2.3"/>')},
   {id:"profile",label:"Dati utente",section:"profileView",icon:svg('<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>')}
  ];
- const DEFAULT=["overview","calendar","groups","ward","coord","list","sites","tax","docs","cvs","users","profile"];
+ const DEFAULT=["overview","calendar","groups","ward","demo","coord","list","sites","tax","docs","cvs","users","profile"];
  const DEFAULT_COORD=["coord","ward","cvs","overview","calendar","groups","list","sites","tax","docs","users","profile"];
  const PRIMARY=4;
  const byId=Object.fromEntries(ITEMS.map(i=>[i.id,i]));
