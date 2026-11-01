@@ -66,7 +66,9 @@
  body.print-calendar #calendar .G,
  body.print-calendar #calendar .N,
  body.print-calendar #calendar .R{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
- body.print-calendar #listSection{display:block!important}
+ body.print-calendar:not(.print-calendar-list) #listSection{display:none!important}
+ body.print-calendar.print-calendar-list #calendar{display:none!important}
+ body.print-calendar.print-calendar-list #listSection{display:block!important}
  body.print-calendar #listSection[data-print-active="true"],
  body.print-calendar #listSection[data-print-active="true"] *{visibility:visible!important}
  body.print-calendar #listSection[data-print-active="true"]{position:absolute!important;left:0!important;top:0!important;width:100%!important;margin:0!important;padding:12mm 0 0!important;box-shadow:none!important;border:0!important}
@@ -353,7 +355,8 @@ function printCalendar(){
  host.dataset.printTitle=title;
  if(view==="list")host.dataset.printActive="true";
  document.body.classList.add("print-calendar");
- const cleanup=()=>{document.body.classList.remove("print-calendar");delete host.dataset.printTitle;delete host.dataset.printActive;window.removeEventListener("afterprint",cleanup)};
+ if(view==="list")document.body.classList.add("print-calendar-list");
+ const cleanup=()=>{document.body.classList.remove("print-calendar","print-calendar-list");delete host.dataset.printTitle;delete host.dataset.printActive;window.removeEventListener("afterprint",cleanup)};
  window.addEventListener("afterprint",cleanup,{once:true});
  window.print();
  setTimeout(cleanup,1500);
