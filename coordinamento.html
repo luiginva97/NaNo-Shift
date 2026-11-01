@@ -85,6 +85,26 @@ dialog{border:0;border-radius:18px;width:min(420px,calc(100% - 24px));padding:20
  .print-target th,.print-target td{min-width:0!important;overflow:hidden!important}
  .print-target .printonly{display:block!important}
 }
+@media print{
+ @page{size:A4 landscape;margin:6mm}
+ html,body{width:100%!important;height:auto!important;background:#fff!important;margin:0!important;padding:0!important}
+ body.printing-plan *{visibility:hidden!important}
+ body.printing-plan .print-target,
+ body.printing-plan .print-target *{visibility:visible!important}
+ body.printing-plan .print-target{
+  display:block!important;position:absolute!important;left:0!important;top:0!important;
+  width:100%!important;max-width:none!important;margin:0!important;padding:0!important;
+  border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important;
+ }
+ body.printing-plan .print-target .noprint{display:none!important}
+ body.printing-plan .print-target .scroll{display:block!important;overflow:visible!important;max-height:none!important;border:0!important;margin:0!important}
+ body.printing-plan .print-target table{display:table!important;width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:collapse!important}
+ body.printing-plan .print-target thead{display:table-header-group!important}
+ body.printing-plan .print-target tr{break-inside:avoid!important;page-break-inside:avoid!important}
+ body.printing-plan .print-target th,body.printing-plan .print-target td{min-width:0!important;overflow:hidden!important}
+ body.printing-plan .print-target .printonly{display:block!important;margin:0 0 2mm!important}
+ body.printing-plan .print-target .pill{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+}
 </style>
 </head>
 <body>
@@ -316,7 +336,13 @@ const review=(uid,action,okText)=>run(sb.rpc("review_unit_member",{p_unit:unit.i
 function printPlan(){
  const source=document.querySelector(".print-target");
  if(!source){alert("La tabella dei turni non è disponibile.");return}
- window.print();
+ document.body.classList.add("printing-plan");
+ const cleanup=()=>{
+  document.body.classList.remove("printing-plan");
+  window.removeEventListener("afterprint",cleanup);
+ };
+ window.addEventListener("afterprint",cleanup,{once:true});
+ requestAnimationFrame(()=>window.print());
 }
 function bind(){
  const wf=$("wardForm");if(wf)wf.onsubmit=async e=>{
