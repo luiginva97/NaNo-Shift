@@ -117,13 +117,22 @@ async function loadMemberships(){
   await loadMonth();
  }else isActualMember=false;
 }
+let myLeaves=[];
+function leaveCard(){
+ const lab={ferie:"Ferie",permesso:"Permesso",altro:"Altro"},st={pending:"In attesa",approved:"Approvata",rejected:"Non approvata",cancelled:"Annullata"};
+ const f=d=>new Date(d+"T12:00:00").toLocaleDateString("it-IT",{day:"numeric",month:"short"});
+ return '<section class="panel"><h2>Ferie e permessi</h2><p class="muted">Invia una richiesta al coordinamento: se approvata, i giorni risultano «non disponibile» e non ti vengono assegnati turni.</p><form id="leaveForm" class="row"><div class="field"><label for="lvKind">Tipo</label><select id="lvKind"><option value="ferie">Ferie</option><option value="permesso">Permesso</option><option value="altro">Altro</option></select></div><div class="field"><label for="lvFrom">Dal</label><input id="lvFrom" type="date" required></div><div class="field"><label for="lvTo">Al</label><input id="lvTo" type="date" required></div><div class="field"><label for="lvNote">Nota (facoltativa)</label><input id="lvNote" maxlength="200"></div><button class="btn" type="submit">Invia richiesta</button></form>'
+ +myLeaves.map(l=>'<div class="item"><span>'+lab[l.kind]+' · '+f(l.start_date)+' → '+f(l.end_date)+'</span><span><b>'+st[l.status]+'</b>'+(l.status==="pending"?' <button class="btn small secondary" data-leave-cancel="'+l.id+'">Annulla</button>':'')+'</span></div>').join("")+'</section>';
+}
 async function loadMonth(){
  const [from,to]=range();
  const [a,s,r]=await Promise.all([
   sb.from("unit_availability").select("day,choice,review_status").eq("unit_id",unit.id).eq("user_id",user.id).gte("day",from).lte("day",to),
   sb.from("unit_shifts").select("user_id,shift_date,code").eq("unit_id",unit.id).eq("published",true).gte("shift_date",from).lte("shift_date",to),
-  sb.rpc("get_unit_roster_with_phone",{p_unit:unit.id})
+  sb.rpc("get_unit_roster_full",{p_unit:unit.id}).then(x=>x.error?sb.rpc("get_unit_roster_with_phone",{p_unit:unit.id}):x)
  ]);
+ const lv=await sb.from("unit_leave_requests").select("id,start_date,end_date,kind,note,status").eq("unit_id",unit.id).eq("user_id",user.id).order("created_at",{ascending:false}).limit(10);
+ myLeaves=lv.error?[]:(lv.data||[]);
  const {data:swapData,error:swapError}=await sb.from("unit_shift_swap_requests").select("*").eq("unit_id",unit.id).order("created_at",{ascending:false}).limit(30);
  const errs=[a.error,s.error,r.error,swapError].filter(Boolean).map(e=>e.message);
  if(errs.length)note("Errore di caricamento: "+errs.join(" · "),"error");
@@ -148,7 +157,7 @@ function availView(){
 }
 function scheduleView(){
  const y=cursor.getFullYear(),m=cursor.getMonth(),n=dim();
- if(!schedule.length)return '<section class="panel"><h2>Turni del reparto</h2><p class="muted">La coordinatrice non ha ancora pubblicato i turni di questo mese.</p></section>';
+ if(!schedule.length)return '<section class="panel"><h2>Turni del reparto</h2><p class="muted">Il coordinamento non ha ancora pubblicato i turni di questo mese.</p></section>';
  const mine=schedule.filter(r=>r.user_id===user.id).sort((a,b)=>a.day.localeCompare(b.day));
  const people=[...new Map(schedule.map(r=>[r.user_id,r.display_name])).entries()].sort((a,b)=>(a[0]===user.id?-1:b[0]===user.id?1:String(a[1]).localeCompare(String(b[1]),"it")));
  const by={};schedule.forEach(r=>{by[r.user_id+"|"+r.day]=r.code});
@@ -195,13 +204,20 @@ function render(){
  h+='<div class="tabs"><button data-tab="avail" class="'+(tab==="avail"?"active":"")+'">Disponibilità</button><button data-tab="sched" class="'+(tab==="sched"?"active":"")+'">Turni pubblicati</button></div>';
  if(isActualMember)h+='<div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn secondary" id="leaveUnit">Lascia il reparto</button></div>';
  h+='<div class="monthnav"><button data-month="-1" aria-label="Mese precedente">‹</button><strong>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</strong><button data-month="1" aria-label="Mese successivo">›</button></div>';
- h+=tab==="avail"?availView():scheduleView();
+ h+=tab==="avail"?availView()+leaveCard():scheduleView();
  if(tab==="sched")h+=swapView();
  h+=contactsView();
  h+=joinCard().replace('<section class="panel"><h2>Entra in un reparto</h2>','<section class="panel"><h2>Entra in un altro reparto</h2>');
  app.innerHTML=h;bind();
 }
 function bind(){
+ const lf=$("leaveForm");if(lf)lf.onsubmit=async e=>{e.preventDefault();
+  const from=$("lvFrom").value,to=$("lvTo").value;if(!from||!to||to<from){note("Controlla le date.","error");render();return}
+  const {error}=await sb.rpc("create_unit_leave",{p_unit:unit.id,p_start:from,p_end:to,p_kind:$("lvKind").value,p_note:$("lvNote").value});
+  if(error){note("Richiesta non inviata: "+error.message,"error");render();return}
+  note("Richiesta inviata al coordinamento.","");await loadMonth();render()};
+ document.querySelectorAll("[data-leave-cancel]").forEach(b=>b.onclick=async()=>{const {error}=await sb.rpc("cancel_unit_leave",{p_request:b.dataset.leaveCancel});
+  if(error)note(error.message,"error");else note("Richiesta annullata.","");await loadMonth();render()});
  const jf=$("joinForm");if(jf)jf.onsubmit=async e=>{
   e.preventDefault();const {error}=await sb.rpc("request_join_unit",{p_code:$("code").value,p_staff_role:$("joinRole").value});
   if(error)note(error.message,"error");else note("Richiesta inviata: attendi l'approvazione della coordinatrice.","");

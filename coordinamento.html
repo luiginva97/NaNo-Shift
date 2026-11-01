@@ -68,6 +68,7 @@ dialog{border:0;border-radius:18px;width:min(420px,calc(100% - 24px));padding:20
 
 /* Responsive polish: coordinatore */
 @media(max-width:700px){.top{align-items:flex-start;flex-direction:column;padding:12px}.brand{font-size:15px;flex-wrap:wrap}.brand img{width:124px;max-height:38px}.links{width:100%}.links a{flex:1;text-align:center;font-size:13px;padding:8px 7px}.wrap{padding:12px 10px 36px}.panel{padding:12px;border-radius:13px}.scroll{max-height:65vh}th:first-child,td:first-child{min-width:108px}.monthnav strong{min-width:125px}.opts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cov.short{background:#fee4e2!important;color:#b42318;font-weight:800}
 </style>
 <link rel="stylesheet" href="ui.css"><link rel="stylesheet" href="nav.css">
 <style>
@@ -111,7 +112,7 @@ const range=()=>[ymd(cursor.getFullYear(),cursor.getMonth(),1),ymd(cursor.getFul
 const recalcPub=()=>{const f=range()[0],r=Object.values(as).filter(x=>x.day>=f);monthPub=r.length>0&&r.every(x=>x.published)};
 const roleLabel=r=>r==='oss'?'OSS':'Infermiere';
 const roleChip=r=>'<span class="rolechip '+(r==='oss'?'oss':'inf')+'">'+roleLabel(r)+'</span>';
-let invites=[];
+let invites=[],leaves=[];
 const approved=()=>roster.filter(m=>m.status==="active");
 const nurses=()=>roster.filter(m=>m.status==="active"&&(m.unit_role==="nurse"||m.user_id===user?.id));
 const pending=()=>roster.filter(m=>m.status==="pending"&&m.unit_role==="nurse");
@@ -143,16 +144,37 @@ async function loadUnits(keepId){
  unit=units.find(u=>u.id===want)||units[0]||null;
  if(unit)await loadData();
 }
+async function rosterRpc(){
+ const full=await sb.rpc("get_unit_roster_full",{p_unit:unit.id});
+ if(!full.error)return full;
+ return sb.rpc("get_unit_roster_with_phone",{p_unit:unit.id});
+}
+const need=c=>Number(unit?.cov?.[c])||0;
+const needSum=()=>WORK.reduce((x,c)=>x+need(c),0);
+function csvEsc(v){v=String(v??"");return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function exportCsv(){
+ const a=approved(),n=dim(),y=cursor.getFullYear(),m=cursor.getMonth();
+ const head=["Persona","Ruolo"].concat(Array.from({length:n},(_,i)=>i+1+" "+WD[new Date(y,m,i+1).getDay()]),["Ore"]);
+ const rows=a.map(p=>{let h=0;const cells=Array.from({length:n},(_,i)=>{const c=as[p.user_id+"|"+ymd(y,m,i+1)]?.code||"";h+=SHIFT_HOURS[c]||0;return c});return [p.display_name,roleLabel(p.staff_role)].concat(cells,[h])});
+ const csv="\ufeff"+[head].concat(rows).map(r=>r.map(csvEsc).join(";")).join("\r\n");
+ const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+ const el=document.createElement("a");el.href=url;el.download="turni-"+y+"-"+pad(m+1)+".csv";document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+const monthHoursDue=p=>p.weekly_hours?Math.round(Number(p.weekly_hours)*dim()/7*10)/10:null;
 async function loadData(){
  const [from,to]=range(),prev=new Date(cursor.getFullYear(),cursor.getMonth(),-6);
- const [r,a,s,iv,sw,ex]=await Promise.all([
-  sb.rpc("get_unit_roster_with_phone",{p_unit:unit.id}),
+ const [r,a,s,iv,sw,ex,lv,cv]=await Promise.all([
+  rosterRpc(),
   sb.from("unit_availability").select("user_id,day,choice,review_status").eq("unit_id",unit.id).gte("day",from).lte("day",to),
   sb.from("unit_shifts").select("user_id,shift_date,code,published").eq("unit_id",unit.id).gte("shift_date",keyOf(prev)).lte("shift_date",to),
   sb.from("unit_invitations").select("id,staff_role,label,created_at,expires_at,accepted_at,revoked_at").eq("unit_id",unit.id).order("created_at",{ascending:false}).limit(30),
   sb.from("unit_shift_swap_requests").select("id,requester_id,target_id,requester_shift_date,target_shift_date,message,status,created_at").eq("unit_id",unit.id).order("created_at",{ascending:false}).limit(50),
-  sb.rpc("get_unit_document_expiries",{p_unit:unit.id})
+  sb.rpc("get_unit_document_expiries",{p_unit:unit.id}),
+  sb.from("unit_leave_requests").select("id,user_id,start_date,end_date,kind,note,status").eq("unit_id",unit.id).order("created_at",{ascending:false}).limit(60),
+  sb.from("units").select("coverage").eq("id",unit.id).maybeSingle()
  ]);
+ leaves=lv.error?[]:(lv.data||[]);
+ unit.cov=(cv&&!cv.error&&cv.data&&cv.data.coverage)||{M:0,P:0,G:0,N:0};
  invites=iv.error?[]:(iv.data||[]);
  swapRequests=sw.error?[]:(sw.data||[]);
  expiryRows=ex.error?[]:(ex.data||[]);
@@ -194,13 +216,13 @@ function homeView(){
  const noAv=a.filter(p=>!Object.values(av).some(r=>r.user_id===p.user_id)).length;
  const w=Object.keys(warnings()).length;
  const monthShifts=Object.values(as).filter(x=>x.day>=from&&x.day<=to),pub=monthShifts.filter(x=>x.published).length;
- const gaps=[];for(let d=1;d<=dim();d++){const k=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(k<today)continue;const cov=a.filter(p=>["M","P","G","N"].includes(as[p.user_id+"|"+k]?.code)).length;if(cov<2)gaps.push(d)}
+ const gaps=[];for(let d=1;d<=dim();d++){const k=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(k<today)continue;const cnt=c=>a.filter(p=>as[p.user_id+"|"+k]?.code===c).length;const tot=a.filter(p=>WORK.includes(as[p.user_id+"|"+k]?.code)).length;if(needSum()?WORK.some(c=>need(c)&&cnt(c)<need(c)):tot<2)gaps.push(d)}
  const sh=c=>approved().filter(p=>as[p.user_id+"|"+today]?.code===c).map(p=>safe(p.display_name)+(p.staff_role==="oss"?" <small class=\"muted\">OSS</small>":""));
  const row=(l,names)=>'<div class="item"><b>'+l+'</b><span>'+(names.length?names.join(", "):'<span class="muted">—</span>')+'</span></div>';
  const stat=(n,l,tabId,warn)=>'<button class="statcard'+(warn?" warn":"")+'" data-tab="'+tabId+'"><b>'+n+'</b><span>'+l+'</span></button>';
  return '<section class="statgrid">'+stat(np,"richieste di ingresso","req",np>0)+stat(toConfirm,"persone con disponibilità da confermare","avail",toConfirm>0)+stat(noAv,"senza disponibilità questo mese","avail",false)+stat(w,"avvisi nei turni","plan",w>0)+'</section>'
  +'<section class="panel"><h2>Oggi · '+new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"})+'</h2>'+row("Mattina",sh("M"))+row("Pomeriggio",sh("P"))+row("Giornata",sh("G"))+row("Notte",sh("N"))+row("Riposo",sh("R"))+'</section>'
- +'<section class="panel"><h2>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2><div class="item"><span>Personale</span><b>'+inf+' infermieri · '+oss+' OSS</b></div><div class="item"><span>Turni assegnati</span><b>'+monthShifts.length+' ('+pub+' pubblicati)</b></div><div class="item"><span>Giorni con meno di 2 persone in servizio</span><b>'+(gaps.length?gaps.length+" · dal "+gaps[0]:"nessuno")+'</b></div></section>';
+ +'<section class="panel"><h2>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2><div class="item"><span>Personale</span><b>'+inf+' infermieri · '+oss+' OSS</b></div><div class="item"><span>Turni assegnati</span><b>'+monthShifts.length+' ('+pub+' pubblicati)</b></div><div class="item"><span>'+(needSum()?"Giorni sotto il fabbisogno minimo":"Giorni con meno di 2 persone in servizio")+'</span><b>'+(gaps.length?gaps.length+" · dal "+gaps[0]:"nessuno")+'</b></div></section>';
 }
 function requestsView(){
  const p=pending();
@@ -216,8 +238,8 @@ function inviteCard(){
 function staffView(){
  const a=approved(),inf=a.filter(m=>m.staff_role!=="oss").length,oss=a.length-inf;
  const rows=a.map(m=>m.unit_role==="coordinator"
-  ?'<div class="item"><span><b>'+safe(m.display_name)+'</b> '+roleChip(m.staff_role)+'</span><span class="muted">Coordinatore'+(m.user_id===user.id?" (tu)":"")+'</span></div>'
-  :'<div class="item"><span><b>'+safe(m.display_name)+'</b> '+roleChip(m.staff_role)+'</span><span class="actions-inline"><select data-role-of="'+m.user_id+'" aria-label="Ruolo di '+safe(m.display_name)+'"><option value="infermiere"'+(m.staff_role!=="oss"?" selected":"")+'>Infermiere</option><option value="oss"'+(m.staff_role==="oss"?" selected":"")+'>OSS</option></select> <button class="btn small secondary" data-promote="'+m.user_id+'">Rendi coordinatore</button> <button class="btn small danger" data-remove="'+m.user_id+'">Rimuovi</button> '+whatsappButton(m)+'</span></div>').join("");
+  ?'<div class="item"><span><b>'+safe(m.display_name)+'</b> '+roleChip(m.staff_role)+'</span><span class="actions-inline"><span class="muted">Coordinatore'+(m.user_id===user.id?" (tu)":"")+'</span> '+(m.user_id===user.id?"":whatsappButton(m))+'</span></div>'
+  :'<div class="item"><span><b>'+safe(m.display_name)+'</b> '+roleChip(m.staff_role)+'</span><span class="actions-inline"><select data-role-of="'+m.user_id+'" aria-label="Ruolo di '+safe(m.display_name)+'"><option value="infermiere"'+(m.staff_role!=="oss"?" selected":"")+'>Infermiere</option><option value="oss"'+(m.staff_role==="oss"?" selected":"")+'>OSS</option></select> <input type="number" min="0" max="60" step="0.5" placeholder="ore/sett." value="'+(m.weekly_hours??"")+'" data-hours-of="'+m.user_id+'" aria-label="Ore settimanali di '+safe(m.display_name)+'" style="width:84px;padding:8px;border:1px solid var(--line);border-radius:9px"> <button class="btn small secondary" data-promote="'+m.user_id+'">Rendi coordinatore</button> <button class="btn small danger" data-remove="'+m.user_id+'">Rimuovi</button> '+whatsappButton(m)+'</span></div>').join("");
  return '<section class="panel"><h2>Personale ('+a.length+')</h2><p class="muted">'+inf+' infermier'+(inf===1?"e":"i")+' · '+oss+' OSS</p>'+(rows||'<p class="muted">Nessuno nel reparto. Invita qualcuno con un link o condividi il codice.</p>')+'</section>'+inviteCard();
 }
 function headRow(extraLabel="Totale"){
@@ -264,13 +286,28 @@ function planView(){
  }).join("")+'<td class="totalcol summarycell">—</td></tr>').join("");
  const cov=["M","P","G","N"].map(c=>'<tr class="covrow"><td>'+c+' coperti</td>'+Array.from({length:n},(_,i)=>{
   const k=ymd(y,m,i+1),cnt=a.filter(p=>as[p.user_id+"|"+k]?.code===c).length;
-  return '<td class="cov'+(cnt?"":" zero")+'">'+cnt+"</td>";
- }).join("")+'<td class="totalcol summarycell">—</td></tr>').join("");
+  return '<td class="cov'+(need(c)&&cnt<need(c)?" short":cnt?"":" zero")+'" title="'+(need(c)?"Minimo richiesto: "+need(c):"")+'">'+cnt+"</td>";
+ }).join("")+'<td class="totalcol summarycell">'+(need(c)?"min "+need(c):"—")+'</td></tr>').join("");
  const dailyHours=Array.from({length:n},(_,i)=>{const k=ymd(y,m,i+1);return a.reduce((sum,p)=>sum+(SHIFT_HOURS[as[p.user_id+"|"+k]?.code]||0),0)});
  const hoursRow='<tr class="covrow"><td>Ore assegnate</td>'+dailyHours.map(h=>'<td class="cov'+(h?"":" zero")+'">'+(h||"–")+'</td>').join("")+'<td class="totalcol summarycell"><b>'+fmtHours(dailyHours.reduce((x,h)=>x+h,0))+'</b></td></tr>';
  const wl=Object.keys(w).map(k=>{const [uid,day]=k.split("|"),p=a.find(x=>x.user_id===uid);return '<li>⚠ '+safe(p?p.display_name:"?")+", "+Number(day.slice(8))+"/"+Number(day.slice(5,7))+": "+safe(w[k].join(", "))+"</li>"}).join("");
  const total=Object.keys(as).filter(k=>k.split("|")[1]>=range()[0]).length;
- return '<section class="panel print-target"><div class="printonly"><h2>'+safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2></div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Turni del mese</h2><span><button class="btn secondary" id="printPlan">Stampa</button> <button class="btn secondary" id="generatePlan">Genera turni dalle disponibilità</button> <button class="btn" id="togglePub"'+(total?"":" disabled")+'>'+(monthPub?"Ritira pubblicazione":"Pubblica turni")+'</button></span></div><div class="legend"><span>Tocca una cella per assegnare il turno</span><span><b style="color:#d92d20">riquadro rosso</b> = avviso</span><span>sfondo rosa = non disponibile · lilla = vorrebbe riposo</span><span>Ore stimate: M 7 h · P 5 h · G 12 h · N 12 h</span><span>Stato: <b>'+(monthPub?"pubblicato":"non pubblicato")+'</b></span></div>'+(a.length?'<div class="scroll"><table>'+headRow("Ore mese")+body+availableRows+cov+hoursRow+'</table></div>':'<p class="muted">Approva almeno un infermiere per iniziare a pianificare.</p>')+quickAssignView(a)+(wl?'<ul class="warnlist">'+wl+"</ul>":"")+'</section>';
+ return '<section class="panel print-target"><div class="printonly"><h2>'+safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2></div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Turni del mese</h2><span><button class="btn secondary" id="exportCsv">Esporta Excel</button> <button class="btn secondary" id="printPlan">Stampa</button> <button class="btn secondary" id="generatePlan">Genera turni dalle disponibilità</button> <button class="btn" id="togglePub"'+(total?"":" disabled")+'>'+(monthPub?"Ritira pubblicazione":"Pubblica turni")+'</button></span></div><div class="legend"><span>Tocca una cella per assegnare il turno</span><span><b style="color:#d92d20">riquadro rosso</b> = avviso</span><span>sfondo rosa = non disponibile · lilla = vorrebbe riposo</span><span>Ore stimate: M 7 h · P 5 h · G 12 h · N 12 h</span><span>Stato: <b>'+(monthPub?"pubblicato":"non pubblicato")+'</b></span></div>'+(a.length?'<div class="scroll"><table>'+headRow("Ore mese")+body+availableRows+cov+hoursRow+'</table></div>':'<p class="muted">Approva almeno un infermiere per iniziare a pianificare.</p>')+coverageHoursView(a)+quickAssignView(a)+(wl?'<ul class="warnlist">'+wl+"</ul>":"")+'</section>';
+}
+function coverageHoursView(a){
+ const y=cursor.getFullYear(),m=cursor.getMonth(),n=dim();
+ const rows=a.map(p=>{let h=0;for(let i=1;i<=n;i++)h+=SHIFT_HOURS[as[p.user_id+"|"+ymd(y,m,i)]?.code]||0;const due=monthHoursDue(p);const bal=due==null?null:Math.round((h-due)*10)/10;
+  return '<div class="item"><span><b>'+safe(p.display_name)+'</b></span><span>'+fmtHours(h)+(due==null?' <small class="muted">· ore settimanali non impostate</small>':' / dovute '+fmtHours(due)+' · <b style="color:'+(bal>0?'#b54708':bal<0?'#1d4ed8':'#067647')+'">saldo '+(bal>0?'+':'')+fmtHours(bal)+'</b>')+'</span></div>'}).join("");
+ return '<div class="panel noprint"><h2>Fabbisogno minimo per turno</h2><p class="muted">Quante persone servono ogni giorno. Le celle sotto il minimo diventano rosse nella tabella e nel riepilogo.</p><form id="coverageForm" class="row">'+WORK.map(c=>'<div class="field"><label for="cv'+c+'">'+c+'</label><input id="cv'+c+'" type="number" min="0" max="50" value="'+need(c)+'" style="width:78px"></div>').join("")+'<button class="btn" type="submit">Salva fabbisogno</button></form></div>'
+ +'<div class="panel noprint"><h2>Ore programmate e saldo</h2><p class="muted">Confronto tra ore assegnate nel mese e ore dovute (ore settimanali impostate in Personale × giorni del mese ÷ 7).</p>'+(rows||'<p class="muted">Nessuna persona.</p>')+'</div>';
+}
+function leaveView(){
+ const nm=id=>roster.find(p=>p.user_id===id)?.display_name||"Persona";
+ const fmt=d=>new Date(d+"T12:00:00").toLocaleDateString("it-IT",{day:"numeric",month:"short"});
+ const open=leaves.filter(l=>l.status==="pending"),done=leaves.filter(l=>l.status!=="pending"&&l.status!=="cancelled").slice(0,15);
+ const lab={ferie:"Ferie",permesso:"Permesso",altro:"Altro"},st={approved:"Approvata",rejected:"Non approvata"};
+ return '<section class="panel"><h2>Ferie e permessi da approvare ('+open.length+')</h2><p class="muted">Approvando, i giorni diventano «non disponibile» confermati e il generatore non assegna turni.</p>'+(open.map(l=>'<div class="item"><span><b>'+safe(nm(l.user_id))+'</b> · '+lab[l.kind]+'<br><small class="muted">'+fmt(l.start_date)+' → '+fmt(l.end_date)+(l.note?' · '+safe(l.note):'')+'</small></span><span><button class="btn small" data-leave="approve" data-id="'+l.id+'">Approva</button> <button class="btn small secondary" data-leave="reject" data-id="'+l.id+'">Rifiuta</button></span></div>').join("")||'<p class="muted">Nessuna richiesta in attesa.</p>')+'</section>'
+ +(done.length?'<section class="panel"><h2>Ultime gestite</h2>'+done.map(l=>'<div class="item"><span>'+safe(nm(l.user_id))+' · '+lab[l.kind]+' · '+fmt(l.start_date)+' → '+fmt(l.end_date)+'</span><b>'+st[l.status]+'</b></div>').join("")+'</section>':'');
 }
 function quickAssignView(a){
  const [from,to]=range();
@@ -299,9 +336,9 @@ function render(){
  h+='<div id="wardBar"><h1>'+safe(unit.name)+'</h1><div class="row" style="align-items:center"><span class="muted">Codice reparto:</span><span class="code">'+safe(unit.join_code)+'</span><button class="btn secondary small" id="copyCode">Copia</button>'+(units.length>1?'<select id="wardSel" style="padding:8px;border-radius:9px;border:1px solid var(--line)">'+units.map(u=>'<option value="'+u.id+'"'+(u.id===unit.id?" selected":"")+">"+safe(u.name)+"</option>").join("")+"</select>":"")+"</div></div>";
  if(msg)h+='<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>";
  const np=pending().length;
- h+='<div class="tabs">'+[["home","Riepilogo"],["req","Richieste"+(np?'<span class="badge">'+np+"</span>":"")],["staff","Personale"],["avail","Disponibilità"],["plan","Turni"],["swaps","Cambi turno"+(swapRequests.some(r=>r.status==="pending"||r.status==="pending_approval")?" · "+swapRequests.filter(r=>r.status==="pending"||r.status==="pending_approval").length:"")],["expiries","Scadenze"+(expiryRows.length?" · "+expiryRows.length:"")]].map(([id,l])=>'<button data-tab="'+id+'" class="'+(tab===id?"active":"")+'">'+l+"</button>").join("")+"</div>";
+ h+='<div class="tabs">'+[["home","Riepilogo"],["req","Richieste"+(np?'<span class="badge">'+np+"</span>":"")],["staff","Personale"],["avail","Disponibilità"],["plan","Turni"],["leave","Ferie"+(leaves.some(l=>l.status==="pending")?" · "+leaves.filter(l=>l.status==="pending").length:"")],["swaps","Cambi turno"+(swapRequests.some(r=>r.status==="pending"||r.status==="pending_approval")?" · "+swapRequests.filter(r=>r.status==="pending"||r.status==="pending_approval").length:"")],["expiries","Scadenze"+(expiryRows.length?" · "+expiryRows.length:"")]].map(([id,l])=>'<button data-tab="'+id+'" class="'+(tab===id?"active":"")+'">'+l+"</button>").join("")+"</div>";
  if(tab==="avail"||tab==="plan")h+='<div class="monthnav"><button class="nav" data-month="-1" aria-label="Mese precedente">‹</button><strong>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</strong><button class="nav" data-month="1" aria-label="Mese successivo">›</button></div>';
- h+=tab==="home"?homeView():tab==="req"?requestsView():tab==="staff"?staffView():tab==="avail"?availView():tab==="plan"?planView():tab==="swaps"?swapsView():expiriesView();
+ h+=tab==="home"?homeView():tab==="req"?requestsView():tab==="staff"?staffView():tab==="avail"?availView():tab==="plan"?planView():tab==="swaps"?swapsView():tab==="leave"?leaveView():expiriesView();
  if(tab==="req")h+=inviteCard();
  if(tab==="req"||tab==="staff")h+=createCard();
  app.innerHTML=h;bind();
@@ -378,11 +415,24 @@ function bind(){
  };
  document.querySelectorAll("[data-cell]").forEach(b=>b.onclick=()=>openCell(b.dataset.cell,b.dataset.day));
  const gp=$("generatePlan");if(gp)gp.onclick=generatePlan;
+ const ex=$("exportCsv");if(ex)ex.onclick=exportCsv;
+ const cvf=$("coverageForm");if(cvf)cvf.onsubmit=async e=>{e.preventDefault();const o={};WORK.forEach(c=>o[c]=Number($("cv"+c).value)||0);
+  const {error}=await sb.rpc("set_unit_coverage",{p_unit:unit.id,p_coverage:o});
+  if(error){note("Fabbisogno non salvato: "+error.message+" (applica l'ultima migrazione del database)","error");render();return}
+  note("Fabbisogno salvato.","");await loadData();render()};
+ document.querySelectorAll("[data-hours-of]").forEach(i=>i.onchange=async()=>{const v=i.value===""?null:Number(i.value);
+  const {error}=await sb.rpc("set_member_hours",{p_unit:unit.id,p_user:i.dataset.hoursOf,p_hours:v});
+  if(error){note("Ore non salvate: "+error.message,"error");render();return}
+  note("Ore settimanali aggiornate.","");await loadData();render()});
+ document.querySelectorAll("[data-leave]").forEach(b=>b.onclick=async()=>{const ok=b.dataset.leave==="approve";
+  const {error}=await sb.rpc("review_unit_leave",{p_request:b.dataset.id,p_approve:ok});
+  if(error)note("Richiesta non gestita: "+error.message,"error");else note(ok?"Richiesta approvata: giorni segnati non disponibili.":"Richiesta rifiutata.","");
+  await loadData();render()});
  const pp=$("printPlan");if(pp)pp.onclick=printPlan;
  const tp=$("togglePub");if(tp)tp.onclick=()=>{
   const [from,to]=range(),next=!monthPub;
   if(next&&!confirm("Pubblicare i turni del mese? Gli infermieri potranno vederli."))return;
-  run(sb.rpc("publish_unit_shifts",{p_unit:unit.id,p_from:from,p_to:to,p_published:next}),next?"Turni pubblicati.":"Pubblicazione ritirata.");
+  run(sb.rpc("publish_unit_shifts",{p_unit:unit.id,p_from:from,p_to:to,p_published:next}),next?"Turni pubblicati. Il personale riceve un avviso.":"Pubblicazione ritirata.").then(ok=>{if(ok&&next)sb.rpc("notify_unit_published",{p_unit:unit.id,p_from:from,p_to:to})});
  };
 }
 async function generatePlan(){
