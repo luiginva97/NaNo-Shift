@@ -157,7 +157,7 @@ async function loadMonth(){
  const [from,to]=range();
  const [a,s,r]=await Promise.all([
   sb.from("unit_availability").select("day,choice,review_status").eq("unit_id",unit.id).eq("user_id",user.id).gte("day",from).lte("day",to),
-  sb.from("unit_shifts").select("user_id,shift_date,code").eq("unit_id",unit.id).eq("published",true).gte("shift_date",from).lte("shift_date",to),
+  sb.from("unit_shifts").select("user_id,shift_date,code,code2").eq("unit_id",unit.id).eq("published",true).gte("shift_date",from).lte("shift_date",to).then(x=>x.error?sb.from("unit_shifts").select("user_id,shift_date,code").eq("unit_id",unit.id).eq("published",true).gte("shift_date",from).lte("shift_date",to):x),
   sb.rpc("get_unit_roster_full",{p_unit:unit.id}).then(x=>x.error?sb.rpc("get_unit_roster_with_phone",{p_unit:unit.id}):x)
  ]);
  const lv=await sb.from("unit_leave_requests").select("id,start_date,end_date,kind,note,status").eq("unit_id",unit.id).eq("user_id",user.id).order("created_at",{ascending:false}).limit(10);
@@ -168,7 +168,7 @@ async function loadMonth(){
  avail={};orig={};review={};
  (a.data||[]).forEach(x=>{avail[x.day]=x.choice;orig[x.day]=x.choice;review[x.day]=x.review_status});
  rosterContacts=r.data||[];const names={};rosterContacts.forEach(x=>{names[x.user_id]=x.display_name});
- schedule=(s.data||[]).map(x=>({user_id:x.user_id,day:x.shift_date,code:x.code,display_name:names[x.user_id]||"Collega"}));swapRequests=swapData||[];
+ schedule=(s.data||[]).map(x=>({user_id:x.user_id,day:x.shift_date,code:x.code,code2:x.code2||"",display_name:names[x.user_id]||"Collega"}));swapRequests=swapData||[];
 }
 function joinCard(){
  const pending=units.filter(m=>m.unit_role==="nurse"&&m.status!=="active").map(m=>'<div class="item"><span><b>'+safe(m.name)+'</b></span><span class="muted">In attesa di approvazione del coordinamento</span></div>').join("");
@@ -198,18 +198,18 @@ function scheduleView(){
  if(!schedule.length)return '<section class="panel"><h2>Turni del reparto</h2><p class="muted">Il coordinamento non ha ancora pubblicato i turni di questo mese.</p></section>';
  const mine=schedule.filter(r=>r.user_id===user.id).sort((a,b)=>a.day.localeCompare(b.day));
  const people=[...new Map(schedule.map(r=>[r.user_id,r.display_name])).entries()].sort((a,b)=>(a[0]===user.id?-1:b[0]===user.id?1:String(a[1]).localeCompare(String(b[1]),"it")));
- const by={};schedule.forEach(r=>{by[r.user_id+"|"+r.day]=r.code});
+ const by={};schedule.forEach(r=>{by[r.user_id+"|"+r.day]=r.code+(r.code2||"")});
  let head="<tr><th>Persona</th>";for(let d=1;d<=n;d++){const wd=new Date(y,m,d).getDay();head+='<th class="'+(wd===0||wd===6?"we":"")+'">'+d+"</th>"}head+="</tr>";
- const body=people.map(([id,name])=>'<tr class="'+(id===user.id?"me":"")+'"><td>'+safe(name)+(id===user.id?" (tu)":"")+"</td>"+Array.from({length:n},(_,i)=>{const c=by[id+"|"+ymd(y,m,i+1)];return "<td>"+(c?'<span class="pill '+c+'">'+c+"</span>":"")+"</td>"}).join("")+"</tr>").join("");
+ const body=people.map(([id,name])=>'<tr class="'+(id===user.id?"me":"")+'"><td>'+safe(name)+(id===user.id?" (tu)":"")+"</td>"+Array.from({length:n},(_,i)=>{const c=by[id+"|"+ymd(y,m,i+1)];return "<td>"+(c?'<span class="pill '+c[0]+'">'+c+"</span>":"")+"</td>"}).join("")+"</tr>").join("");
  const HRS={M:7,P:5,G:12,N:12,R:0},TXT={M:"Mattina",P:"Pomeriggio",G:"Giornata",N:"Notte",R:"Riposo"},today=ymd(new Date().getFullYear(),new Date().getMonth(),new Date().getDate());
- const mineBy={};mine.forEach(r=>{mineBy[r.day]=r.code});
+ const mineBy={},mineBy2={};mine.forEach(r=>{mineBy[r.day]=r.code;mineBy2[r.day]=r.code2||""});
  const cnt={M:0,P:0,G:0,N:0,R:0};mine.forEach(r=>{if(cnt[r.code]!==undefined)cnt[r.code]++});
  const hours=mine.reduce((a,r)=>a+(HRS[r.code]||0),0),worked=mine.filter(r=>r.code!=="R").length;
  const next=mine.find(r=>r.day>=today&&r.code!=="R");
  const lead=(new Date(y,m,1).getDay()+6)%7;
  let grid=["Lun","Mar","Mer","Gio","Ven","Sab","Dom"].map(w=>'<div class="mh">'+w+'</div>').join("")+'<div class="mc empty"></div>'.repeat(lead);
  for(let d=1;d<=n;d++){const k=ymd(y,m,d),c=mineBy[k],wd=new Date(y,m,d).getDay();
-  grid+='<div class="mc'+(k===today?" today":"")+(wd===0||wd===6?" we":"")+(c?" has":"")+'"><span class="dn">'+d+'</span>'+(c?'<span class="pill '+c+'" title="'+TXT[c]+'">'+c+'</span><span class="tm">'+(c==="R"?"Riposo":SHIFT[c][0].slice(0,2)+"–"+SHIFT[c][1].slice(0,2))+'</span>':"")+'</div>'}
+  grid+='<div class="mc'+(k===today?" today":"")+(wd===0||wd===6?" we":"")+(c?" has":"")+'"><span class="dn">'+d+'</span>'+(c?'<span class="pill '+c+'" title="'+TXT[c]+'">'+c+(mineBy2[k]||"")+'</span><span class="tm">'+(c==="R"?"Riposo":SHIFT[c][0].slice(0,2)+"–"+SHIFT[c][1].slice(0,2))+'</span>':"")+'</div>'}
  const chips=["M","P","G","N","R"].filter(c=>cnt[c]).map(c=>'<span class="sumchip"><span class="pill '+c+'">'+c+'</span> '+cnt[c]+' '+TXT[c].toLowerCase()+'</span>').join("");
  const list='<div class="mysum"><div><b>'+worked+'</b><span>giorni di lavoro</span></div><div><b>'+hours+' h</b><span>ore programmate</span></div><div><b>'+(next?new Date(next.day+"T12:00:00").toLocaleDateString("it-IT",{weekday:"short",day:"numeric",month:"short"})+" · "+next.code:"—")+'</b><span>prossimo turno</span></div></div>'+(mine.length?'<div class="sumchips">'+chips+'</div><div class="mgrid" role="grid" aria-label="I tuoi turni del mese">'+grid+'</div>':'<p class="muted">Nessun turno assegnato a te questo mese.</p>');
  return '<section class="panel"><h2>I tuoi turni</h2>'+list+(mine.length?'<div class="savebar"><button class="btn" id="importShifts">Importa nel mio calendario</button> <button class="btn danger" id="removeImportedShifts">Rimuovi turni importati</button></div><p class="muted">Puoi rimuovere dal calendario personale solo i turni importati da questo reparto; gli altri turni resteranno invariati.</p>':"")+'</section><section class="panel"><h2>Turni del reparto</h2><div class="scroll"><table>'+head+body+'</table></div></section>';

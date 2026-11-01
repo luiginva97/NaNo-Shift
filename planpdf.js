@@ -39,7 +39,8 @@
   const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;
   return new Blob([u],{type:"application/pdf"});
  }
- const COL={M:"#c58a12",P:"#3478d4",G:"#13845b",N:"#7754c8",R:"#fff4bf"};
+ const COL={M:"#c58a12",P:"#3478d4",G:"#13845b",N:"#7754c8",R:"#fff4bf",ABS:"#d92d20"};
+ const cst=c=>c?(c.startsWith("abs:")?{f:COL.ABS,t:c.slice(4),k:"#ffffff"}:{f:COL[c[0]],t:c,k:c==="R"?"#0057b7":"#ffffff"}):null;
  function plan(o,orient){
   if(orient==="p")return planPortrait(o);
   W=297*MM;H=210*MM;
@@ -73,8 +74,8 @@
    pg.text(r.name,mx+6,y+(big?rowH/2-1:rowH/2+3),9.5,true,"#10284b","left",nameW-10);
    if(big)pg.text(r.sub,mx+6,y+rowH/2+9,7,false,"#5b6b83","left",nameW-10);
    r.cells.forEach((c,i)=>{const x=mx+nameW+i*dayW,d=o.days[i];
-    pg.rect(x,y,dayW,rowH,c?COL[c]:(d.we?"#f3f5f9":"#ffffff"),"#7f8da3",.6);
-    if(c)pg.text(c,x+dayW/2,y+rowH/2+4,Math.min(12,rowH*.5),true,c==="R"?"#0057b7":"#ffffff","center")});
+    pg.rect(x,y,dayW,rowH,c?cst(c).f:(d.we?"#f3f5f9":"#ffffff"),"#7f8da3",.6);
+    if(c)pg.text(cst(c).t,x+dayW/2,y+rowH/2+4,Math.min(12,rowH*.5)*(cst(c).t.length>1?.78:1),true,cst(c).k,"center")});
    const tx=mx+nameW+n*dayW;pg.rect(tx,y,totW,rowH,"#eaf0fb","#7f8da3",.6);pg.text(r.total,tx+totW/2,y+rowH/2+4,10,true,"#10284b","center");
    y+=rowH;
   });
@@ -108,8 +109,8 @@
    pg.rect(mx,y,dayColW,rowH,d.we?"#fdecea":"#ffffff","#7f8da3",.6);
    pg.text(d.d+" "+d.wd,mx+6,y+rowH/2+3.5,9,true,d.we?"#c0261b":"#10284b");
    o.rows.forEach((r,i)=>{const x=mx+dayColW+i*pw,c=r.cells[j];
-    pg.rect(x,y,pw,rowH,c?COL[c]:(d.we?"#f3f5f9":"#ffffff"),"#7f8da3",.6);
-    if(c)pg.text(c,x+pw/2,y+rowH/2+4,Math.min(13,rowH*.55),true,c==="R"?"#0057b7":"#ffffff","center")});
+    pg.rect(x,y,pw,rowH,c?cst(c).f:(d.we?"#f3f5f9":"#ffffff"),"#7f8da3",.6);
+    if(c)pg.text(cst(c).t,x+pw/2,y+rowH/2+4,Math.min(13,rowH*.55),true,cst(c).k,"center")});
    y+=rowH;
   });
   pg.rect(mx,y,dayColW,sumH,"#eaf0fb","#7f8da3",.6);pg.text("Ore mese",mx+6,y+13,9,true);

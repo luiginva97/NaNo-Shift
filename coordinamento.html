@@ -48,6 +48,7 @@ dialog{border:0;border-radius:18px;width:min(420px,calc(100% - 24px));padding:20
 /* Responsive polish: coordinatore */
 @media(max-width:700px){.top{align-items:flex-start;flex-direction:column;padding:12px}.brand{font-size:15px;flex-wrap:wrap}.brand img{width:124px;max-height:38px}.links{width:100%}.links a{flex:1;text-align:center;font-size:13px;padding:8px 7px}.wrap{padding:12px 10px 36px}.panel{padding:12px;border-radius:13px}.scroll{max-height:65vh}th:first-child,td:first-child{min-width:108px}.monthnav strong{min-width:125px}.opts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px}.flow em{flex:1;min-width:8px;max-width:28px;height:2px;background:var(--line)}.fs{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--muted)}.fs i{font-style:normal;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);font-size:11px}.fs.ok{color:var(--green)}.fs.ok i{background:var(--green);border-color:var(--green);color:#fff}@media(max-width:520px){.flow em{display:none}.flow{gap:8px 14px}}.nextstep{border-color:#b9cdfb!important;background:linear-gradient(180deg,#f4f8ff,#fff)!important}
+.cell.abs{background:#fde1de}.pill.absp{background:#d92d20;color:#fff;font-size:11px}.cell .nt{position:absolute;right:2px;top:2px;width:6px;height:6px;border-radius:50%;background:#e0a812}.cell{position:relative}tr.extrarow td{background:#fffdf3;font-size:11px;color:#7a5200}tr.extrarow td:first-child{font-weight:700}td.xcell{font-weight:800;color:#7a5200}
 .cov.short{background:#fee4e2!important;color:#b42318;font-weight:800}
 </style>
 <link rel="stylesheet" href="ui.css"><link rel="stylesheet" href="nav.css"><script src="planpdf.js" defer></script>
@@ -147,13 +148,18 @@ async function rosterRpc(){
  if(!full.error)return full;
  return sb.rpc("get_unit_roster_with_phone",{p_unit:unit.id});
 }
-const need=c=>Number(unit?.cov?.[c])||0;
+const isWEk=k=>{const d=new Date(k+"T12:00:00").getDay();return d===0||d===6};
+const need=(c,k)=>{const useWe=k&&isWEk(k)&&WORK.some(x=>Number(unit?.covWe?.[x])>0);return Number((useWe?unit.covWe:unit?.cov)?.[c])||0};
+const shHrs=c=>c?(SHIFT_HOURS[c.code]||0)+(c.code2?SHIFT_HOURS[c.code2]||0:0):0;
+const codeTxt=c=>c.code+(c.code2||"");
+const ABS_L={ferie:"F",permesso:"Pe",assenza:"A"},ABS_N={ferie:"Ferie",permesso:"Permesso",assenza:"Assenza"};
+let absn={},extras=[];
 const needSum=()=>WORK.reduce((x,c)=>x+need(c),0);
 function csvEsc(v){v=String(v??"");return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
 function exportCsv(){
  const a=approved(),n=dim(),y=cursor.getFullYear(),m=cursor.getMonth();
  const head=["Persona","Ruolo"].concat(Array.from({length:n},(_,i)=>i+1+" "+WD[new Date(y,m,i+1).getDay()]),["Ore"]);
- const rows=a.map(p=>{let h=0;const cells=Array.from({length:n},(_,i)=>{const c=as[p.user_id+"|"+ymd(y,m,i+1)]?.code||"";h+=SHIFT_HOURS[c]||0;return c});return [p.display_name,roleLabel(p.staff_role)].concat(cells,[h])});
+ const rows=a.map(p=>{let h=0;const cells=Array.from({length:n},(_,i)=>{const k=ymd(y,m,i+1),z=as[p.user_id+"|"+k],ab=absn[p.user_id+"|"+k];h+=shHrs(z);return z?codeTxt(z):ab?ABS_L[ab]:""});return [p.display_name,roleLabel(p.staff_role)].concat(cells,[h])});
  const csv="\ufeff"+[head].concat(rows).map(r=>r.map(csvEsc).join(";")).join("\r\n");
  const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
  const el=document.createElement("a");el.href=url;el.download="turni-"+y+"-"+pad(m+1)+".csv";document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
@@ -161,18 +167,22 @@ function exportCsv(){
 const monthHoursDue=p=>p.weekly_hours?Math.round(Number(p.weekly_hours)*dim()/7*10)/10:null;
 async function loadData(){
  const [from,to]=range(),prev=new Date(cursor.getFullYear(),cursor.getMonth(),-6);
- const [r,a,s,iv,sw,ex,lv,cv]=await Promise.all([
+ const [r,a,s,iv,sw,ex,lv,cv,ab,xt]=await Promise.all([
   rosterRpc(),
   sb.from("unit_availability").select("user_id,day,choice,review_status").eq("unit_id",unit.id).gte("day",from).lte("day",to),
-  sb.from("unit_shifts").select("user_id,shift_date,code,published").eq("unit_id",unit.id).gte("shift_date",keyOf(prev)).lte("shift_date",to),
+  sb.from("unit_shifts").select("user_id,shift_date,code,code2,note,published").eq("unit_id",unit.id).gte("shift_date",keyOf(prev)).lte("shift_date",to).then(x=>x.error?sb.from("unit_shifts").select("user_id,shift_date,code,published").eq("unit_id",unit.id).gte("shift_date",keyOf(prev)).lte("shift_date",to):x),
   sb.from("unit_invitations").select("id,staff_role,label,created_at,expires_at,accepted_at,revoked_at").eq("unit_id",unit.id).order("created_at",{ascending:false}).limit(30),
   sb.from("unit_shift_swap_requests").select("id,requester_id,target_id,requester_shift_date,target_shift_date,message,status,created_at").eq("unit_id",unit.id).order("created_at",{ascending:false}).limit(50),
   sb.rpc("get_unit_document_expiries",{p_unit:unit.id}),
   sb.from("unit_leave_requests").select("id,user_id,start_date,end_date,kind,note,status").eq("unit_id",unit.id).order("created_at",{ascending:false}).limit(60),
-  sb.from("units").select("coverage").eq("id",unit.id).maybeSingle()
+  sb.from("units").select("coverage,coverage_we").eq("id",unit.id).maybeSingle().then(x=>x.error?sb.from("units").select("coverage").eq("id",unit.id).maybeSingle():x),
+  sb.from("unit_absences").select("user_id,day,kind").eq("unit_id",unit.id).gte("day",from).lte("day",to),
+  sb.from("unit_extra_shifts").select("user_id,shift_date,label,code,hours").eq("unit_id",unit.id).gte("shift_date",from).lte("shift_date",to)
  ]);
+ absn={};(ab.error?[]:(ab.data||[])).forEach(x=>{absn[x.user_id+"|"+x.day]=x.kind});
+ extras=xt.error?[]:(xt.data||[]);
  leaves=lv.error?[]:(lv.data||[]);
- unit.cov=(cv&&!cv.error&&cv.data&&cv.data.coverage)||{M:0,P:0,G:0,N:0};
+ unit.cov=(cv&&!cv.error&&cv.data&&cv.data.coverage)||{M:0,P:0,G:0,N:0};unit.covWe=(cv&&!cv.error&&cv.data&&cv.data.coverage_we)||{M:0,P:0,G:0,N:0};
  invites=iv.error?[]:(iv.data||[]);
  swapRequests=sw.error?[]:(sw.data||[]);
  expiryRows=ex.error?[]:(ex.data||[]);
@@ -180,7 +190,7 @@ async function loadData(){
  if(errs.length)note("Errore di caricamento: "+errs.join(" · "),"error");
  roster=r.data||[];av={};as={};
  (a.data||[]).forEach(x=>{av[x.user_id+"|"+x.day]={user_id:x.user_id,day:x.day,choice:x.choice,confirmed:x.review_status==="confirmed"}});
- (s.data||[]).forEach(x=>{as[x.user_id+"|"+x.shift_date]={user_id:x.user_id,day:x.shift_date,code:x.code,published:x.published}});
+ (s.data||[]).forEach(x=>{as[x.user_id+"|"+x.shift_date]={user_id:x.user_id,day:x.shift_date,code:x.code,code2:x.code2||"",note:x.note||"",published:x.published}});
  recalcPub();
 }
 function warnings(){
@@ -193,6 +203,7 @@ function warnings(){
    streak=work?streak+1:0;
    if(work&&k>=from){
     const w=[],pr=av[p.user_id+"|"+k]?.choice;
+    if(absn[p.user_id+"|"+k])w.push("assegnato in un giorno di assenza ("+ABS_N[absn[p.user_id+"|"+k]].toLowerCase()+")");
     if(pr==="OFF")w.push("segnata come non disponibile");
     if(pr==="R")w.push("aveva chiesto riposo");
     if(prev==="N"&&code!=="N")w.push("turno dopo una notte senza riposo");
@@ -230,7 +241,7 @@ function homeView(){
  const noAv=a.filter(p=>!Object.values(av).some(r=>r.user_id===p.user_id)).length;
  const w=Object.keys(warnings()).length;
  const monthShifts=Object.values(as).filter(x=>x.day>=from&&x.day<=to),pub=monthShifts.filter(x=>x.published).length;
- const gaps=[];for(let d=1;d<=dim();d++){const k=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(k<today)continue;const cnt=c=>a.filter(p=>as[p.user_id+"|"+k]?.code===c).length;const tot=a.filter(p=>WORK.includes(as[p.user_id+"|"+k]?.code)).length;if(needSum()?WORK.some(c=>need(c)&&cnt(c)<need(c)):tot<2)gaps.push(d)}
+ const gaps=[];for(let d=1;d<=dim();d++){const k=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(k<today)continue;const cnt=c=>a.filter(p=>{const z=as[p.user_id+"|"+k];return z&&(z.code===c||z.code2===c)}).length;const tot=a.filter(p=>WORK.includes(as[p.user_id+"|"+k]?.code)).length;if(needSum()?WORK.some(c=>need(c,k)&&cnt(c)<need(c,k)):tot<2)gaps.push(d)}
  const sh=c=>approved().filter(p=>as[p.user_id+"|"+today]?.code===c).map(p=>safe(p.display_name)+(p.staff_role==="oss"?" <small class=\"muted\">OSS</small>":""));
  const row=(l,names)=>'<div class="item"><b>'+l+'</b><span>'+(names.length?names.join(", "):'<span class="muted">—</span>')+'</span></div>';
  const stat=(n,l,tabId,warn)=>'<button class="statcard'+(warn?" warn":"")+'" data-tab="'+tabId+'"><b>'+n+'</b><span>'+l+'</span></button>';
@@ -288,21 +299,25 @@ function planView(){
  const body=a.map(p=>{
   let personHours=0;
   const cells=Array.from({length:n},(_,i)=>{
-   const k=ymd(y,m,i+1),cur=as[p.user_id+"|"+k],pr=av[p.user_id+"|"+k]?.choice,bad=w[p.user_id+"|"+k];
-   const h=cur?(SHIFT_HOURS[cur.code]??0):0;personHours+=h;
-   return '<td><button class="cell'+(pr==="OFF"?" unav":pr==="R"?" rest":"")+(bad?" warn":"")+'" data-cell="'+p.user_id+'" data-day="'+k+'" title="'+safe(bad?bad.join(" · "):(pr?PREF_TXT[pr]:""))+'">'+(cur?'<span class="pill '+cur.code+'">'+cur.code+"</span>":"")+"</button></td>";
+   const k=ymd(y,m,i+1),cur=as[p.user_id+"|"+k],pr=av[p.user_id+"|"+k]?.choice,bad=w[p.user_id+"|"+k],ab=absn[p.user_id+"|"+k];
+   const h=shHrs(cur);personHours+=h;
+   return '<td><button class="cell'+(ab?" abs":pr==="OFF"?" unav":pr==="R"?" rest":"")+(bad?" warn":"")+'" data-cell="'+p.user_id+'" data-day="'+k+'" title="'+safe((ab?ABS_N[ab]+(bad?" · ":""):"")+(bad?bad.join(" · "):(!ab&&pr?PREF_TXT[pr]:""))+(cur?.note?" · "+cur.note:""))+'">'+(cur?'<span class="pill '+cur.code+'">'+codeTxt(cur)+'</span>':ab?'<span class="pill absp">'+ABS_L[ab]+'</span>':"")+(cur?.note?'<i class="nt"></i>':"")+"</button></td>";
   }).join("");
-  return '<tr><td>'+safe(p.display_name)+'<br>'+roleChip(p.staff_role)+'</td>'+cells+'<td class="totalcol summarycell"><b>'+fmtHours(personHours)+'</b></td></tr>';
+  const due=monthHoursDue(p),bal=due==null?null:Math.round((personHours-due)*10)/10;
+  const mine=extras.filter(x=>x.user_id===p.user_id),labels=[...new Set(mine.map(x=>x.label))];
+  const extraRows=labels.map(lb=>{let eh=0;const cs=Array.from({length:n},(_,i)=>{const k=ymd(y,m,i+1),e=mine.find(x=>x.label===lb&&x.shift_date===k);if(e)eh+=Number(e.hours)||0;return '<td class="xcell" title="'+(e?safe(lb+" "+(e.code||"")+" · "+e.hours+" h"):"")+'">'+(e?safe(e.code||"•"):"")+'</td>'}).join("");
+   return '<tr class="extrarow"><td>↳ '+safe(lb)+'</td>'+cs+'<td class="totalcol summarycell"><b>'+fmtHours(eh)+'</b></td></tr>'}).join("");
+  return '<tr><td>'+safe(p.display_name)+'<br>'+roleChip(p.staff_role)+'</td>'+cells+'<td class="totalcol summarycell"><b>'+fmtHours(personHours)+'</b>'+(bal==null?"":'<br><small style="color:'+(bal>0?"#b54708":bal<0?"#1d4ed8":"#067647")+'">saldo '+(bal>0?"+":"")+fmtHours(bal)+'</small>')+'</td></tr>'+extraRows;
  }).join("");
  const availableRows=["M","P","G","N"].map(c=>'<tr class="covrow"><td>'+c+' disponibili</td>'+Array.from({length:n},(_,i)=>{
   const k=ymd(y,m,i+1),cnt=a.filter(p=>{const v=av[p.user_id+"|"+k];return v?.confirmed&&(v.choice===c||v.choice==="ANY")}).length;
   return '<td class="cov'+(cnt?"":" zero")+'" title="Disponibilità confermate per '+c+'">'+cnt+"</td>";
  }).join("")+'<td class="totalcol summarycell">—</td></tr>').join("");
  const cov=["M","P","G","N"].map(c=>'<tr class="covrow"><td>'+c+' coperti</td>'+Array.from({length:n},(_,i)=>{
-  const k=ymd(y,m,i+1),cnt=a.filter(p=>as[p.user_id+"|"+k]?.code===c).length;
-  return '<td class="cov'+(need(c)&&cnt<need(c)?" short":cnt?"":" zero")+'" title="'+(need(c)?"Minimo richiesto: "+need(c):"")+'">'+cnt+"</td>";
+  const k=ymd(y,m,i+1),cnt=a.filter(p=>{const z=as[p.user_id+"|"+k];return z&&(z.code===c||z.code2===c)}).length;
+  return '<td class="cov'+(need(c,k)&&cnt<need(c,k)?" short":cnt?"":" zero")+'" title="'+(need(c,k)?"Minimo richiesto: "+need(c,k):"")+'">'+cnt+"</td>";
  }).join("")+'<td class="totalcol summarycell">'+(need(c)?"min "+need(c):"—")+'</td></tr>').join("");
- const dailyHours=Array.from({length:n},(_,i)=>{const k=ymd(y,m,i+1);return a.reduce((sum,p)=>sum+(SHIFT_HOURS[as[p.user_id+"|"+k]?.code]||0),0)});
+ const dailyHours=Array.from({length:n},(_,i)=>{const k=ymd(y,m,i+1);return a.reduce((sum,p)=>sum+shHrs(as[p.user_id+"|"+k]),0)});
  const hoursRow='<tr class="covrow"><td>Ore assegnate</td>'+dailyHours.map(h=>'<td class="cov'+(h?"":" zero")+'">'+(h||"–")+'</td>').join("")+'<td class="totalcol summarycell"><b>'+fmtHours(dailyHours.reduce((x,h)=>x+h,0))+'</b></td></tr>';
  const wl=Object.keys(w).map(k=>{const [uid,day]=k.split("|"),p=a.find(x=>x.user_id===uid);return '<li>⚠ '+safe(p?p.display_name:"?")+", "+Number(day.slice(8))+"/"+Number(day.slice(5,7))+": "+safe(w[k].join(", "))+"</li>"}).join("");
  const total=Object.keys(as).filter(k=>k.split("|")[1]>=range()[0]).length;
@@ -310,17 +325,31 @@ function planView(){
 }
 function coverageHoursView(a){
  const y=cursor.getFullYear(),m=cursor.getMonth(),n=dim();
- const rows=a.map(p=>{let h=0;for(let i=1;i<=n;i++)h+=SHIFT_HOURS[as[p.user_id+"|"+ymd(y,m,i)]?.code]||0;const due=monthHoursDue(p);const bal=due==null?null:Math.round((h-due)*10)/10;
+ const rows=a.map(p=>{let h=0;for(let i=1;i<=n;i++)h+=shHrs(as[p.user_id+"|"+ymd(y,m,i)]);const due=monthHoursDue(p);const bal=due==null?null:Math.round((h-due)*10)/10;
   return '<div class="item"><span><b>'+safe(p.display_name)+'</b></span><span>'+fmtHours(h)+(due==null?' <small class="muted">· ore settimanali non impostate</small>':' / dovute '+fmtHours(due)+' · <b style="color:'+(bal>0?'#b54708':bal<0?'#1d4ed8':'#067647')+'">saldo '+(bal>0?'+':'')+fmtHours(bal)+'</b>')+'</span></div>'}).join("");
- return '<div class="panel noprint"><h2>Fabbisogno minimo per turno</h2><p class="muted">Quante persone servono ogni giorno. Le celle sotto il minimo diventano rosse nella tabella e nel riepilogo.</p><form id="coverageForm" class="row">'+WORK.map(c=>'<div class="field"><label for="cv'+c+'">'+c+'</label><input id="cv'+c+'" type="number" min="0" max="50" value="'+need(c)+'" style="width:78px"></div>').join("")+'<button class="btn" type="submit">Salva fabbisogno</button></form></div>'
+ return '<div class="panel noprint"><h2>Fabbisogno minimo per turno</h2><p class="muted">Quante persone servono ogni giorno. Le celle sotto il minimo diventano rosse nella tabella e nel riepilogo.</p><form id="coverageForm"><b>Giorni feriali (lun-ven)</b><div class="row" style="margin:6px 0 10px">'+WORK.map(c=>'<div class="field"><label for="cv'+c+'">'+c+'</label><input id="cv'+c+'" type="number" min="0" max="50" value="'+(Number(unit.cov?.[c])||0)+'" style="width:78px"></div>').join("")+'</div><b>Weekend (sab-dom)</b> <small class="muted">— se tutti a 0 vale il fabbisogno dei feriali</small><div class="row" style="margin:6px 0 10px">'+WORK.map(c=>'<div class="field"><label for="cw'+c+'">'+c+'</label><input id="cw'+c+'" type="number" min="0" max="50" value="'+(Number(unit.covWe?.[c])||0)+'" style="width:78px"></div>').join("")+'</div><button class="btn" type="submit">Salva fabbisogno</button></form></div>'
  +'<div class="panel noprint"><h2>Ore programmate e saldo</h2><p class="muted">Confronto tra ore assegnate nel mese e ore dovute (ore settimanali impostate in Personale × giorni del mese ÷ 7).</p>'+(rows||'<p class="muted">Nessuna persona.</p>')+'</div>';
+}
+function absRanges(){
+ const by={};Object.keys(absn).sort().forEach(k=>{const [u,d]=k.split("|");(by[u]=by[u]||[]).push([d,absn[k]])});
+ const out=[];Object.keys(by).forEach(u=>{let cur=null;by[u].forEach(([d,kind])=>{
+  const prev=cur&&new Date(new Date(cur.to+"T12:00:00").getTime()+864e5).toISOString().slice(0,10);
+  if(cur&&cur.kind===kind&&prev===d)cur.to=d;else{if(cur)out.push(cur);cur={u,from:d,to:d,kind}}});if(cur)out.push(cur)});
+ return out.sort((x,y)=>x.from.localeCompare(y.from));
+}
+function absenceView(){
+ const nm=id=>roster.find(p=>p.user_id===id)?.display_name||"Persona";
+ const fmt=d=>new Date(d+"T12:00:00").toLocaleDateString("it-IT",{day:"numeric",month:"short"});
+ const [from]=range(),def=from;
+ return '<section class="panel"><h2>Assenze del mese</h2><p class="muted">Compaiono come barre rosse nel piano e il generatore non assegna turni in quei giorni. Indica solo il tipo: non inserire motivi sanitari.</p><form id="absForm" class="row"><div class="field"><label for="abP">Persona</label><select id="abP">'+approved().map(p=>'<option value="'+p.user_id+'">'+safe(p.display_name)+'</option>').join("")+'</select></div><div class="field"><label for="abK">Tipo</label><select id="abK"><option value="ferie">Ferie</option><option value="permesso">Permesso</option><option value="assenza">Altra assenza</option></select></div><div class="field"><label for="abF">Dal</label><input id="abF" type="date" value="'+def+'" required></div><div class="field"><label for="abT">Al</label><input id="abT" type="date" value="'+def+'" required></div><button class="btn" type="submit">Registra assenza</button></form>'
+ +absRanges().map(x=>'<div class="item"><span><b>'+safe(nm(x.u))+'</b> · '+ABS_N[x.kind]+'<br><small class="muted">'+fmt(x.from)+(x.to!==x.from?' → '+fmt(x.to):'')+'</small></span><button class="btn small danger" data-abs-del="'+x.u+'|'+x.from+'|'+x.to+'">Rimuovi</button></div>').join("")+'</section>';
 }
 function leaveView(){
  const nm=id=>roster.find(p=>p.user_id===id)?.display_name||"Persona";
  const fmt=d=>new Date(d+"T12:00:00").toLocaleDateString("it-IT",{day:"numeric",month:"short"});
  const open=leaves.filter(l=>l.status==="pending"),done=leaves.filter(l=>l.status!=="pending"&&l.status!=="cancelled").slice(0,15);
  const lab={ferie:"Ferie",permesso:"Permesso",altro:"Altro"},st={approved:"Approvata",rejected:"Non approvata"};
- return '<section class="panel"><h2>Ferie e permessi da approvare ('+open.length+')</h2><p class="muted">Approvando, i giorni diventano «non disponibile» confermati e il generatore non assegna turni.</p>'+(open.map(l=>'<div class="item"><span><b>'+safe(nm(l.user_id))+'</b> · '+lab[l.kind]+'<br><small class="muted">'+fmt(l.start_date)+' → '+fmt(l.end_date)+(l.note?' · '+safe(l.note):'')+'</small></span><span><button class="btn small" data-leave="approve" data-id="'+l.id+'">Approva</button> <button class="btn small secondary" data-leave="reject" data-id="'+l.id+'">Rifiuta</button></span></div>').join("")||'<p class="muted">Nessuna richiesta in attesa.</p>')+'</section>'
+ return absenceView()+'<section class="panel"><h2>Ferie e permessi da approvare ('+open.length+')</h2><p class="muted">Approvando, i giorni diventano «non disponibile» confermati e il generatore non assegna turni.</p>'+(open.map(l=>'<div class="item"><span><b>'+safe(nm(l.user_id))+'</b> · '+lab[l.kind]+'<br><small class="muted">'+fmt(l.start_date)+' → '+fmt(l.end_date)+(l.note?' · '+safe(l.note):'')+'</small></span><span><button class="btn small" data-leave="approve" data-id="'+l.id+'">Approva</button> <button class="btn small secondary" data-leave="reject" data-id="'+l.id+'">Rifiuta</button></span></div>').join("")||'<p class="muted">Nessuna richiesta in attesa.</p>')+'</section>'
  +(done.length?'<section class="panel"><h2>Ultime gestite</h2>'+done.map(l=>'<div class="item"><span>'+safe(nm(l.user_id))+' · '+lab[l.kind]+' · '+fmt(l.start_date)+' → '+fmt(l.end_date)+'</span><b>'+st[l.status]+'</b></div>').join("")+'</section>':'');
 }
 function quickAssignView(a){
@@ -369,9 +398,9 @@ function buildPlanPdf(orient){
  const title=cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"});
  const NAMES={M:"Mattina",P:"Pomeriggio",G:"Giornata",N:"Notte",R:"Riposo"};
  const days=Array.from({length:n},(_,i)=>{const wd=new Date(y,m,i+1).getDay();return {d:String(i+1),wd:WD[wd].slice(0,2),k:ymd(y,m,i+1),we:wd===0||wd===6}});
- const rows=a.map(p=>{let h=0;const cells=days.map(x=>{const c=as[p.user_id+"|"+x.k]?.code||"";h+=SHIFT_HOURS[c]||0;return c});return {name:p.display_name,sub:roleLabel(p.staff_role),cells,total:String(Math.round(h*10)/10)}});
- const foot=WORK.map(c=>({label:NAMES[c],cells:days.map(x=>{const cnt=a.filter(p=>as[p.user_id+"|"+x.k]?.code===c).length;return {v:cnt?String(cnt):"-",low:!!(need(c)&&cnt<need(c))}})}));
- const legend=["M","P","G","N","R"].map(c=>({c,t:c+" "+NAMES[c]+(SHIFT_HOURS[c]?" ("+SHIFT_HOURS[c]+" h)":"")}));
+ const rows=a.map(p=>{let h=0;const cells=days.map(x=>{const z=as[p.user_id+"|"+x.k],ab=absn[p.user_id+"|"+x.k];h+=shHrs(z);return z?codeTxt(z):ab?"abs:"+ABS_L[ab]:""});return {name:p.display_name,sub:roleLabel(p.staff_role),cells,total:String(Math.round(h*10)/10)}});
+ const foot=WORK.map(c=>({label:NAMES[c],cells:days.map(x=>{const cnt=a.filter(p=>{const z=as[p.user_id+"|"+x.k];return z&&(z.code===c||z.code2===c)}).length;return {v:cnt?String(cnt):"-",low:!!(need(c,x.k)&&cnt<need(c,x.k))}})}));
+ const legend=["M","P","G","N","R"].map(c=>({c,t:c+" "+NAMES[c]+(SHIFT_HOURS[c]?" ("+SHIFT_HOURS[c]+" h)":"")})).concat([{c:"ABS",t:"F ferie - Pe permesso - A assenza"}]);
  const blob=NanoPdf.plan({title:unit.name,subtitle:"Turni di "+title,days,rows,foot,legend,stamp:"Stampato il "+new Date().toLocaleDateString("it-IT"),status:monthPub?"Calendario pubblicato":"Bozza non pubblicata"},orient);
  return {blob,name:"turni-"+y+"-"+pad(m+1)+(orient==="p"?"-verticale":"-orizzontale")+".pdf",title:unit.name+" - "+title};
 }
@@ -455,14 +484,22 @@ function bind(){
  const gp=$("generatePlan");if(gp)gp.onclick=generatePlan;
  const pf=$("pdfPlan");if(pf)pf.onclick=pdfPlan;
  const ex=$("exportCsv");if(ex)ex.onclick=exportCsv;
- const cvf=$("coverageForm");if(cvf)cvf.onsubmit=async e=>{e.preventDefault();const o={};WORK.forEach(c=>o[c]=Number($("cv"+c).value)||0);
-  const {error}=await sb.rpc("set_unit_coverage",{p_unit:unit.id,p_coverage:o});
+ const cvf=$("coverageForm");if(cvf)cvf.onsubmit=async e=>{e.preventDefault();const o={},we={};WORK.forEach(c=>{o[c]=Number($("cv"+c).value)||0;we[c]=Number($("cw"+c).value)||0});
+  let {error}=await sb.rpc("set_unit_coverage",{p_unit:unit.id,p_coverage:o});
+  if(!error){const r2=await sb.rpc("set_unit_coverage_we",{p_unit:unit.id,p_coverage:we});error=r2.error}
   if(error){note("Fabbisogno non salvato: "+error.message+" (applica l'ultima migrazione del database)","error");render();return}
   note("Fabbisogno salvato.","");await loadData();render()};
  document.querySelectorAll("[data-hours-of]").forEach(i=>i.onchange=async()=>{const v=i.value===""?null:Number(i.value);
   const {error}=await sb.rpc("set_member_hours",{p_unit:unit.id,p_user:i.dataset.hoursOf,p_hours:v});
   if(error){note("Ore non salvate: "+error.message,"error");render();return}
   note("Ore settimanali aggiornate.","");await loadData();render()});
+ const af=$("absForm");if(af)af.onsubmit=async e=>{e.preventDefault();
+  const {error}=await sb.rpc("set_unit_absence",{p_unit:unit.id,p_user:$("abP").value,p_start:$("abF").value,p_end:$("abT").value,p_kind:$("abK").value,p_note:null});
+  if(error){note("Assenza non registrata: "+error.message,"error");render();return}
+  note("Assenza registrata.","");await loadData();render()};
+ document.querySelectorAll("[data-abs-del]").forEach(b=>b.onclick=async()=>{const [u,f,t]=b.dataset.absDel.split("|");
+  const {error}=await sb.rpc("clear_unit_absence",{p_unit:unit.id,p_user:u,p_start:f,p_end:t});
+  if(error)note(error.message,"error");else note("Assenza rimossa.","");await loadData();render()});
  document.querySelectorAll("[data-leave]").forEach(b=>b.onclick=async()=>{const ok=b.dataset.leave==="approve";
   const {error}=await sb.rpc("review_unit_leave",{p_request:b.dataset.id,p_approve:ok});
   if(error)note("Richiesta non gestita: "+error.message,"error");else note(ok?"Richiesta approvata: giorni segnati non disponibili.":"Richiesta rifiutata.","");
@@ -492,7 +529,7 @@ async function generatePlan(){
  for(const p of staff)typeCounts[p.user_id]={M:0,P:0,G:0,N:0};
  for(let d=1;d<=days;d++){
   const day=ymd(year,month,d);
-  const available=staff.map(p=>({p,r:av[p.user_id+"|"+day]})).filter(x=>x.r&&x.r.confirmed);
+  const available=staff.map(p=>({p,r:av[p.user_id+"|"+day]})).filter(x=>x.r&&x.r.confirmed&&!absn[x.p.user_id+"|"+day]);
   const open=available.filter(x=>x.r.choice==="ANY");
   const dayTypes={M:0,P:0,G:0,N:0};
   // Honor every explicit preference, including weekends and consecutive shifts.
@@ -528,23 +565,37 @@ async function generatePlan(){
  await loadData();render();
 }
 function openCell(uid,day){
- const p=roster.find(x=>x.user_id===uid),cur=as[uid+"|"+day]?.code||"",r=av[uid+"|"+day],d=new Date(day+"T12:00:00");
+ const p=roster.find(x=>x.user_id===uid),cs=as[uid+"|"+day],cur=cs?.code||"",r=av[uid+"|"+day],d=new Date(day+"T12:00:00"),ab=absn[uid+"|"+day];
+ const dayExtras=extras.filter(x=>x.user_id===uid&&x.shift_date===day);
  const dlg=$("cellDlg");
- dlg.innerHTML='<h2 style="margin:0">'+safe(p.display_name)+'</h2><div class="muted">'+d.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"})+'</div><p>'+(r?"Disponibilità: <b>"+PREF_TXT[r.choice]+"</b>"+(r.confirmed?" (confermata)":" (non ancora confermata)"):"Nessuna disponibilità indicata.")+'</p><div class="opts">'+[["","Nessuno"],["M","M Mattina"],["P","P Pomeriggio"],["G","G Giornata"],["N","N Notte"],["R","R Riposo"]].map(([c,l])=>'<button type="button" data-code="'+c+'" class="'+(cur===c?"on":"")+'">'+l+"</button>").join("")+'</div><button class="btn secondary" type="button" id="cellClose">Chiudi</button>';
- dlg.querySelectorAll("[data-code]").forEach(b=>b.onclick=async()=>{dlg.close();await setCell(uid,day,b.dataset.code)});
+ dlg.innerHTML='<h2 style="margin:0">'+safe(p.display_name)+'</h2><div class="muted">'+d.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"})+(ab?' · <b style="color:#d92d20">'+ABS_N[ab]+'</b>':'')+'</div><p>'+(r?"Disponibilità: <b>"+PREF_TXT[r.choice]+"</b>"+(r.confirmed?" (confermata)":" (non ancora confermata)"):"Nessuna disponibilità indicata.")+'</p>'
+  +'<div class="opts">'+[["","Nessuno"],["M","M Mattina"],["P","P Pomeriggio"],["G","G Giornata"],["N","N Notte"],["R","R Riposo"]].map(([c,l])=>'<button type="button" data-code="'+c+'" class="'+(cur===c?"on":"")+'">'+l+"</button>").join("")+'</div>'
+  +'<div class="row" style="margin-bottom:10px"><div class="field"><label for="cd2">Secondo turno (es. MN)</label><select id="cd2"><option value="">Nessuno</option>'+WORK.map(c=>'<option value="'+c+'"'+(cs?.code2===c?" selected":"")+'>'+c+'</option>').join("")+'</select></div><div class="field"><label for="cdn">Nota (es. h21:00)</label><input id="cdn" maxlength="30" value="'+safe(cs?.note||"")+'"></div></div>'
+  +'<details'+(ab?" open":"")+' style="margin:6px 0"><summary><b>Assenza</b></summary><div class="row" style="margin-top:8px"><div class="field"><label for="dK">Tipo</label><select id="dK"><option value="ferie">Ferie</option><option value="permesso">Permesso</option><option value="assenza">Altra assenza</option></select></div><div class="field"><label for="dF">Dal</label><input id="dF" type="date" value="'+day+'"></div><div class="field"><label for="dT">Al</label><input id="dT" type="date" value="'+day+'"></div></div><div class="row" style="margin-top:8px"><button type="button" class="btn small" id="dSet">Segna assenza</button>'+(ab?'<button type="button" class="btn small danger" id="dDel">Togli assenza</button>':'')+'</div></details>'
+  +'<details'+(dayExtras.length?" open":"")+' style="margin:6px 0"><summary><b>Turno in altro reparto / extra</b></summary>'+dayExtras.map(x=>'<div class="item"><span>'+safe(x.label)+' '+safe(x.code||"")+' · '+x.hours+' h</span><button type="button" class="btn small danger" data-xdel="'+safe(x.label)+'">Rimuovi</button></div>').join("")+'<div class="row" style="margin-top:8px"><div class="field"><label for="xL">Reparto</label><input id="xL" maxlength="20" placeholder="es. OBI"></div><div class="field"><label for="xC">Sigla</label><input id="xC" maxlength="6" placeholder="es. MPS"></div><div class="field"><label for="xH">Ore</label><input id="xH" type="number" min="0" max="24" step="0.5" value="7"></div></div><button type="button" class="btn small" id="xAdd" style="margin-top:8px">Aggiungi</button></details>'
+  +'<button class="btn secondary" type="button" id="cellClose" style="margin-top:8px">Chiudi</button>';
+ dlg.querySelectorAll("[data-code]").forEach(b=>b.onclick=async()=>{dlg.close();await saveCell(uid,day,b.dataset.code,$("cd2").value,$("cdn").value)});
+ const act=async(p,ok)=>{const {error}=await p;dlg.close();if(error)note("Operazione non riuscita: "+error.message,"error");else note(ok,"");await loadData();render()};
+ $("dSet").onclick=()=>act(sb.rpc("set_unit_absence",{p_unit:unit.id,p_user:uid,p_start:$("dF").value,p_end:$("dT").value,p_kind:$("dK").value,p_note:null}),"Assenza registrata.");
+ if($("dDel"))$("dDel").onclick=()=>act(sb.rpc("clear_unit_absence",{p_unit:unit.id,p_user:uid,p_start:day,p_end:day}),"Assenza tolta.");
+ $("xAdd").onclick=()=>{if(!$("xL").value.trim()){alert("Indica il reparto.");return}act(sb.rpc("set_unit_extra_shift",{p_unit:unit.id,p_user:uid,p_day:day,p_label:$("xL").value,p_code:$("xC").value,p_hours:Number($("xH").value)||0}),"Turno extra aggiunto.")};
+ dlg.querySelectorAll("[data-xdel]").forEach(b=>b.onclick=()=>act(sb.rpc("clear_unit_extra_shift",{p_unit:unit.id,p_user:uid,p_day:day,p_label:b.dataset.xdel}),"Turno extra rimosso."));
  $("cellClose").onclick=()=>dlg.close();
  dlg.showModal();
 }
-async function setCell(uid,day,code){
+async function saveCell(uid,day,code,code2,noteTxt){
  const existing=as[uid+"|"+day];let res;
  const where=q=>q.eq("unit_id",unit.id).eq("user_id",uid).eq("shift_date",day);
+ code2=(code&&WORK.includes(code)&&code2&&code2!==code)?code2:null;noteTxt=(noteTxt||"").trim()||null;
+ const extraCols=code2||noteTxt||existing?.code2||existing?.note;
+ const row=extraCols?{code,code2,note:noteTxt,updated_at:new Date().toISOString()}:{code,updated_at:new Date().toISOString()};
  if(!code){if(!existing)return;res=await where(sb.from("unit_shifts").delete())}
- else if(existing){if(existing.code===code)return;res=await where(sb.from("unit_shifts").update({code,updated_at:new Date().toISOString()}))}
- else res=await sb.from("unit_shifts").insert({unit_id:unit.id,user_id:uid,shift_date:day,code,published:monthPub});
- if(res.error){note("Salvataggio non riuscito: "+res.error.message,"error");render();return}
+ else if(existing)res=await where(sb.from("unit_shifts").update(row));
+ else res=await sb.from("unit_shifts").insert({unit_id:unit.id,user_id:uid,shift_date:day,...row,published:monthPub});
+ if(res.error){note("Salvataggio non riuscito: "+res.error.message+(extraCols?" (per secondo turno e nota applica l'ultima migrazione del database)":""),"error");render();return}
  note(null);
  const k=uid+"|"+day;
- if(!code)delete as[k];else as[k]={user_id:uid,day,code,published:existing?existing.published:monthPub};
+ if(!code)delete as[k];else as[k]={user_id:uid,day,code,code2:code2||"",note:noteTxt||"",published:existing?existing.published:monthPub};
  recalcPub();render();
 }
 init();
