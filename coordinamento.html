@@ -90,7 +90,7 @@ dialog{border:0;border-radius:18px;width:min(420px,calc(100% - 24px));padding:20
 <nav class="side-nav" id="sideNav" aria-label="Navigazione"></nav>
 <header class="top"><div class="brand"><img class="logo-mark" src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small>Area coordinamento</small></span></div><div id="headerAccount"></div></header>
 <main class="wrap" id="app"><div class="panel">Caricamento…</div></main>
-<dialog id="cellDlg"></dialog>
+<dialog id="cellDlg"></dialog><dialog id="pdfDlg"></dialog>
 <script>
 const SUPABASE_URL="https://mmkdibdomjaxwqfryqcw.supabase.co";
 const SUPABASE_KEY="sb_publishable_QPArC4ARilfFLqxnNsV72A_UBzZN-5g";
@@ -306,7 +306,7 @@ function planView(){
  const hoursRow='<tr class="covrow"><td>Ore assegnate</td>'+dailyHours.map(h=>'<td class="cov'+(h?"":" zero")+'">'+(h||"–")+'</td>').join("")+'<td class="totalcol summarycell"><b>'+fmtHours(dailyHours.reduce((x,h)=>x+h,0))+'</b></td></tr>';
  const wl=Object.keys(w).map(k=>{const [uid,day]=k.split("|"),p=a.find(x=>x.user_id===uid);return '<li>⚠ '+safe(p?p.display_name:"?")+", "+Number(day.slice(8))+"/"+Number(day.slice(5,7))+": "+safe(w[k].join(", "))+"</li>"}).join("");
  const total=Object.keys(as).filter(k=>k.split("|")[1]>=range()[0]).length;
- return '<section class="panel print-target"><div class="printonly"><h2>'+safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2></div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Turni del mese</h2><span><button class="btn" id="pdfPlan">PDF orizzontale</button> <button class="btn secondary" id="exportCsv">Esporta Excel</button> <button class="btn secondary" id="printPlan">Stampa</button> <button class="btn secondary" id="generatePlan">Genera turni dalle disponibilità</button> <button class="btn" id="togglePub"'+(total?"":" disabled")+'>'+(monthPub?"Ritira pubblicazione":"Pubblica turni")+'</button></span></div><div class="legend"><span>Tocca una cella per assegnare il turno</span><span><b style="color:#d92d20">riquadro rosso</b> = avviso</span><span>sfondo rosa = non disponibile · lilla = vorrebbe riposo</span><span>Ore stimate: M 7 h · P 5 h · G 12 h · N 12 h</span><span>Stato: <b>'+(monthPub?"pubblicato":"non pubblicato")+'</b></span></div>'+(a.length?'<div class="scroll"><table>'+headRow("Ore mese")+body+availableRows+cov+hoursRow+'</table></div>':'<p class="muted">Approva almeno un infermiere per iniziare a pianificare.</p>')+coverageHoursView(a)+quickAssignView(a)+(wl?'<ul class="warnlist">'+wl+"</ul>":"")+'</section>';
+ return '<section class="panel print-target"><div class="printonly"><h2>'+safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2></div><div class="row noprint" style="justify-content:space-between"><h2 style="margin:0">Turni del mese</h2><span><button class="btn" id="pdfPlan">Esporta PDF</button> <button class="btn secondary" id="exportCsv">Esporta Excel</button> <button class="btn secondary" id="generatePlan">Genera turni dalle disponibilità</button> <button class="btn" id="togglePub"'+(total?"":" disabled")+'>'+(monthPub?"Ritira pubblicazione":"Pubblica turni")+'</button></span></div><div class="legend"><span>Tocca una cella per assegnare il turno</span><span><b style="color:#d92d20">riquadro rosso</b> = avviso</span><span>sfondo rosa = non disponibile · lilla = vorrebbe riposo</span><span>Ore stimate: M 7 h · P 5 h · G 12 h · N 12 h</span><span>Stato: <b>'+(monthPub?"pubblicato":"non pubblicato")+'</b></span></div>'+(a.length?'<div class="scroll"><table>'+headRow("Ore mese")+body+availableRows+cov+hoursRow+'</table></div>':'<p class="muted">Approva almeno un infermiere per iniziare a pianificare.</p>')+coverageHoursView(a)+quickAssignView(a)+(wl?'<ul class="warnlist">'+wl+"</ul>":"")+'</section>';
 }
 function coverageHoursView(a){
  const y=cursor.getFullYear(),m=cursor.getMonth(),n=dim();
@@ -364,9 +364,7 @@ async function run(p,okText){
  await loadData();render();return true;
 }
 const review=(uid,action,okText)=>run(sb.rpc("review_unit_member",{p_unit:unit.id,p_user:uid,p_action:action}),okText);
-async function pdfPlan(){
- if(!unit||!approved().length){alert("Non ci sono turni da esportare.");return}
- if(!window.NanoPdf){alert("Il generatore PDF non è ancora caricato: riprova tra un istante.");return}
+function buildPlanPdf(orient){
  const y=cursor.getFullYear(),m=cursor.getMonth(),n=dim(),a=approved();
  const title=cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"});
  const NAMES={M:"Mattina",P:"Pomeriggio",G:"Giornata",N:"Notte",R:"Riposo"};
@@ -374,35 +372,26 @@ async function pdfPlan(){
  const rows=a.map(p=>{let h=0;const cells=days.map(x=>{const c=as[p.user_id+"|"+x.k]?.code||"";h+=SHIFT_HOURS[c]||0;return c});return {name:p.display_name,sub:roleLabel(p.staff_role),cells,total:String(Math.round(h*10)/10)}});
  const foot=WORK.map(c=>({label:NAMES[c],cells:days.map(x=>{const cnt=a.filter(p=>as[p.user_id+"|"+x.k]?.code===c).length;return {v:cnt?String(cnt):"-",low:!!(need(c)&&cnt<need(c))}})}));
  const legend=["M","P","G","N","R"].map(c=>({c,t:c+" "+NAMES[c]+(SHIFT_HOURS[c]?" ("+SHIFT_HOURS[c]+" h)":"")}));
- const blob=NanoPdf.plan({title:unit.name,subtitle:"Turni di "+title,days,rows,foot,legend,stamp:"Stampato il "+new Date().toLocaleDateString("it-IT"),status:monthPub?"Calendario pubblicato":"Bozza non pubblicata"});
- const name="turni-"+y+"-"+pad(m+1)+".pdf",file=new File([blob],name,{type:"application/pdf"});
- try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:unit.name+" - "+title});return}}catch(e){if(e&&e.name==="AbortError")return}
- const url=URL.createObjectURL(blob);
- const w=window.open(url,"_blank");
- if(!w){const el=document.createElement("a");el.href=url;el.download=name;document.body.appendChild(el);el.click();el.remove()}
- setTimeout(()=>URL.revokeObjectURL(url),60000);
+ const blob=NanoPdf.plan({title:unit.name,subtitle:"Turni di "+title,days,rows,foot,legend,stamp:"Stampato il "+new Date().toLocaleDateString("it-IT"),status:monthPub?"Calendario pubblicato":"Bozza non pubblicata"},orient);
+ return {blob,name:"turni-"+y+"-"+pad(m+1)+(orient==="p"?"-verticale":"-orizzontale")+".pdf",title:unit.name+" - "+title};
 }
-function printPlan(){
- if(!unit||!approved().length){alert("Non ci sono turni da stampare.");return}
- const y=cursor.getFullYear(),m=cursor.getMonth(),n=dim(),a=approved();
- const title=cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"});
- const NAMES={M:"Mattina",P:"Pomeriggio",G:"Giornata",N:"Notte",R:"Riposo"};
- const days=Array.from({length:n},(_,i)=>{const wd=new Date(y,m,i+1).getDay();return {d:i+1,k:ymd(y,m,i+1),we:wd===0||wd===6,l:WD[wd].slice(0,1)==="G"||WD[wd].slice(0,1)==="M"?WD[wd].slice(0,2):WD[wd].slice(0,1)}});
- const head='<tr><th class="name">Persona</th>'+days.map(x=>'<th class="'+(x.we?"we":"")+'">'+x.d+'<br>'+WD[new Date(y,m,x.d).getDay()].slice(0,2)+'</th>').join("")+'<th class="tot">Ore</th></tr>';
- const rows=a.map(p=>{let h=0;const cells=days.map(x=>{const c=as[p.user_id+"|"+x.k]?.code;h+=SHIFT_HOURS[c]||0;return '<td class="'+(c?"c-"+c:x.we?"we":"")+'">'+(c||"")+'</td>'}).join("");
-  return '<tr><td class="name">'+safe(p.display_name)+'<small>'+roleLabel(p.staff_role)+'</small></td>'+cells+'<td class="tot">'+Math.round(h*10)/10+'</td></tr>'}).join("");
- const foot=WORK.map(c=>'<tr class="foot"><td class="name">'+NAMES[c]+'</td>'+days.map(x=>{const cnt=a.filter(p=>as[p.user_id+"|"+x.k]?.code===c).length;return '<td class="'+(need(c)&&cnt<need(c)?"low":"")+'">'+(cnt||"–")+'</td>'}).join("")+'<td></td></tr>').join("");
- const rowH=a.length>22?"6.2mm":a.length>16?"7.2mm":a.length>10?"8.6mm":"10.5mm";
- const el=document.createElement("div");el.id="printSheet";el.style.setProperty("--psrow",rowH);
- el.innerHTML='<div class="ps-head"><h1>'+safe(unit.name)+'<small>Turni di '+safe(title)+'</small></h1><div class="ps-brand">NaNo<b>Shift</b></div></div>'
-  +'<table class="ps-table"><thead>'+head+'</thead><tbody>'+rows+foot+'</tbody></table>'
-  +'<div class="ps-legend">'+["M","P","G","N","R"].map(c=>'<span><i style="background:'+({M:"#c58a12",P:"#3478d4",G:"#13845b",N:"#7754c8",R:"#fff4bf;border:.3mm solid #0057b7"})[c]+'"></i><b>'+c+"</b> "+NAMES[c]+(SHIFT_HOURS[c]?" ("+SHIFT_HOURS[c]+" h)":"")+'</span>').join("")+'</div>'
-  +'<div class="ps-foot"><span>Stampato il '+new Date().toLocaleDateString("it-IT")+'</span><span>'+(monthPub?"Calendario pubblicato":"Bozza non pubblicata")+'</span></div>';
- document.getElementById("printSheet")?.remove();
- document.body.appendChild(el);
- const done=()=>{el.remove();window.removeEventListener("afterprint",done)};
- window.addEventListener("afterprint",done);
- setTimeout(()=>window.print(),60);
+function pdfPlan(){
+ if(!unit||!approved().length){alert("Non ci sono turni da esportare.");return}
+ if(!window.NanoPdf){alert("Il generatore PDF non è ancora caricato: riprova tra un istante.");return}
+ const dlg=$("pdfDlg");
+ dlg.innerHTML='<h2 style="margin:0">Esporta in PDF</h2><p class="muted" style="margin:6px 0 12px">Scegli come vuoi il foglio, poi cosa farne.</p><div class="opts" style="grid-template-columns:1fr 1fr"><button type="button" class="on" data-or="l">Orizzontale<br><small>giorni in colonna</small></button><button type="button" data-or="p">Verticale<br><small>giorni in riga</small></button></div><div style="display:grid;gap:8px"><button class="btn" data-act="view">Visualizza</button><button class="btn secondary" data-act="down">Scarica</button>'+(navigator.canShare?'<button class="btn secondary" data-act="share">Condividi o stampa</button>':'')+'<button class="btn secondary" id="pdfClose">Annulla</button></div>';
+ let orient="l";
+ dlg.querySelectorAll("[data-or]").forEach(b=>b.onclick=()=>{orient=b.dataset.or;dlg.querySelectorAll("[data-or]").forEach(x=>x.classList.toggle("on",x===b))});
+ dlg.querySelectorAll("[data-act]").forEach(b=>b.onclick=async()=>{
+  const act=b.dataset.act,w=act==="view"?window.open("","_blank"):null;
+  const {blob,name,title}=buildPlanPdf(orient),url=URL.createObjectURL(blob);
+  if(act==="share"){const file=new File([blob],name,{type:"application/pdf"});try{if(navigator.canShare({files:[file]}))await navigator.share({files:[file],title});else note("Il tuo dispositivo non permette di condividere file: usa Scarica.","warn")}catch(e){}}
+  else if(act==="view"){if(w)w.location.href=url;else location.href=url}
+  else{const el=document.createElement("a");el.href=url;el.download=name;document.body.appendChild(el);el.click();el.remove()}
+  setTimeout(()=>URL.revokeObjectURL(url),60000);dlg.close();
+ });
+ $("pdfClose").onclick=()=>dlg.close();
+ dlg.showModal();
 }
 function bind(){
  const wf=$("wardForm");if(wf)wf.onsubmit=async e=>{
@@ -478,7 +467,6 @@ function bind(){
   const {error}=await sb.rpc("review_unit_leave",{p_request:b.dataset.id,p_approve:ok});
   if(error)note("Richiesta non gestita: "+error.message,"error");else note(ok?"Richiesta approvata: giorni segnati non disponibili.":"Richiesta rifiutata.","");
   await loadData();render()});
- const pp=$("printPlan");if(pp)pp.onclick=printPlan;
  const tp=$("togglePub");if(tp)tp.onclick=()=>{
   const [from,to]=range(),next=!monthPub;
   if(next&&!confirm("Pubblicare i turni del mese? Gli infermieri potranno vederli."))return;

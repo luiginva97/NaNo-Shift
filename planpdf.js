@@ -1,7 +1,7 @@
 /* PDF orizzontale (A4) dei turni, generato nel browser senza librerie esterne.
    NanoPdf.plan({title,subtitle,days,rows,foot,legend,stamp,status}) -> Blob */
 (function(){
- const MM=72/25.4,W=297*MM,H=210*MM;
+ const MM=72/25.4;let W=297*MM,H=210*MM;
  const cv=document.createElement("canvas").getContext("2d");
  const widthOf=(t,size,bold)=>{cv.font=(bold?"bold ":"")+"100px Arial, Helvetica, sans-serif";return cv.measureText(t).width/100*size};
  const fix=t=>String(t==null?"":t).replace(/[–—]/g,"-").replace(/[·•]/g,"-").replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/[^\x20-\xFF]/g,"?");
@@ -40,7 +40,9 @@
   return new Blob([u],{type:"application/pdf"});
  }
  const COL={M:"#c58a12",P:"#3478d4",G:"#13845b",N:"#7754c8",R:"#fff4bf"};
- function plan(o){
+ function plan(o,orient){
+  if(orient==="p")return planPortrait(o);
+  W=297*MM;H=210*MM;
   const mx=8*MM,top=8*MM,bot=8*MM,usableW=W-2*mx;
   const nameW=48*MM,totW=16*MM,n=o.days.length,dayW=(usableW-nameW-totW)/n;
   const pages=[];let pg,y;
@@ -85,6 +87,37 @@
   o.legend.forEach(l=>{pg.rect(x,y,13,13,COL[l.c],l.c==="R"?"#0057b7":null,.8);pg.text(l.t,x+18,y+10,8.5,false,"#44546b");x+=18+widthOf(l.t,8.5)+18});
   pg.text(o.stamp,mx,H-bot+2,8,false,"#7a879b");pg.text(o.status,W-mx,H-bot+2,8,false,"#7a879b","right");
   return build(pages);
+ }
+
+ function planPortrait(o){
+  W=210*MM;H=297*MM;
+  const mx=9*MM,top=9*MM,bot=9*MM,usableW=W-2*mx,n=o.rows.length,days=o.days;
+  const dayColW=26*MM,pw=(usableW-dayColW)/Math.max(1,n);
+  const pg=new Page();let y=top;
+  pg.text(o.title,mx,y+16,17,true,"#10284b");pg.text(o.subtitle,mx,y+29,10,false,"#5b6b83");
+  pg.text("NaNo",W-mx-widthOf("NaNoShift",13,true),y+16,13,true,"#0057b7");pg.text("Shift",W-mx-widthOf("Shift",13,true),y+16,13,true,"#e0a812");
+  pg.rect(mx,y+34,usableW,3,"#0057b7");y+=44;
+  const hh=30,legendH=34,sumH=20;
+  const rowH=Math.min(30,(H-bot-y-hh-sumH-legendH-10)/days.length);
+  pg.rect(mx,y,dayColW,hh,"#eaf0fb","#7f8da3",.6);pg.text("Giorno",mx+6,y+18,9,true);
+  const fs=n>9?7:n>6?8:9.5;
+  o.rows.forEach((r,i)=>{const x=mx+dayColW+i*pw;pg.rect(x,y,pw,hh,"#eaf0fb","#7f8da3",.6);
+   pg.text(r.name,x+pw/2,y+13,fs,true,"#10284b","center",pw-4);pg.text(r.sub,x+pw/2,y+24,6.5,false,"#5b6b83","center",pw-4)});
+  y+=hh;
+  days.forEach((d,j)=>{
+   pg.rect(mx,y,dayColW,rowH,d.we?"#fdecea":"#ffffff","#7f8da3",.6);
+   pg.text(d.d+" "+d.wd,mx+6,y+rowH/2+3.5,9,true,d.we?"#c0261b":"#10284b");
+   o.rows.forEach((r,i)=>{const x=mx+dayColW+i*pw,c=r.cells[j];
+    pg.rect(x,y,pw,rowH,c?COL[c]:(d.we?"#f3f5f9":"#ffffff"),"#7f8da3",.6);
+    if(c)pg.text(c,x+pw/2,y+rowH/2+4,Math.min(13,rowH*.55),true,c==="R"?"#0057b7":"#ffffff","center")});
+   y+=rowH;
+  });
+  pg.rect(mx,y,dayColW,sumH,"#eaf0fb","#7f8da3",.6);pg.text("Ore mese",mx+6,y+13,9,true);
+  o.rows.forEach((r,i)=>{const x=mx+dayColW+i*pw;pg.rect(x,y,pw,sumH,"#eaf0fb","#7f8da3",.6);pg.text(r.total,x+pw/2,y+13,9.5,true,"#10284b","center")});
+  y+=sumH+14;let x=mx;
+  o.legend.forEach(l=>{pg.rect(x,y,12,12,COL[l.c],l.c==="R"?"#0057b7":null,.8);pg.text(l.t,x+16,y+9.5,8,false,"#44546b");x+=16+widthOf(l.t,8)+14;if(x>W-mx-90){x=mx;y+=16}});
+  pg.text(o.stamp,mx,H-bot+2,8,false,"#7a879b");pg.text(o.status,W-mx,H-bot+2,8,false,"#7a879b","right");
+  return build([pg]);
  }
  window.NanoPdf={plan};
 })();
