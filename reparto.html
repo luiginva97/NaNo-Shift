@@ -48,6 +48,7 @@ h1{margin:0 0 4px;font-size:clamp(22px,4vw,29px);letter-spacing:-.4px}h2{margin:
 /* Responsive polish: area reparto */
 html{overflow-x:hidden}body{min-width:0;overflow-x:hidden}.top{width:100%;padding:12px max(12px,calc((100% - 1000px)/2))}.brand{min-width:0;flex-wrap:wrap;font-size:15px}.brand img{width:120px;max-height:36px}.links{min-width:0;display:flex;gap:6px;flex-wrap:wrap}.links a{white-space:normal;text-align:center;padding:8px 9px;font-size:13px}.wrap{width:100%;min-width:0;padding:14px 12px 36px}.panel{min-width:0;padding:13px;border-radius:13px}.monthnav{flex-wrap:wrap}.monthnav strong{min-width:0;flex:1;text-align:center}.scroll{max-width:100%;overscroll-behavior-x:contain}.savebar{position:sticky;bottom:0;padding:10px;background:#fffffff2;z-index:4}.row .field{min-width:min(180px,100%)}
 @media(max-width:620px){.top{align-items:stretch;flex-direction:column;gap:10px}.links{display:grid;grid-template-columns:1fr 1fr}.links a{font-size:12px;padding:8px 5px}.wrap{padding:10px 8px 28px}.day{gap:6px;padding:10px 0}.day .d{width:100%;font-size:13px}.chips{width:100%;flex-basis:100%}.chip{padding:6px 9px;font-size:12px}.scroll table{min-width:680px}h1{font-size:24px}.panel h2{font-size:17px}}
+.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px}.flow em{flex:1;min-width:8px;max-width:28px;height:2px;background:var(--line)}.fs{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--muted)}.fs i{font-style:normal;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);font-size:11px}.fs.ok{color:var(--green)}.fs.ok i{background:var(--green);border-color:var(--green);color:#fff}@media(max-width:520px){.flow em{display:none}.flow{gap:8px 14px}}.nextstep{border-color:#b9cdfb!important;background:linear-gradient(180deg,#f4f8ff,#fff)!important}
 </style>
 <link rel="stylesheet" href="ui.css"><link rel="stylesheet" href="nav.css">
 </head>
@@ -82,7 +83,7 @@ async function handleUnitInvite(){
   const hash=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,"0")).join("");
   const {data:pv}=await sb.rpc("preview_unit_invitation",{p_token_hash:hash});
   const info=Array.isArray(pv)?pv[0]:null;
-  if(!info){note("Questo invito non è valido, è scaduto o è già stato usato. Chiedi alla coordinatrice un nuovo link.","error");return}
+  if(!info){note("Questo invito non è valido, è scaduto o è già stato usato. Chiedi al coordinamento un nuovo link.","error");return}
   if(info.already_member){note("Fai già parte del reparto "+info.unit_name+".","");return}
   const {data:unitId,error}=await sb.rpc("accept_unit_invitation",{p_token_hash:hash});
   if(error){note("Invito non accettato: "+error.message,"error");return}
@@ -118,6 +119,12 @@ async function loadMemberships(){
  }else isActualMember=false;
 }
 let myLeaves=[];
+function flowCard(){
+ const saved=Object.keys(orig).length,conf=Object.values(review).filter(v=>v==="confirmed").length,mineShifts=schedule.filter(x=>x.user_id===user.id).length;
+ const st=[["Indichi le disponibilità",saved>0],["Il coordinamento le conferma",saved>0&&conf>=saved],["Vedi i turni pubblicati",mineShifts>0]];
+ const msg=!saved?"Inizia da qui: indica per ogni giorno quando puoi lavorare e salva.":conf<saved?"Disponibilità inviate ("+conf+" di "+saved+" giorni confermati). Puoi modificare i giorni non ancora confermati.":!mineShifts?"Tutto confermato. Appena il coordinamento pubblica i turni li trovi in «Turni pubblicati».":"Turni pubblicati: li trovi in «Turni pubblicati». Per cambiare un turno usa «Cambio turno».";
+ return '<section class="panel nextstep"><div class="flow">'+st.map(([l,ok],i)=>'<span class="fs'+(ok?" ok":"")+'"><i>'+(ok?"✓":i+1)+'</i>'+l+'</span>').join('<em></em>')+'</div><p style="margin:0;font-weight:650">'+msg+'</p></section>';
+}
 function leaveCard(){
  const lab={ferie:"Ferie",permesso:"Permesso",altro:"Altro"},st={pending:"In attesa",approved:"Approvata",rejected:"Non approvata",cancelled:"Annullata"};
  const f=d=>new Date(d+"T12:00:00").toLocaleDateString("it-IT",{day:"numeric",month:"short"});
@@ -142,9 +149,9 @@ async function loadMonth(){
  schedule=(s.data||[]).map(x=>({user_id:x.user_id,day:x.shift_date,code:x.code,display_name:names[x.user_id]||"Collega"}));swapRequests=swapData||[];
 }
 function joinCard(){
- const pending=units.filter(m=>m.unit_role==="nurse"&&m.status!=="active").map(m=>'<div class="item"><span><b>'+safe(m.name)+'</b></span><span class="muted">In attesa di approvazione della coordinatrice</span></div>').join("");
+ const pending=units.filter(m=>m.unit_role==="nurse"&&m.status!=="active").map(m=>'<div class="item"><span><b>'+safe(m.name)+'</b></span><span class="muted">In attesa di approvazione del coordinamento</span></div>').join("");
  const pendingStructures=units.filter(m=>m.unit_role==="coordinator"&&m.status!=="active").map(m=>'<div class="item"><span><b>'+safe(m.name)+'</b></span><span class="muted">Struttura in attesa di approvazione Master</span></div>').join("");
- return '<section class="panel"><h2>Entra in un reparto</h2><p class="muted">Apri il link personale ricevuto dalla coordinatrice oppure inserisci qui il codice del reparto. Con il codice potrai indicare le disponibilità dopo la sua approvazione.</p><form id="joinForm" class="row"><div class="field"><label for="code">Codice reparto</label><input id="code" maxlength="8" autocapitalize="characters" autocomplete="off" required placeholder="Es. K7M2QX9A"></div><div class="field"><label for="joinRole">Il tuo ruolo</label><select id="joinRole"><option value="infermiere">Infermiere</option><option value="oss">OSS</option></select></div><button class="btn" type="submit">Invia richiesta</button></form>'+(pending?'<div style="margin-top:12px">'+pending+'</div>':"")+(pendingStructures?'<div style="margin-top:12px">'+pendingStructures+'</div>':"")+'<div style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px"><h2>Richiedi una nuova struttura</h2><p class="muted">Se sei il referente di una struttura, puoi inviare una richiesta di attivazione. Lo spazio e il ruolo di coordinatore saranno attivati solo dopo l’approvazione del Master.</p><form id="createUnitForm" class="row"><div class="field"><label for="newUnitName">Nome della struttura</label><input id="newUnitName" maxlength="80" minlength="2" required placeholder="Es. Casa di cura …"></div><button class="btn" type="submit">Invia richiesta di attivazione</button></form></div></section>';
+ return '<section class="panel"><h2>Entra in un reparto</h2><p class="muted">Apri il link personale ricevuto dal coordinamento oppure inserisci qui il codice del reparto. Con il codice potrai indicare le disponibilità dopo la sua approvazione.</p><form id="joinForm" class="row"><div class="field"><label for="code">Codice reparto</label><input id="code" maxlength="8" autocapitalize="characters" autocomplete="off" required placeholder="Es. K7M2QX9A"></div><div class="field"><label for="joinRole">Il tuo ruolo</label><select id="joinRole"><option value="infermiere">Infermiere</option><option value="oss">OSS</option></select></div><button class="btn" type="submit">Invia richiesta</button></form>'+(pending?'<div style="margin-top:12px">'+pending+'</div>':"")+(pendingStructures?'<div style="margin-top:12px">'+pendingStructures+'</div>':"")+'<div style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px"><h2>Richiedi una nuova struttura</h2><p class="muted">Se sei il referente di una struttura, puoi inviare una richiesta di attivazione. Lo spazio e il ruolo di coordinatore saranno attivati solo dopo l’approvazione del Master.</p><form id="createUnitForm" class="row"><div class="field"><label for="newUnitName">Nome della struttura</label><input id="newUnitName" maxlength="80" minlength="2" required placeholder="Es. Casa di cura …"></div><button class="btn" type="submit">Invia richiesta di attivazione</button></form></div></section>';
 }
 function availView(){
  const y=cursor.getFullYear(),m=cursor.getMonth();let h='<div id="availabilityGrid">';
@@ -153,7 +160,7 @@ function availView(){
   h+='<div class="day'+(wd===0||wd===6?" we":"")+(avail[key]!==orig[key]?" dirty":"")+'"><div class="d"><span>'+WD[wd]+'</span><span>'+d+'</span></div><div class="chips">'+PREFS.map(([v,l,cls])=>'<button type="button" class="chip '+cls+(cur===v?" on":"")+'" data-day="'+key+'" data-pref="'+v+'"'+(lock?" disabled":"")+'>'+l+'</button>').join("")+'</div>'+(lock?'<span class="lock">✓ Confermata</span>':review[key]==="rejected"?'<span class="lock" style="color:var(--red)">Da modificare</span>':"")+'</div>';
  }
  h+='</div>';
- return '<section class="panel"><h2>Le tue disponibilità</h2><p class="muted">Tocca una scelta per ogni giorno. Le date già confermate dalla coordinatrice sono bloccate.</p>'+h+'<div class="savebar"><button class="btn" id="saveAvail"'+(dirty()&&!busy?"":" disabled")+'>'+(busy?"Salvataggio…":"Salva disponibilità")+'</button><select id="fillPref" class="inline" style="width:auto"><option value="">Imposta i giorni non confermati…</option>'+PREFS.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("")+'</select>'+(dirty()?'<span class="muted">Modifiche non salvate</span>':"")+'</div></section>';
+ return '<section class="panel"><h2>Le tue disponibilità</h2><p class="muted">Tocca una scelta per ogni giorno. Le date già confermate dal coordinamento sono bloccate.</p>'+h+'<div class="savebar"><button class="btn" id="saveAvail"'+(dirty()&&!busy?"":" disabled")+'>'+(busy?"Salvataggio…":"Salva disponibilità")+'</button><select id="fillPref" class="inline" style="width:auto"><option value="">Imposta i giorni non confermati…</option>'+PREFS.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("")+'</select>'+(dirty()?'<span class="muted">Modifiche non salvate</span>':"")+'</div></section>';
 }
 function scheduleView(){
  const y=cursor.getFullYear(),m=cursor.getMonth(),n=dim();
@@ -182,29 +189,29 @@ function contactsView(){return '<section class="panel"><h2>Contatta i colleghi</
 function swapView(){
  const mine=schedule.filter(s=>s.user_id===user.id);
  const peers=[...new Map(schedule.filter(s=>s.user_id!==user.id).map(s=>[s.user_id,s.display_name])).entries()];
- let h="<section class='panel'><h2>Cambio turno</h2><p class='muted'>Proponi uno scambio tra turni pubblicati. Dopo l'accettazione del collega, la coordinatrice dovrà approvarlo prima che il calendario venga modificato.</p><form id='swapForm' class='row'><div class='field'><label for='swapMine'>Il mio turno</label><select id='swapMine' required><option value=''>Scegli data</option>";
+ let h="<section class='panel'><h2>Cambio turno</h2><p class='muted'>Proponi uno scambio tra turni pubblicati. Dopo l'accettazione del collega, il coordinamento dovrà approvarlo prima che il calendario venga modificato.</p><form id='swapForm' class='row'><div class='field'><label for='swapMine'>Il mio turno</label><select id='swapMine' required><option value=''>Scegli data</option>";
  mine.forEach(s=>h+="<option value='"+s.day+"'>"+s.day+" · "+s.code+"</option>");
  h+="</select></div><div class='field'><label for='swapTarget'>Collega</label><select id='swapTarget' required><option value=''>Scegli collega</option>";
  peers.forEach(p=>h+="<option value='"+p[0]+"'>"+safe(p[1])+"</option>");
  h+="</select></div><div class='field'><label for='swapTargetDate'>Turno del collega</label><select id='swapTargetDate' required><option value=''>Scegli prima il collega</option></select></div><div class='field'><label for='swapMessage'>Messaggio (facoltativo)</label><input id='swapMessage' maxlength='300'></div><button class='btn' type='submit'>Invia richiesta</button></form><div class='small-list'>";
- swapRequests.filter(s=>s.requester_id===user.id||s.target_id===user.id).forEach(s=>{const other=rosterContacts.find(m=>m.user_id===(s.requester_id===user.id?s.target_id:s.requester_id));h+="<div class='item'><span><b>"+(s.requester_id===user.id?"A ":"Da ")+safe(other?.display_name||"collega")+"</b><br><small class='muted'>"+s.requester_shift_date+" ↔ "+s.target_shift_date+" · "+({pending:"In attesa del collega",pending_approval:"In attesa di approvazione della coordinatrice",accepted:"Approvato",declined:"Rifiutato",cancelled:"Annullato"}[s.status]||s.status)+"</small></span>";if(s.target_id===user.id&&s.status==="pending")h+="<span><button type='button' data-swap-accept='"+s.id+"'>Accetta</button> <button type='button' data-swap-decline='"+s.id+"'>Rifiuta</button></span>";h+="</div>"});
+ swapRequests.filter(s=>s.requester_id===user.id||s.target_id===user.id).forEach(s=>{const other=rosterContacts.find(m=>m.user_id===(s.requester_id===user.id?s.target_id:s.requester_id));h+="<div class='item'><span><b>"+(s.requester_id===user.id?"A ":"Da ")+safe(other?.display_name||"collega")+"</b><br><small class='muted'>"+s.requester_shift_date+" ↔ "+s.target_shift_date+" · "+({pending:"In attesa del collega",pending_approval:"In attesa di approvazione del coordinamento",accepted:"Approvato",declined:"Rifiutato",cancelled:"Annullato"}[s.status]||s.status)+"</small></span>";if(s.target_id===user.id&&s.status==="pending")h+="<span><button type='button' data-swap-accept='"+s.id+"'>Accetta</button> <button type='button' data-swap-decline='"+s.id+"'>Rifiuta</button></span>";h+="</div>"});
  return h+"</div></section>";
 }
 
 function render(){
  const app=$("app");
- let h='<h1>'+(unit?safe(unit.name):"Reparto")+'</h1><div class="muted">Disponibilità e turni pubblicati dalla coordinatrice.</div>';
+ let h='<h1>'+(unit?safe(unit.name):"Reparto")+'</h1><div class="muted">Disponibilità e turni pubblicati dal coordinamento.</div>';
  if(msg)h+='<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+'</div>';
  const ok=myUnits();
  if(ok.length>1)h+='<div class="field" style="margin-top:10px"><label for="wardSel">Reparto</label><select id="wardSel">'+ok.map(m=>'<option value="'+m.unit_id+'"'+(unit&&m.unit_id===unit.id?" selected":"")+'>'+safe(m.name)+'</option>').join("")+'</select></div>';
  if(!unit){
-  if(units.some(m=>m.unit_role==="coordinator"&&m.status==="active"))h+='<div class="notice warn">Sei coordinatrice di un reparto: gestiscilo dall\'<a href="coordinamento.html">area coordinamento</a>.</div>';
+  if(units.some(m=>m.unit_role==="coordinator"&&m.status==="active"))h+='<div class="notice warn">Sei nel coordinamento di un reparto: gestiscilo dall\'<a href="coordinamento.html">area coordinamento</a>.</div>';
   h+=joinCard();app.innerHTML=h;bind();return
  }
  h+='<div class="tabs"><button data-tab="avail" class="'+(tab==="avail"?"active":"")+'">Disponibilità</button><button data-tab="sched" class="'+(tab==="sched"?"active":"")+'">Turni pubblicati</button></div>';
  if(isActualMember)h+='<div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn secondary" id="leaveUnit">Lascia il reparto</button></div>';
  h+='<div class="monthnav"><button data-month="-1" aria-label="Mese precedente">‹</button><strong>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</strong><button data-month="1" aria-label="Mese successivo">›</button></div>';
- h+=tab==="avail"?availView()+leaveCard():scheduleView();
+ h+=tab==="avail"?flowCard()+availView()+leaveCard():scheduleView();
  if(tab==="sched")h+=swapView();
  h+=contactsView();
  h+=joinCard().replace('<section class="panel"><h2>Entra in un reparto</h2>','<section class="panel"><h2>Entra in un altro reparto</h2>');
@@ -220,7 +227,7 @@ function bind(){
   if(error)note(error.message,"error");else note("Richiesta annullata.","");await loadMonth();render()});
  const jf=$("joinForm");if(jf)jf.onsubmit=async e=>{
   e.preventDefault();const {error}=await sb.rpc("request_join_unit",{p_code:$("code").value,p_staff_role:$("joinRole").value});
-  if(error)note(error.message,"error");else note("Richiesta inviata: attendi l'approvazione della coordinatrice.","");
+  if(error)note(error.message,"error");else note("Richiesta inviata: attendi l'approvazione del coordinamento.","");
   await loadMemberships();render();
  };
  const cf=$("createUnitForm");if(cf)cf.onsubmit=async e=>{

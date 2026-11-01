@@ -47,6 +47,7 @@ dialog{border:0;border-radius:18px;width:min(420px,calc(100% - 24px));padding:20
 .printonly{display:none}
 /* Responsive polish: coordinatore */
 @media(max-width:700px){.top{align-items:flex-start;flex-direction:column;padding:12px}.brand{font-size:15px;flex-wrap:wrap}.brand img{width:124px;max-height:38px}.links{width:100%}.links a{flex:1;text-align:center;font-size:13px;padding:8px 7px}.wrap{padding:12px 10px 36px}.panel{padding:12px;border-radius:13px}.scroll{max-height:65vh}th:first-child,td:first-child{min-width:108px}.monthnav strong{min-width:125px}.opts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px}.flow em{flex:1;min-width:8px;max-width:28px;height:2px;background:var(--line)}.fs{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--muted)}.fs i{font-style:normal;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);font-size:11px}.fs.ok{color:var(--green)}.fs.ok i{background:var(--green);border-color:var(--green);color:#fff}@media(max-width:520px){.flow em{display:none}.flow{gap:8px 14px}}.nextstep{border-color:#b9cdfb!important;background:linear-gradient(180deg,#f4f8ff,#fff)!important}
 .cov.short{background:#fee4e2!important;color:#b42318;font-weight:800}
 </style>
 <link rel="stylesheet" href="ui.css"><link rel="stylesheet" href="nav.css">
@@ -206,6 +207,22 @@ function warnings(){
 function createCard(){
  return '<section class="panel"><h2>'+(units.length?"Crea un altro reparto":"Crea il tuo reparto")+'</h2><p class="muted">Potrai invitare infermieri e OSS con un link personale, oppure dare loro il codice del reparto.</p><form id="wardForm" class="row"><div class="field"><label for="wardName">Nome del reparto</label><input id="wardName" minlength="2" maxlength="80" required placeholder="Es. Medicina Generale"></div><button class="btn" type="submit">Crea reparto</button></form></section>';
 }
+function nextStepCard(){
+ const a=nurses(),[from,to]=range(),np=pending().length;
+ const toConfirm=a.filter(p=>Object.values(av).some(r=>r.user_id===p.user_id&&!r.confirmed)).length;
+ const noAv=a.filter(p=>!Object.values(av).some(r=>r.user_id===p.user_id)).length;
+ const ms=Object.values(as).filter(x=>x.day>=from&&x.day<=to),pub=ms.length&&ms.every(x=>x.published);
+ const lv=leaves.filter(l=>l.status==="pending").length,sw=swapRequests.filter(r=>r.status==="pending_approval").length;
+ let t,d,tab2,btn;
+ if(np){t=np+" richiest"+(np>1?"e":"a")+" di ingresso";d="Approva chi entra nel reparto: potrà indicare le disponibilità.";tab2="req";btn="Apri richieste"}
+ else if(toConfirm){t="Conferma le disponibilità ("+toConfirm+" person"+(toConfirm>1?"e":"a")+")";d="Il generatore usa solo le disponibilità confermate."+(noAv?" "+noAv+" non ne hanno ancora indicate.":"");tab2="avail";btn="Vai alle disponibilità"}
+ else if(!ms.length){t="Genera la bozza dei turni";d=noAv?noAv+" person"+(noAv>1?"e non hanno":"a non ha")+" ancora indicato disponibilità: potresti attendere.":"Disponibilità confermate: puoi creare la bozza del mese.";tab2="plan";btn="Vai ai turni"}
+ else if(!pub){t="Controlla e pubblica i turni";d="Verifica gli avvisi, correggi le celle e pubblica: il personale riceve un avviso.";tab2="plan";btn="Vai ai turni"}
+ else if(lv||sw){t=(lv?lv+" ferie/permessi":"")+(lv&&sw?" e ":"")+(sw?sw+" cambi turno":"")+" da approvare";d="Il calendario cambia solo dopo la tua approvazione.";tab2=lv?"leave":"swaps";btn="Gestisci"}
+ else{t="Tutto in ordine";d="Turni pubblicati e nessuna richiesta in sospeso.";tab2="plan";btn="Vedi i turni"}
+ const steps=[["Ingresso",!np],["Disponibilità",!np&&!toConfirm],["Bozza",ms.length>0],["Pubblicazione",!!pub]];
+ return '<section class="panel nextstep"><div class="flow">'+steps.map(([l,ok],i)=>'<span class="fs'+(ok?" ok":"")+'"><i>'+(ok?"✓":i+1)+'</i>'+l+'</span>').join('<em></em>')+'</div><h2>Prossimo passo: '+t+'</h2><p class="muted">'+d+'</p><button class="btn" data-tab="'+tab2+'">'+btn+'</button></section>';
+}
 function homeView(){
  const today=keyOf(new Date()),a=nurses(),np=pending().length,[from,to]=range();
  const inf=approved().filter(m=>m.staff_role!=="oss").length,oss=approved().length-inf;
@@ -217,7 +234,7 @@ function homeView(){
  const sh=c=>approved().filter(p=>as[p.user_id+"|"+today]?.code===c).map(p=>safe(p.display_name)+(p.staff_role==="oss"?" <small class=\"muted\">OSS</small>":""));
  const row=(l,names)=>'<div class="item"><b>'+l+'</b><span>'+(names.length?names.join(", "):'<span class="muted">—</span>')+'</span></div>';
  const stat=(n,l,tabId,warn)=>'<button class="statcard'+(warn?" warn":"")+'" data-tab="'+tabId+'"><b>'+n+'</b><span>'+l+'</span></button>';
- return '<section class="statgrid">'+stat(np,"richieste di ingresso","req",np>0)+stat(toConfirm,"persone con disponibilità da confermare","avail",toConfirm>0)+stat(noAv,"senza disponibilità questo mese","avail",false)+stat(w,"avvisi nei turni","plan",w>0)+'</section>'
+ return nextStepCard()+'<section class="statgrid">'+stat(np,"richieste di ingresso","req",np>0)+stat(toConfirm,"persone con disponibilità da confermare","avail",toConfirm>0)+stat(noAv,"senza disponibilità questo mese","avail",false)+stat(w,"avvisi nei turni","plan",w>0)+'</section>'
  +'<section class="panel"><h2>Oggi · '+new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"})+'</h2>'+row("Mattina",sh("M"))+row("Pomeriggio",sh("P"))+row("Giornata",sh("G"))+row("Notte",sh("N"))+row("Riposo",sh("R"))+'</section>'
  +'<section class="panel"><h2>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</h2><div class="item"><span>Personale</span><b>'+inf+' infermieri · '+oss+' OSS</b></div><div class="item"><span>Turni assegnati</span><b>'+monthShifts.length+' ('+pub+' pubblicati)</b></div><div class="item"><span>'+(needSum()?"Giorni sotto il fabbisogno minimo":"Giorni con meno di 2 persone in servizio")+'</span><b>'+(gaps.length?gaps.length+" · dal "+gaps[0]:"nessuno")+'</b></div></section>';
 }
