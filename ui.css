@@ -109,3 +109,8 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
 .mc .tm{font-size:10px;color:var(--muted);white-space:nowrap}
 .mc.has{background:#f9fbff}.mc.today{outline:2px solid var(--blue);outline-offset:-2px}
 @media(max-width:520px){.mc{min-height:54px;padding:3px 2px;border-radius:8px}.mc .tm{display:none}.mysum b{font-size:15px}}
+
+/* Turni del reparto non ancora confermati nel calendario personale */
+.shift.ghost{opacity:.55;border:1.5px dashed currentColor;background-image:repeating-linear-gradient(135deg,transparent 0 6px,#ffffff80 6px 8px);cursor:pointer}
+.ward-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:10px 12px;border:1px dashed #9db6e6;border-radius:12px;background:#f3f7ff;font-size:14px}
+#googleSync{display:inline-flex;align-items:center;gap:8px}.gicon{width:18px;height:18px;flex:none}
