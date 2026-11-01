@@ -313,6 +313,19 @@ async function run(p,okText){
  await loadData();render();return true;
 }
 const review=(uid,action,okText)=>run(sb.rpc("review_unit_member",{p_unit:unit.id,p_user:uid,p_action:action}),okText);
+function printPlan(){
+ const source=document.querySelector(".print-target");
+ if(!source){alert("La tabella dei turni non è disponibile.");return}
+ const popup=window.open("","_blank");
+ if(!popup){alert("Il browser ha bloccato la finestra di stampa. Consenti i popup per NaNoShift e riprova.");return}
+ const clone=source.cloneNode(true);
+ clone.querySelectorAll(".noprint,button,form").forEach(el=>el.remove());
+ const title=safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"});
+ const html='<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><style>@page{size:A4 landscape;margin:8mm}*{box-sizing:border-box}body{font:11px/1.35 Arial,sans-serif;color:#10284b;margin:0}h1{font-size:18px;margin:0 0 10px;text-transform:capitalize}.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;margin:0 0 8px}.scroll{overflow:visible!important;max-height:none!important;border:0!important}table{width:100%;min-width:0!important;border-collapse:collapse;table-layout:fixed;font-size:9px}th,td{border:1px solid #9aa8b8;padding:3px 1px;text-align:center;overflow-wrap:anywhere}th{background:#eef2f7}th:first-child,td:first-child{text-align:left;width:28mm;white-space:normal}.totalcol{background:#f1f5fc;font-weight:bold}.pill{display:inline-block;min-width:16px;padding:2px;border-radius:3px;color:#fff;font-weight:bold}.M{background:#c58a12}.P{background:#3478d4}.G{background:#13845b}.N{background:#7754c8}.R{background:#fff4bf;color:#0755b7}.warnlist{font-size:10px;color:#b42318}.printonly{display:none}</style></head><body><h1>'+title+'</h1>'+clone.innerHTML+'</body></html>';
+ popup.document.open();popup.document.write(html);popup.document.close();
+ popup.focus();popup.addEventListener("load",()=>popup.print(),{once:true});
+ setTimeout(()=>{try{popup.print()}catch(_){}},350);
+}
 function bind(){
  const wf=$("wardForm");if(wf)wf.onsubmit=async e=>{
   e.preventDefault();const {data,error}=await sb.rpc("create_unit",{p_name:$("wardName").value});
@@ -373,7 +386,7 @@ function bind(){
  };
  document.querySelectorAll("[data-cell]").forEach(b=>b.onclick=()=>openCell(b.dataset.cell,b.dataset.day));
  const gp=$("generatePlan");if(gp)gp.onclick=generatePlan;
- const pp=$("printPlan");if(pp)pp.onclick=()=>window.print();
+ const pp=$("printPlan");if(pp)pp.onclick=printPlan;
  const tp=$("togglePub");if(tp)tp.onclick=()=>{
   const [from,to]=range(),next=!monthPub;
   if(next&&!confirm("Pubblicare i turni del mese? Gli infermieri potranno vederli."))return;
