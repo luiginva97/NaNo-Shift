@@ -323,8 +323,8 @@ function printPlan(){
  const title=safe(unit.name)+" · "+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"});
  const html='<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><style>@page{size:A4 landscape;margin:8mm}*{box-sizing:border-box}body{font:11px/1.35 Arial,sans-serif;color:#10284b;margin:0}h1{font-size:18px;margin:0 0 10px;text-transform:capitalize}.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;margin:0 0 8px}.scroll{overflow:visible!important;max-height:none!important;border:0!important}table{width:100%;min-width:0!important;border-collapse:collapse;table-layout:fixed;font-size:9px}th,td{border:1px solid #9aa8b8;padding:3px 1px;text-align:center;overflow-wrap:anywhere}th{background:#eef2f7}th:first-child,td:first-child{text-align:left;width:28mm;white-space:normal}.totalcol{background:#f1f5fc;font-weight:bold}.pill{display:inline-block;min-width:16px;padding:2px;border-radius:3px;color:#fff;font-weight:bold}.M{background:#c58a12}.P{background:#3478d4}.G{background:#13845b}.N{background:#7754c8}.R{background:#fff4bf;color:#0755b7}.warnlist{font-size:10px;color:#b42318}.printonly{display:none}</style></head><body><h1>'+title+'</h1>'+clone.innerHTML+'</body></html>';
  popup.document.open();popup.document.write(html);popup.document.close();
- popup.focus();popup.addEventListener("load",()=>popup.print(),{once:true});
- setTimeout(()=>{try{popup.print()}catch(_){}},350);
+ popup.focus();
+ setTimeout(()=>{try{popup.focus();popup.print()}catch(_){}},500);
 }
 function bind(){
  const wf=$("wardForm");if(wf)wf.onsubmit=async e=>{
