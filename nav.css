@@ -98,3 +98,4 @@
 @media(min-width:1000px){.side-nav .sw-desk+.side-account{margin-top:0}}
 .side-nav .area-switch>svg:first-child{display:none}
 @media(min-width:1000px){.side-nav .sw-desk .area-switch{font-size:13px;gap:8px}.side-nav .sw-desk .area-switch span{white-space:nowrap}}
+@media(min-width:1000px){.side-nav .sw-desk .area-switch{padding:10px 8px;gap:6px;font-size:12.5px;line-height:1.2;text-align:left}.side-nav .sw-desk .area-switch svg{flex:none;width:16px;height:16px}.side-nav .sw-desk .area-switch span{white-space:normal}}

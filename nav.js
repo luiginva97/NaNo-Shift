@@ -104,7 +104,7 @@
  // Editor dell'ordine (Dati utente): ↑ ↓ + ripristino. save(nextPrefs) → Promise.
  function mountOrderEditor(el,o){
   const draw=()=>{
-   const prefs=o.getPrefs(),ctx=o.getCtx(),items=ordered(prefs,ctx);
+   const prefs=o.getPrefs(),ctx=o.getCtx(),items=ordered(prefs,ctx).filter(i=>!i.switch);
    el.innerHTML='<ul class="nav-order">'+items.map((it,i)=>'<li data-id="'+it.id+'">'+it.icon+'<b>'+esc(it.label)+(enabled(it,prefs)?"":' <small>(nascosta)</small>')+'</b><span class="mv"><button type="button" data-d="-1" aria-label="Sposta su '+esc(it.label)+'"'+(i===0?" disabled":"")+'>↑</button><button type="button" data-d="1" aria-label="Sposta giù '+esc(it.label)+'"'+(i===items.length-1?" disabled":"")+'>↓</button></span></li>').join("")+'</ul><div style="margin-top:10px"><button type="button" class="btn secondary" data-reset>Ripristina ordine</button></div>';
    el.querySelectorAll("[data-d]").forEach(b=>b.onclick=async()=>{
     const id=b.closest("li").dataset.id,ids=items.map(i=>i.id),i=ids.indexOf(id),j=i+Number(b.dataset.d);
@@ -135,5 +135,15 @@
   {id:"accounts",label:"Account",tab:true,icon:svg('<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><circle cx="12" cy="10" r="2.2"/><path d="M8.5 16.5c.8-1.6 2-2.3 3.5-2.3s2.7.7 3.5 2.3"/>')},
   {id:"profile",label:"Dati utente",href:"dashboard.html?area=personale&section=profileView",icon:svg('<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>')}
  ];
- window.NanoNav={COORD_TABS,MASTER_TABS,ITEMS,render,loadContext,mountAccount,mountOrderEditor,visibleItems,ordered,isVisible:(id,prefs,ctx)=>byId[id]?visible(byId[id],prefs,ctx):true,sectionToId:s=>(ITEMS.find(i=>i.section===s)||{}).id};
+ const coordItems=prefs=>{const all=COORD_TABS.filter(i=>!i.switch),sw=COORD_TABS.filter(i=>i.switch),saved=Array.isArray((prefs||{}).coord_order)?prefs.coord_order:[],seen=new Set(),out=[];saved.forEach(id=>{const it=all.find(x=>x.id===id);if(it&&!seen.has(id)){seen.add(id);out.push(it)}});all.forEach(it=>{if(!seen.has(it.id))out.push(it)});return [...sw,...out]};
+ function mountCoordOrderEditor(el,o){
+  const draw=()=>{
+   const prefs=o.getPrefs(),items=coordItems(prefs).filter(i=>!i.switch);
+   el.innerHTML='<ul class="nav-order">'+items.map((it,i)=>'<li data-id="'+it.id+'">'+it.icon+'<b>'+esc(it.label)+'</b><span class="mv"><button type="button" data-d="-1" aria-label="Sposta su '+esc(it.label)+'"'+(i===0?" disabled":"")+'>↑</button><button type="button" data-d="1" aria-label="Sposta giù '+esc(it.label)+'"'+(i===items.length-1?" disabled":"")+'>↓</button></span></li>').join("")+'</ul><div style="margin-top:10px"><button type="button" class="btn secondary" data-reset>Ripristina ordine</button></div>';
+   el.querySelectorAll("[data-d]").forEach(b=>b.onclick=async()=>{const id=b.closest("li").dataset.id,ids=items.map(i=>i.id),i=ids.indexOf(id),j=i+Number(b.dataset.d);if(j<0||j>=ids.length)return;[ids[i],ids[j]]=[ids[j],ids[i]];await o.save({...prefs,coord_order:ids});draw()});
+   el.querySelector("[data-reset]").onclick=async()=>{const n={...prefs};delete n.coord_order;await o.save(n);draw()};
+  };
+  draw();
+ }
+ window.NanoNav={coordItems,mountCoordOrderEditor,COORD_TABS,MASTER_TABS,ITEMS,render,loadContext,mountAccount,mountOrderEditor,visibleItems,ordered,isVisible:(id,prefs,ctx)=>byId[id]?visible(byId[id],prefs,ctx):true,sectionToId:s=>(ITEMS.find(i=>i.section===s)||{}).id};
 })();

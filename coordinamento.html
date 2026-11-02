@@ -116,7 +116,7 @@ function renderSide(){
  if(!navBase)return;
  const np=pending().length,swN=swapRequests.filter(r=>r.status==="pending_approval").length,lvN=leaves.filter(l=>l.status==="pending").length;
  const badge={req:np,swaps:swN,leave:lvN,expiries:expiryRows.length};
- const items=NanoNav.COORD_TABS.map(i=>({...i,badge:badge[i.id]||""}));
+ const items=NanoNav.coordItems(navBase.prefs).map(i=>({...i,badge:badge[i.id]||""}));
  NanoNav.render({...navBase,customItems:items,active:tab,primary:4,onTab:t=>{tab=t;note(null);render();window.scrollTo({top:0})},onHome:()=>{tab="home";render()}});
 }
 const approved=()=>roster.filter(m=>m.status==="active");
