@@ -99,9 +99,9 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id),pad=n=>String(n).padStart(2,"0");
 const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const WD=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"],WORK=["M","P","G","N"];
-const PREF_TXT={ANY:"Libero",M:"Mattina",P:"Pomeriggio",G:"Giornata",N:"Notte",R:"Vorrebbe riposo",OFF:"Non disponibile"};
-const PREF_SYM={ANY:"L",M:"M",P:"P",G:"G",N:"N",R:"Ri",OFF:"✕"};
-const PREF_CLS={ANY:"free",M:"M",P:"P",G:"G",N:"N",R:"rest",OFF:"unavailable"};
+const PREF_TXT={ANY:"Non indicata",M:"Mattina",P:"Pomeriggio",G:"Giornata",N:"Notte",R:"Libero (a casa)",OFF:"Libero (a casa)"};
+const PREF_SYM={ANY:"–",M:"M",P:"P",G:"G",N:"N",R:"L",OFF:"L"};
+const PREF_CLS={ANY:"",M:"M",P:"P",G:"G",N:"N",R:"rest",OFF:"unavailable"};
 let user=null,units=[],unit=null,roster=[],av={},as={},swapRequests=[],expiryRows=[],tab=(["home","req","plan","avail","staff","leave","swaps","expiries"].includes(new URLSearchParams(location.search).get("tab"))?new URLSearchParams(location.search).get("tab"):"home"),cursor=new Date(),msg=null,monthPub=false;
 cursor.setDate(1);
 const ymd=(y,m,d)=>y+"-"+pad(m+1)+"-"+pad(d);
@@ -282,15 +282,15 @@ function headRow(extraLabel="Totale"){
 const SHIFT_HOURS={M:7,P:5,G:12,N:12,R:0};
 const fmtHours=n=>Number(n||0).toLocaleString("it-IT",{maximumFractionDigits:2})+" h";
 function availabilityChoice(uid,day){return av[uid+"|"+day]?.choice||null}
-function isAvailableChoice(choice){return ["ANY","M","P","G","N"].includes(choice)}
+function isAvailableChoice(choice){return ["M","P","G","N"].includes(choice)}
 
 function availView(){
  const a=nurses(),y=cursor.getFullYear(),m=cursor.getMonth(),n=dim();
  const rows=a.map(p=>{
   const mine=Object.keys(av).filter(k=>k.startsWith(p.user_id+"|")).map(k=>av[k]),all=mine.length>0&&mine.every(r=>r.confirmed);
-  const counts={free:0,pref:0,rest:0,off:0};
-  for(let d=1;d<=n;d++){const choice=availabilityChoice(p.user_id,ymd(y,m,d));if(choice==="ANY")counts.free++;else if(["M","P","G","N"].includes(choice))counts.pref++;else if(choice==="R")counts.rest++;else if(choice==="OFF")counts.off++}
-  const total='<td class="totalcol summarycell" title="Liberi / preferenze / riposo / non disponibili"><b>'+ (counts.free+counts.pref)+'</b><br><small>'+counts.free+' L · '+counts.pref+' P</small></td>';
+  const counts={none:0,pref:0,rest:0,off:0};
+  for(let d=1;d<=n;d++){const choice=availabilityChoice(p.user_id,ymd(y,m,d));if(choice==="ANY")counts.none++;else if(["M","P","G","N"].includes(choice))counts.pref++;else if(choice==="R")counts.rest++;else if(choice==="OFF")counts.off++}
+  const total='<td class="totalcol summarycell" title="Giorni con disponibilità / giorni liberi (a casa)"><b>'+counts.pref+'</b><br><small>'+(counts.rest+counts.off)+' liberi</small></td>';
   return '<tr><td>'+safe(p.display_name)+' '+roleChip(p.staff_role)+'<br><button class="btn small'+(all?" secondary":"")+'" data-confirm="'+p.user_id+'" data-set="'+(all?"pending":"confirmed")+'"'+(mine.length?"":" disabled")+' style="margin-top:2px">'+(all?"Riapri":"Conferma")+'</button></td>'+Array.from({length:n},(_,i)=>{
    const r=av[p.user_id+"|"+ymd(y,m,i+1)];
    return '<td class="a '+(r?PREF_CLS[r.choice]:"none")+(r&&r.confirmed?" conf":"")+'" title="'+(r?PREF_TXT[r.choice]+(r.confirmed?" · confermata":""):"Nessuna indicazione")+'">'+(r?PREF_SYM[r.choice]:"–")+"</td>";
@@ -317,7 +317,7 @@ function planView(){
   return '<tr><td>'+safe(p.display_name)+'<br>'+roleChip(p.staff_role)+'</td>'+cells+'<td class="totalcol summarycell"><b>'+fmtHours(personHours)+'</b>'+(bal==null?"":'<br><small style="color:'+(bal>0?"#b54708":bal<0?"#1d4ed8":"#067647")+'">saldo '+(bal>0?"+":"")+fmtHours(bal)+'</small>')+'</td></tr>'+extraRows;
  }).join("");
  const availableRows=["M","P","G","N"].map(c=>'<tr class="covrow"><td>'+c+' disponibili</td>'+Array.from({length:n},(_,i)=>{
-  const k=ymd(y,m,i+1),cnt=a.filter(p=>{const v=av[p.user_id+"|"+k];return v?.confirmed&&(v.choice===c||v.choice==="ANY")}).length;
+  const k=ymd(y,m,i+1),cnt=a.filter(p=>{const v=av[p.user_id+"|"+k];return v?.confirmed&&v.choice===c}).length;
   return '<td class="cov'+(cnt?"":" zero")+'" title="Disponibilità confermate per '+c+'">'+cnt+"</td>";
  }).join("")+'<td class="totalcol summarycell">—</td></tr>').join("");
  const cov=["M","P","G","N"].map(c=>'<tr class="covrow"><td>'+c+' coperti</td>'+Array.from({length:n},(_,i)=>{
@@ -525,7 +525,7 @@ async function generatePlan(){
  if(missing.length&&!confirm("Non risultano disponibilità per: "+missing.map(p=>p.display_name).join(", ")+". Per queste persone non sarà possibile generare turni. Vuoi continuare?"))return;
  const existing=Object.values(as).filter(x=>x.day>=from&&x.day<=to);
  if(monthPub&&!confirm("Il calendario risulta pubblicato. Rigenerando i turni dovrai ricontrollare e ripubblicare la nuova bozza. Continuare?"))return;
- if(!confirm("Generare la bozza usando TUTTE le disponibilità confermate? Le preferenze M/P/G/N saranno assegnate esattamente come indicate, 'L' sarà trasformato in un turno da distribuire, 'Ri' in riposo e '✕' resterà senza turno. Non verranno applicati limiti settimanali né esclusi sabati o domeniche. Gli eventuali problemi saranno segnalati con avvisi, senza eliminare le disponibilità. I turni già presenti nel mese verranno sostituiti."))return;
+ if(!confirm("Generare la bozza usando TUTTE le disponibilità confermate? I turni M/P/G/N indicati saranno assegnati esattamente come richiesti, «L» (libero, a casa) resterà senza turno e i giorni senza indicazione non saranno assegnati. Non verranno applicati limiti settimanali né esclusi sabati o domeniche. Gli eventuali problemi saranno segnalati con avvisi, senza eliminare le disponibilità. I turni già presenti nel mese verranno sostituiti."))return;
  if(existing.some(x=>x.published)){
   const {error}=await sb.rpc("publish_unit_shifts",{p_unit:unit.id,p_from:from,p_to:to,p_published:false});
   if(error){note("Non riesco a ritirare la pubblicazione prima di rigenerare: "+error.message,"error");render();return}
@@ -534,7 +534,7 @@ async function generatePlan(){
  for(const p of staff)typeCounts[p.user_id]={M:0,P:0,G:0,N:0};
  for(let d=1;d<=days;d++){
   const day=ymd(year,month,d);
-  const available=staff.map(p=>({p,r:av[p.user_id+"|"+day]})).filter(x=>x.r&&x.r.confirmed&&!absn[x.p.user_id+"|"+day]);
+  const available=staff.map(p=>({p,r:av[p.user_id+"|"+day]})).filter(x=>x.r&&x.r.confirmed&&x.r.choice!=="ANY"&&!absn[x.p.user_id+"|"+day]);
   const open=available.filter(x=>x.r.choice==="ANY");
   const dayTypes={M:0,P:0,G:0,N:0};
   // Honor every explicit preference, including weekends and consecutive shifts.
@@ -566,7 +566,7 @@ async function generatePlan(){
   const {error:insertError}=await sb.from("unit_shifts").insert(planned);
   if(insertError){note("Bozza non salvata: "+insertError.message,"error");await loadData();render();return}
  }
- note("Bozza generata: "+planned.length+" righe da disponibilità confermate. Sono state mantenute tutte le preferenze; controlla gli avvisi e poi modifica o pubblica il calendario.","");
+ note("Bozza generata: "+planned.length+" righe da disponibilità confermate. Sono state mantenute tutte le disponibilità; controlla gli avvisi e poi modifica o pubblica il calendario.","");
  await loadData();render();
 }
 function openCell(uid,day){
