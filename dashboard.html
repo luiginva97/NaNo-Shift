@@ -201,7 +201,7 @@ function buildSectionViews(){
  const renderNav=()=>NanoNav.render({container:nav,page:"dashboard",prefs:profile.feature_preferences||{},ctx:navCtx(),active:activeSection,onSection:activate,account:{name:profile.display_name||profile.first_name||user.email,avatar:profile.avatar_url,onLogout:async()=>{await sb.auth.signOut();location.href="accesso.html"}}});
  window.renderNav=renderNav;
  function activate(id){activeSection=id;try{const u=new URL(location.href);u.searchParams.set("section",id);if(!u.searchParams.get("area"))u.searchParams.set("area","personale");history.replaceState(null,"",u)}catch(_){}app.querySelectorAll(".view-section").forEach(v=>v.hidden=v.id!==id||v.dataset.off==="1");renderNav();window.scrollTo({top:0,behavior:"instant"})}
- const wanted=new URLSearchParams(location.search).get("section");if(wanted&&$(wanted)&&$(wanted).classList.contains("view-section"))activeSection=wanted;
+ if(!window.__sectionInit){window.__sectionInit=true;const wanted=new URLSearchParams(location.search).get("section");if(wanted&&$(wanted)&&$(wanted).classList.contains("view-section"))activeSection=wanted}
  activate(activeSection);applyFeaturePreferences();
 
  const email=user.email||"";setupNotifications();
