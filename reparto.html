@@ -177,8 +177,9 @@ function joinCard(){
 }
 let sel=new Set(),rangeMode=false,rangeStart=null,brush=null,soundOn=true;
 try{soundOn=localStorage.getItem("ns_sound")!=="0"}catch(_){}
-let _ac=null;
-function tuk(){if(!soundOn)return;try{_ac=_ac||new (window.AudioContext||window.webkitAudioContext)();const a=_ac,t=a.currentTime,o=a.createOscillator(),g=a.createGain();o.type="sine";o.frequency.setValueAtTime(720,t);o.frequency.exponentialRampToValueAtTime(260,t+.07);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.22,t+.005);g.gain.exponentialRampToValueAtTime(.0001,t+.09);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+.1)}catch(_){}}
+let _snd=null;
+function mkTuk(){const sr=22050,n=Math.floor(sr*.09),buf=new Uint8Array(44+n*2),dv=new DataView(buf.buffer);const w=(o,t)=>{for(let i=0;i<t.length;i++)dv.setUint8(o+i,t.charCodeAt(i))};w(0,"RIFF");dv.setUint32(4,36+n*2,true);w(8,"WAVEfmt ");dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,sr,true);dv.setUint32(28,sr*2,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);w(36,"data");dv.setUint32(40,n*2,true);let ph=0;for(let i=0;i<n;i++){const t=i/n,f=760-480*t;ph+=2*Math.PI*f/sr;const env=Math.min(1,i/60)*Math.pow(1-t,2.2);dv.setInt16(44+i*2,Math.round(Math.sin(ph)*env*26000),true)}let bin="";for(let i=0;i<buf.length;i++)bin+=String.fromCharCode(buf[i]);return "data:audio/wav;base64,"+btoa(bin)}
+function tuk(){if(!soundOn)return;try{if(!_snd){const u=mkTuk();_snd=[0,1,2].map(()=>{const a=new Audio(u);a.preload="auto";return a});_snd.i=0}const a=_snd[_snd.i++%_snd.length];a.currentTime=0;const p=a.play();if(p&&p.catch)p.catch(()=>{})}catch(_){}try{navigator.vibrate&&navigator.vibrate(8)}catch(_){}}
 const ORDER=["M","P","G","N","OFF"];
 const HRS={M:"07–14",P:"14–19",G:"07–19",N:"19–07"};
 function applyBrush(keys){const all=keys.length&&keys.every(k=>avail[k]===brush);keys.forEach(k=>{avail[k]=all?"ANY":brush});return all}
