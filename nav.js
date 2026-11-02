@@ -43,16 +43,17 @@
  function render(o){
   const nav=o.container,ctx=o.ctx||{},prefs=o.prefs||{},page=o.page;
   document.body.classList.add("has-nav");
-  let items=o.customItems||visibleItems(prefs,ctx);items=[...items.filter(i=>i.switch),...items.filter(i=>!i.switch)];
+  let items=o.customItems||visibleItems(prefs,ctx);const swItem=items.find(i=>i.switch);items=items.filter(i=>!i.switch);
   const activeId=o.customItems?o.active:page==="dashboard"?(items.find(i=>i.section===o.active)||{}).id:(PAGE_IDS[page]||null);
   const btn=it=>{
    const target=it.tab?'data-tab="'+esc(it.id)+'"':it.section?(page==="dashboard"?'data-section="'+it.section+'"':'data-href="dashboard.html?area=personale&section='+it.section+'"'):'data-href="'+it.href+'"';
-   return '<button type="button" '+target+' class="'+(it.switch?"area-switch ":"")+(it.id===activeId&&!it.switch?"active":"")+'"'+(it.id===activeId&&!it.switch?' aria-current="page"':"")+(it.switch?' aria-label="Passa all’area '+esc(it.to)+'"':"")+'>'+it.icon+(it.switch?'<span class="seg cur">'+esc(it.cur)+'</span><span class="seg go"><i aria-hidden="true">⇄</i>'+esc(it.to)+'</span>':'<span>'+esc(it.label)+'</span>')+(it.badge?'<em class="nbadge">'+esc(it.badge)+'</em>':"")+'</button>';
+   return '<button type="button" '+target+' class="'+(it.switch?"area-switch ":"")+(it.id===activeId&&!it.switch?"active":"")+'"'+(it.id===activeId&&!it.switch?' aria-current="page"':"")+(it.switch?' aria-label="Passa all’area '+esc(it.to)+'"':"")+'>'+it.icon+(it.switch?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg><span>Passa all’area '+esc(it.to.toLowerCase())+'</span>':'<span>'+esc(it.label)+'</span>')+(it.badge?'<em class="nbadge">'+esc(it.badge)+'</em>':"")+'</button>';
   };
-  const PRI=o.primary||PRIMARY;const main=items.length>PRI+1?items.slice(0,PRI):items,more=items.length>PRI+1?items.slice(PRI):[];
-  nav.innerHTML='<div class="side-brand" role="link" tabindex="0" aria-label="Vai alla pagina iniziale"><img src="favicon-192.png" alt="" width="38" height="38"><span class="sb-name">NaNo<span>Shift</span></span></div>'
+  const PRI=o.primary||PRIMARY;const main=items.length>PRI+1?items.slice(0,PRI):items,more=items.length>PRI+1?items.slice(PRI):[];const swHtml=swItem?btn(swItem):"";const hasMore=more.length>0||!!swItem;
+  nav.innerHTML='<div class="side-brand" role="link" tabindex="0" aria-label="Vai alla pagina iniziale"><img src="favicon-192.png" alt="" width="38" height="38"><span class="sb-name">NaNo<span>Shift</span></span></div>'+(swItem?'<div class="area-tag '+(swItem.id==="coord"?"is-user":"is-coord")+'">'+esc(swItem.cur==='Utente'?"Area utente":"Area coordinamento")+'</div>':"")
    +main.map(btn).join("")
-   +(more.length?'<button type="button" class="nav-more-btn'+(more.some(i=>i.id===activeId)?" active":"")+'" aria-expanded="false" aria-controls="navMore"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg><span>Altro</span></button><div class="nav-more" id="navMore">'+more.map(btn).join("")+'</div>':"");
+   +(hasMore?'<button type="button" class="nav-more-btn'+(more.some(i=>i.id===activeId)?" active":"")+'" aria-expanded="false" aria-controls="navMore"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg><span>Altro</span></button><div class="nav-more" id="navMore">'+more.map(btn).join("")+(swItem?'<span class="sw-mob">'+swHtml+'</span>':"")+'</div>':"");
+  if(swItem)nav.insertAdjacentHTML("beforeend",'<span class="sw-desk">'+swHtml+'</span>');
   const acc=o.account;
   if(acc){
    nav.insertAdjacentHTML("beforeend",'<div class="side-account"><button type="button" class="side-account-btn" aria-haspopup="menu" aria-expanded="false"><span class="sa-avatar">'+(acc.avatar?'<img src="'+esc(acc.avatar)+'" alt="">':esc(String(acc.name||"?").trim().charAt(0).toUpperCase()))+'</span><span class="sa-name">'+esc(acc.name||"Account")+'</span></button><div class="side-account-menu" role="menu" hidden><button type="button" role="menuitem" data-acc="profile">Dati utente</button><button type="button" role="menuitem" data-acc="logout" class="logout-menu-item">Esci</button></div></div>');
