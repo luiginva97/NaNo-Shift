@@ -24,7 +24,8 @@
  const PAGE_IDS={reparto:"ward",coordinamento:"coord",professional:"docs",cvs:"cvs",admin:"users"};
 
  // Una voce è disponibile per questa persona (ruolo e tipo di impiego), indipendentemente dai toggle.
- const available=(it,ctx)=>!(it.coordOnly&&!ctx.isCoord)&&!(it.adminOnly&&!ctx.isAdmin)&&!(it.notEmployee&&ctx.employee)&&!(it.id==="ward"&&ctx.isMaster);
+ const MASTER_IDS=["users","profile"];
+ const available=(it,ctx)=>!(ctx.isMaster&&!MASTER_IDS.includes(it.id))&&!(it.coordOnly&&!ctx.isCoord)&&!(it.adminOnly&&!ctx.isAdmin)&&!(it.notEmployee&&ctx.employee)&&!(it.id==="ward"&&ctx.isMaster);
  const enabled=(it,prefs)=>!it.pref||(prefs||{})[it.pref]!==false;
  const visible=(it,prefs,ctx)=>available(it,ctx)&&enabled(it,prefs);
 
@@ -43,13 +44,13 @@
  function render(o){
   const nav=o.container,ctx=o.ctx||{},prefs=o.prefs||{},page=o.page;
   document.body.classList.add("has-nav");
-  const items=visibleItems(prefs,ctx);
-  const activeId=page==="dashboard"?(items.find(i=>i.section===o.active)||{}).id:(PAGE_IDS[page]||null);
+  const items=o.customItems||visibleItems(prefs,ctx);
+  const activeId=o.customItems?o.active:page==="dashboard"?(items.find(i=>i.section===o.active)||{}).id:(PAGE_IDS[page]||null);
   const btn=it=>{
-   const target=it.section?(page==="dashboard"?'data-section="'+it.section+'"':'data-href="dashboard.html?area=personale&section='+it.section+'"'):'data-href="'+it.href+'"';
-   return '<button type="button" '+target+' class="'+(it.id===activeId?"active":"")+'"'+(it.id===activeId?' aria-current="page"':"")+'>'+it.icon+'<span>'+esc(it.label)+'</span></button>';
+   const target=it.tab?'data-tab="'+esc(it.id)+'"':it.section?(page==="dashboard"?'data-section="'+it.section+'"':'data-href="dashboard.html?area=personale&section='+it.section+'"'):'data-href="'+it.href+'"';
+   return '<button type="button" '+target+' class="'+(it.id===activeId?"active":"")+'"'+(it.id===activeId?' aria-current="page"':"")+'>'+it.icon+'<span>'+esc(it.label)+'</span>'+(it.badge?'<em class="nbadge">'+esc(it.badge)+'</em>':"")+'</button>';
   };
-  const main=items.length>PRIMARY+1?items.slice(0,PRIMARY):items,more=items.length>PRIMARY+1?items.slice(PRIMARY):[];
+  const PRI=o.primary||PRIMARY;const main=items.length>PRI+1?items.slice(0,PRI):items,more=items.length>PRI+1?items.slice(PRI):[];
   nav.innerHTML='<div class="side-brand" role="link" tabindex="0" aria-label="Vai alla pagina iniziale"><img src="favicon-192.png" alt="" width="38" height="38"><span class="sb-name">NaNo<span>Shift</span></span></div>'
    +main.map(btn).join("")
    +(more.length?'<button type="button" class="nav-more-btn'+(more.some(i=>i.id===activeId)?" active":"")+'" aria-expanded="false" aria-controls="navMore"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg><span>Altro</span></button><div class="nav-more" id="navMore">'+more.map(btn).join("")+'</div>':"");
@@ -63,9 +64,10 @@
   }
   nav.querySelectorAll("[data-section]").forEach(b=>b.onclick=()=>{nav.classList.remove("more-open");o.onSection&&o.onSection(b.dataset.section)});
   nav.querySelectorAll("[data-href]").forEach(b=>b.onclick=()=>{location.href=b.dataset.href});
+  nav.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{nav.classList.remove("more-open");o.onTab&&o.onTab(b.dataset.tab)});
   const mb=nav.querySelector(".nav-more-btn");
   if(mb)mb.onclick=e=>{e.stopPropagation();const open=nav.classList.toggle("more-open");mb.setAttribute("aria-expanded",String(open))};
-  const brand=nav.querySelector(".side-brand"),home=()=>{location.href=ctx.isCoord?"coordinamento.html":"dashboard.html?area=personale"};
+  const brand=nav.querySelector(".side-brand"),home=()=>{if(o.onHome){o.onHome();return}location.href=ctx.isMaster?"admin.html":ctx.isCoord?"coordinamento.html":"dashboard.html?area=personale"};
   brand.onclick=home;brand.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();home()}};
   if(!window.__navGlobalBound){
    window.__navGlobalBound=true;
@@ -115,5 +117,24 @@
   draw();
  }
 
- window.NanoNav={ITEMS,render,loadContext,mountAccount,mountOrderEditor,visibleItems,ordered,isVisible:(id,prefs,ctx)=>byId[id]?visible(byId[id],prefs,ctx):true,sectionToId:s=>(ITEMS.find(i=>i.section===s)||{}).id};
+ const COORD_TABS=[
+  {id:"home",label:"Riepilogo",icon:svg('<rect x="3" y="3" width="8" height="9" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="12" width="8" height="9" rx="2"/><rect x="3" y="16" width="8" height="5" rx="2"/>')},
+  {id:"req",label:"Richieste",icon:svg('<path d="M4 4h16v12H8l-4 4z"/><path d="M8 9h8M8 12h5"/>')},
+  {id:"plan",label:"Turni",icon:svg('<rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M16 2.5v4M8 2.5v4M3 10h18M8 14h3M13 14h3M8 17.5h3"/>')},
+  {id:"avail",label:"Disponibilità",icon:svg('<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/>')},
+  {id:"staff",label:"Personale",icon:svg('<circle cx="9" cy="8" r="3.2"/><path d="M2.8 20v-1.5A5.5 5.5 0 0 1 8.3 13h1.4a5.5 5.5 0 0 1 5.5 5.5V20"/><path d="M16 4.9a3.2 3.2 0 0 1 0 6.2M18.5 13.4a5.5 5.5 0 0 1 2.7 5.1V20"/>')},
+  {id:"leave",label:"Ferie e assenze",icon:svg('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>')},
+  {id:"swaps",label:"Cambi turno",icon:svg('<path d="M4 8h14l-3-3M20 16H6l3 3"/>')},
+  {id:"expiries",label:"Scadenze",icon:svg('<circle cx="12" cy="13" r="8"/><path d="M12 8.5V13l3 2M9 2.5h6"/>')},
+  {id:"cvs",label:"CV condivisi",href:"cv-condivisi.html",icon:svg('<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6.5 16c.5-1.5 1.5-2 2.5-2s2 .5 2.5 2M14 10h4M14 14h4"/>')},
+  {id:"personal",label:"Area utente",href:"dashboard.html?area=personale",icon:svg('<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>')}
+ ].map(i=>i.href?i:{...i,tab:true});
+ const MASTER_TABS=[
+  {id:"overview",label:"Panoramica",tab:true,icon:svg('<rect x="3" y="3" width="8" height="9" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="12" width="8" height="9" rx="2"/><rect x="3" y="16" width="8" height="5" rx="2"/>')},
+  {id:"units",label:"Strutture",tab:true,icon:svg('<path d="M4 21V6.5L12 3l8 3.5V21M2.5 21h19"/><path d="M9 21v-4.5h6V21M8.5 9.5h1.5M14 9.5h1.5M8.5 13h1.5M14 13h1.5"/>')},
+  {id:"accounts",label:"Account",tab:true,icon:svg('<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><circle cx="12" cy="10" r="2.2"/><path d="M8.5 16.5c.8-1.6 2-2.3 3.5-2.3s2.7.7 3.5 2.3"/>')},
+  {id:"demo",label:"Demo reparto",href:"demo-reparto.html",icon:svg('<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/>')},
+  {id:"profile",label:"Dati utente",href:"dashboard.html?area=personale&section=profileView",icon:svg('<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>')}
+ ];
+ window.NanoNav={COORD_TABS,MASTER_TABS,ITEMS,render,loadContext,mountAccount,mountOrderEditor,visibleItems,ordered,isVisible:(id,prefs,ctx)=>byId[id]?visible(byId[id],prefs,ctx):true,sectionToId:s=>(ITEMS.find(i=>i.section===s)||{}).id};
 })();

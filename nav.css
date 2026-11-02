@@ -76,3 +76,8 @@
  .header-actions .account-menu-wrap{display:none}
  #headerAccount{display:none}
 }
+
+/* Badge numerico sulle voci di menu */
+.side-nav button{position:relative}
+.nbadge{font-style:normal;min-width:18px;height:18px;line-height:18px;border-radius:9px;background:#d92d20;color:#fff;font-size:11px;font-weight:800;text-align:center;padding:0 5px;margin-left:auto}
+@media(max-width:999px){.side-nav>button .nbadge{position:absolute;top:2px;right:calc(50% - 22px);margin:0}}

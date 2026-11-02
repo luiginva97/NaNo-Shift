@@ -92,6 +92,28 @@ Deno.serve(async (req: Request) => {
     return json({ units: data || [] });
   }
 
+  if (action === "unit_stats") {
+    // Solo numeri aggregati: niente nomi del personale, turni o disponibilità.
+    const [{ data: units, error: uErr }, { data: members, error: mErr }] = await Promise.all([
+      admin.from("units").select("id,name,approval_status,created_at").order("created_at", { ascending: false }),
+      admin.from("unit_members").select("unit_id,unit_role,status"),
+    ]);
+    if (uErr || mErr) return json({ error: "Impossibile caricare le statistiche delle strutture" }, 500);
+    const by = new Map<string, { active: number; pending: number; coordinators: number }>();
+    for (const m of members || []) {
+      const c = by.get(m.unit_id) || { active: 0, pending: 0, coordinators: 0 };
+      if (m.status === "active") { c.active++; if (m.unit_role === "coordinator") c.coordinators++; }
+      else if (m.status === "pending") c.pending++;
+      by.set(m.unit_id, c);
+    }
+    return json({
+      units: (units || []).map((u) => ({
+        id: u.id, name: u.name, approval_status: u.approval_status, created_at: u.created_at,
+        ...(by.get(u.id) || { active: 0, pending: 0, coordinators: 0 }),
+      })),
+    });
+  }
+
   if (action === "review_unit") {
     const unitId = String(body.unit_id || "");
     const decision = String(body.decision || "");

@@ -111,7 +111,14 @@ const range=()=>[ymd(cursor.getFullYear(),cursor.getMonth(),1),ymd(cursor.getFul
 const recalcPub=()=>{const f=range()[0],r=Object.values(as).filter(x=>x.day>=f);monthPub=r.length>0&&r.every(x=>x.published)};
 const roleLabel=r=>r==='oss'?'OSS':'Infermiere';
 const roleChip=r=>'<span class="rolechip '+(r==='oss'?'oss':'inf')+'">'+roleLabel(r)+'</span>';
-let invites=[],leaves=[];
+let invites=[],leaves=[],navBase=null;
+function renderSide(){
+ if(!navBase)return;
+ const np=pending().length,swN=swapRequests.filter(r=>r.status==="pending_approval").length,lvN=leaves.filter(l=>l.status==="pending").length;
+ const badge={req:np,swaps:swN,leave:lvN,expiries:expiryRows.length};
+ const items=NanoNav.COORD_TABS.map(i=>({...i,badge:badge[i.id]||""}));
+ NanoNav.render({...navBase,customItems:items,active:tab,primary:4,onTab:t=>{tab=t;note(null);render();window.scrollTo({top:0})},onHome:()=>{tab="home";render()}});
+}
 const approved=()=>roster.filter(m=>m.status==="active");
 const nurses=()=>roster.filter(m=>m.status==="active"&&(m.unit_role==="nurse"||m.user_id===user?.id));
 const pending=()=>roster.filter(m=>m.status==="pending"&&m.unit_role==="nurse");
@@ -121,7 +128,7 @@ async function init(){
  if(!session){location.href="accesso.html";return}
  user=session.user;
  const nv=await NanoNav.loadContext(sb,user);
- NanoNav.render({container:$("sideNav"),page:"coordinamento",prefs:nv.prefs,ctx:nv.ctx,account:{name:nv.profile.display_name||nv.profile.first_name||user.email,avatar:nv.profile.avatar_url,onLogout:async()=>{await sb.auth.signOut();location.href="accesso.html"}}});
+ navBase={container:$("sideNav"),page:"coordinamento",prefs:nv.prefs,ctx:nv.ctx,account:{name:nv.profile.display_name||nv.profile.first_name||user.email,avatar:nv.profile.avatar_url,onLogout:async()=>{await sb.auth.signOut();location.href="accesso.html"}}};renderSide();
  NanoNav.mountAccount($("headerAccount"),{sb,user,profile:nv.profile});
  const {data:profile}=await sb.from("profiles").select("role").eq("id",user.id).single();
  // Accesso per ruolo globale oppure per appartenenza attiva come coordinatore di reparto.
@@ -375,16 +382,14 @@ function expiriesView(){
 }
 function render(){
  const app=$("app");let h="";
- if(!unit){h='<h1>Coordinamento</h1><div class="muted">Crea il reparto, approva il personale, conferma le disponibilità e gestisci i turni.</div>'+(msg?'<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>":"")+createCard();app.innerHTML=h;bind();return}
+ if(!unit){h='<h1>Coordinamento</h1><div class="muted">Crea il reparto, approva il personale, conferma le disponibilità e gestisci i turni.</div>'+(msg?'<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>":"")+createCard();app.innerHTML=h;bind();renderSide();return}
  h+='<div id="wardBar"><h1>'+safe(unit.name)+'</h1><div class="row" style="align-items:center"><span class="muted">Codice reparto:</span><span class="code">'+safe(unit.join_code)+'</span><button class="btn secondary small" id="copyCode">Copia</button>'+(units.length>1?'<select id="wardSel" style="padding:8px;border-radius:9px;border:1px solid var(--line)">'+units.map(u=>'<option value="'+u.id+'"'+(u.id===unit.id?" selected":"")+">"+safe(u.name)+"</option>").join("")+"</select>":"")+"</div></div>";
  if(msg)h+='<div class="notice '+msg.type+'" role="status">'+safe(msg.t)+"</div>";
- const np=pending().length;
- h+='<div class="tabs">'+[["home","Riepilogo"],["req","Richieste"+(np?'<span class="badge">'+np+"</span>":"")],["staff","Personale"],["avail","Disponibilità"],["plan","Turni"],["leave","Ferie"+(leaves.some(l=>l.status==="pending")?" · "+leaves.filter(l=>l.status==="pending").length:"")],["swaps","Cambi turno"+(swapRequests.some(r=>r.status==="pending"||r.status==="pending_approval")?" · "+swapRequests.filter(r=>r.status==="pending"||r.status==="pending_approval").length:"")],["expiries","Scadenze"+(expiryRows.length?" · "+expiryRows.length:"")]].map(([id,l])=>'<button data-tab="'+id+'" class="'+(tab===id?"active":"")+'">'+l+"</button>").join("")+"</div>";
  if(tab==="avail"||tab==="plan")h+='<div class="monthnav"><button class="nav" data-month="-1" aria-label="Mese precedente">‹</button><strong>'+cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"})+'</strong><button class="nav" data-month="1" aria-label="Mese successivo">›</button></div>';
  h+=tab==="home"?homeView():tab==="req"?requestsView():tab==="staff"?staffView():tab==="avail"?availView():tab==="plan"?planView():tab==="swaps"?swapsView():tab==="leave"?leaveView():expiriesView();
  if(tab==="req")h+=inviteCard();
  if(tab==="req"||tab==="staff")h+=createCard();
- app.innerHTML=h;bind();
+ app.innerHTML=h;bind();renderSide();
 }
 async function run(p,okText){
  const {error}=await p;
