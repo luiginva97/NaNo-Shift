@@ -118,7 +118,7 @@ async function init(){
  if(!session){location.href="accesso.html";return}
  user=session.user;
  const nv=await NanoNav.loadContext(sb,user);
- if(nv.ctx.isMaster){location.href="demo-reparto.html";return}
+ if(nv.ctx.isMaster){location.href="admin.html";return}
  NanoNav.render({container:$("sideNav"),page:"reparto",prefs:nv.prefs,ctx:nv.ctx,account:{name:nv.profile.display_name||nv.profile.first_name||user.email,avatar:nv.profile.avatar_url,onLogout:async()=>{await sb.auth.signOut();location.href="accesso.html"}}});
  NanoNav.mountAccount($("headerAccount"),{sb,user,profile:nv.profile});
  await handleUnitInvite();

@@ -25,7 +25,7 @@
 
  // Una voce è disponibile per questa persona (ruolo e tipo di impiego), indipendentemente dai toggle.
  const MASTER_IDS=["users","profile"];
- const available=(it,ctx)=>!(ctx.isMaster&&!MASTER_IDS.includes(it.id))&&!(it.coordOnly&&!ctx.isCoord)&&!(it.adminOnly&&!ctx.isAdmin)&&!(it.notEmployee&&ctx.employee)&&!(it.id==="ward"&&ctx.isMaster);
+ const available=(it,ctx)=>!(ctx.isMaster&&!MASTER_IDS.includes(it.id))&&!(it.coordOnly&&!ctx.isCoord)&&!(it.adminOnly&&!ctx.isAdmin)&&!(it.notEmployee&&ctx.employee)&&!(it.id==="ward"&&(ctx.isMaster||ctx.hasUnit===false));
  const enabled=(it,prefs)=>!it.pref||(prefs||{})[it.pref]!==false;
  const visible=(it,prefs,ctx)=>available(it,ctx)&&enabled(it,prefs);
 
@@ -86,7 +86,7 @@
   const isAdmin=profile.role==="admin";
   let isMaster=false;
   if(isAdmin){const masterCheck=await sb.rpc("is_master_account");isMaster=!masterCheck.error&&masterCheck.data===true;}
-  return {profile,prefs:profile.feature_preferences||{},ctx:{isCoord:units.some(m=>m.unit_role==="coordinator"&&m.status==="active"),isAdmin,isMaster,employee:profile.employment_type==="employee"}};
+  return {profile,prefs:profile.feature_preferences||{},ctx:{hasUnit:units.length>0,isCoord:units.some(m=>m.unit_role==="coordinator"&&m.status==="active"),isAdmin,isMaster,employee:profile.employment_type==="employee"}};
  }
 
  // Menu account nell'intestazione (pagine diverse dalla dashboard).
@@ -133,7 +133,6 @@
   {id:"overview",label:"Panoramica",tab:true,icon:svg('<rect x="3" y="3" width="8" height="9" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="12" width="8" height="9" rx="2"/><rect x="3" y="16" width="8" height="5" rx="2"/>')},
   {id:"units",label:"Strutture",tab:true,icon:svg('<path d="M4 21V6.5L12 3l8 3.5V21M2.5 21h19"/><path d="M9 21v-4.5h6V21M8.5 9.5h1.5M14 9.5h1.5M8.5 13h1.5M14 13h1.5"/>')},
   {id:"accounts",label:"Account",tab:true,icon:svg('<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><circle cx="12" cy="10" r="2.2"/><path d="M8.5 16.5c.8-1.6 2-2.3 3.5-2.3s2.7.7 3.5 2.3"/>')},
-  {id:"demo",label:"Demo reparto",href:"demo-reparto.html",icon:svg('<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/>')},
   {id:"profile",label:"Dati utente",href:"dashboard.html?area=personale&section=profileView",icon:svg('<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>')}
  ];
  window.NanoNav={COORD_TABS,MASTER_TABS,ITEMS,render,loadContext,mountAccount,mountOrderEditor,visibleItems,ordered,isVisible:(id,prefs,ctx)=>byId[id]?visible(byId[id],prefs,ctx):true,sectionToId:s=>(ITEMS.find(i=>i.section===s)||{}).id};

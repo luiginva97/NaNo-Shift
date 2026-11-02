@@ -77,7 +77,7 @@ Deno.serve(async (req: Request) => {
     return json({
       users: (profiles || []).map((p) => {
         const a = authById.get(p.id);
-        return { id: p.id, role: p.role, created_at: p.created_at,
+        return { id: p.id, email: a?.email || null, role: p.role, created_at: p.created_at,
           last_sign_in_at: a?.last_sign_in_at || null, email_confirmed: !!a?.email_confirmed_at };
       })
     });
