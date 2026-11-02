@@ -69,7 +69,7 @@ html{overflow-x:hidden}body{min-width:0;overflow-x:hidden}.top{width:100%;paddin
 .abar{position:sticky;bottom:92px;z-index:15;background:#fff;border:1px solid #9bb8f4;border-radius:14px;box-shadow:0 12px 36px #10284b2e;padding:10px;margin:8px 0;display:none}
 .abar.show{display:block}.abar-t{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:8px}
 .linkbtn{border:0;background:transparent;color:var(--blue);font:inherit;font-weight:700;cursor:pointer}
-.abar-b{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.abar-b .chip{padding:10px 2px;font-size:12px}
+.brushbox{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin:12px 0}.brush-t{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;font-size:14px}.abar-b.brush{grid-template-columns:repeat(4,minmax(0,1fr))}.abar-b.brush .chip{padding:12px 2px;font-size:13px}.abar-b{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.abar-b .chip{padding:10px 2px;font-size:12px}
 @media(min-width:1000px){.abar{bottom:14px}.acal{max-width:560px}}
 </style>
 <link rel="stylesheet" href="ui.css"><link rel="stylesheet" href="nav.css">
@@ -84,7 +84,7 @@ const SUPABASE_KEY="sb_publishable_QPArC4ARilfFLqxnNsV72A_UBzZN-5g";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id),pad=n=>String(n).padStart(2,"0");
 const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const PREFS=[["ANY","Libero","free"],["M","Prefer. M","sp"],["P","Prefer. P","sp"],["G","Prefer. G","sp"],["N","Prefer. N","sp"],["R","Vorrei riposo","rest"],["OFF","Non disponibile","unavailable"]];
+const PREFS=[["ANY","Libero","free"],["M","Mattina","sp"],["P","Pomeriggio","sp"],["G","Giornata","sp"],["N","Notte","sp"],["R","Vorrei riposo","rest"],["OFF","Non disponibile","unavailable"]];
 const SHIFT={M:["07:00","14:00"],P:["14:00","19:00"],G:["07:00","19:00"],N:["19:00","07:00"],R:["00:00","00:00"]};
 const WD=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
 let user=null,units=[],unit=null,isActualMember=false,cursor=new Date(),tab="avail",avail={},orig={},review={},schedule=[],rosterContacts=[],swapRequests=[],msg=null,busy=false;
@@ -175,7 +175,11 @@ function joinCard(){
  const pendingStructures=units.filter(m=>m.unit_role==="coordinator"&&m.status!=="active").map(m=>'<div class="item"><span><b>'+safe(m.name)+'</b></span><span class="muted">Struttura in attesa di approvazione Master</span></div>').join("");
  return '<section class="panel"><h2>Entra in un reparto</h2><p class="muted">Apri il link personale ricevuto dal coordinamento oppure inserisci qui il codice del reparto. Con il codice potrai indicare le disponibilità dopo la sua approvazione.</p><form id="joinForm" class="row"><div class="field"><label for="code">Codice reparto</label><input id="code" maxlength="8" autocapitalize="characters" autocomplete="off" required placeholder="Es. K7M2QX9A"></div><div class="field"><label for="joinRole">Il tuo ruolo</label><select id="joinRole"><option value="infermiere">Infermiere</option><option value="oss">OSS</option></select></div><button class="btn" type="submit">Invia richiesta</button></form>'+(pending?'<div style="margin-top:12px">'+pending+'</div>':"")+(pendingStructures?'<div style="margin-top:12px">'+pendingStructures+'</div>':"")+'<div style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px"><h2>Richiedi una nuova struttura</h2><p class="muted">Se sei il referente di una struttura, puoi inviare una richiesta di attivazione. Lo spazio e il ruolo di coordinatore saranno attivati solo dopo l’approvazione del Master.</p><form id="createUnitForm" class="row"><div class="field"><label for="newUnitName">Nome della struttura</label><input id="newUnitName" maxlength="80" minlength="2" required placeholder="Es. Casa di cura …"></div><button class="btn" type="submit">Invia richiesta di attivazione</button></form></div></section>';
 }
-let sel=new Set(),rangeMode=false,rangeStart=null;
+let sel=new Set(),rangeMode=false,rangeStart=null,brush=null,soundOn=true;
+try{soundOn=localStorage.getItem("ns_sound")!=="0"}catch(_){}
+let _ac=null;
+function tuk(){if(!soundOn)return;try{_ac=_ac||new (window.AudioContext||window.webkitAudioContext)();const a=_ac,t=a.currentTime,o=a.createOscillator(),g=a.createGain();o.type="sine";o.frequency.setValueAtTime(720,t);o.frequency.exponentialRampToValueAtTime(260,t+.07);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.22,t+.005);g.gain.exponentialRampToValueAtTime(.0001,t+.09);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+.1)}catch(_){}}
+const ORDER=["M","P","G","N","ANY","R","OFF"];
 const SYM={ANY:"L",M:"M",P:"P",G:"G",N:"N",R:"Ri",OFF:"✕"};
 function availView(){
  const y=cursor.getFullYear(),m=cursor.getMonth(),n=dim(),pfx=y+"-"+pad(m+1)+"-";
@@ -189,9 +193,10 @@ function availView(){
  }
  h+='</div>';
  const legend='<div class="alegend">'+PREFS.map(([v,l,c])=>'<span><i class="ac '+c+' set"></i>'+SYM[v]+' '+l+'</span>').join("")+'<span><b style="color:var(--green)">✓</b> confermata (bloccata)</span></div>';
- const bar='<div class="abar'+(sel.size?" show":"")+'" role="toolbar" aria-label="Imposta i giorni selezionati"><div class="abar-t"><b>'+sel.size+'</b> '+(sel.size===1?"giorno selezionato":"giorni selezionati")+'<button type="button" class="linkbtn" id="selClear">Deseleziona</button></div><div class="abar-b">'+PREFS.map(([v,l,c])=>'<button type="button" class="chip '+c+'" data-apply="'+v+'">'+l+'</button>').join("")+'</div></div>';
+ const bar=brush?'':'<div class="abar'+(sel.size?" show":"")+'" role="toolbar" aria-label="Imposta i giorni selezionati"><div class="abar-t"><b>'+sel.size+'</b> '+(sel.size===1?"giorno selezionato":"giorni selezionati")+'<button type="button" class="linkbtn" id="selClear">Deseleziona</button></div><div class="abar-b">'+PREFS.map(([v,l,c])=>'<button type="button" class="chip '+c+'" data-apply="'+v+'">'+l+'</button>').join("")+'</div></div>';
+ const palette='<div class="brushbox"><div class="brush-t"><b>1. Scegli il turno</b><button type="button" class="linkbtn" id="soundBtn" aria-pressed="'+soundOn+'">'+(soundOn?"🔊 Suono attivo":"🔇 Suono spento")+'</button></div><div class="abar-b brush">'+ORDER.map(v=>PREFS.find(p=>p[0]===v)).map(([v,l,c])=>'<button type="button" class="chip '+c+(brush===v?" on":"")+'" data-brush="'+v+'" aria-pressed="'+(brush===v)+'">'+l+'</button>').join("")+'</div><p class="muted" style="margin:8px 0 0;font-size:13px">'+(brush?'<b>2. Tocca i giorni</b> da impostare come «'+PREFS.find(p=>p[0]===brush)[1]+'»: si segnano al tocco. Tocca di nuovo il turno scelto per smettere.':'<b>2. Tocca i giorni</b>, oppure usa «Seleziona tutto il mese» o un intervallo.')+'</p></div>';
  const tools='<div class="atools"><button type="button" class="btn small secondary'+(rangeMode?" on":"")+'" id="rangeBtn">'+(rangeMode?(rangeStart?"Tocca l'ultimo giorno":"Tocca il primo giorno"):"Seleziona un intervallo")+'</button><button type="button" class="btn small secondary" id="selAll">Seleziona tutto il mese</button></div>';
- return '<section class="panel"><h2>Le tue disponibilità</h2><p class="muted">Tocca uno o più giorni, poi scegli la disponibilità. Ogni giorno parte da «Libero». I giorni confermati dal coordinamento sono bloccati.</p><div class="notice" style="background:#f3faf6;color:#146543"><b>Cosa significa «Libero» (L)?</b> Sei disponibile a lavorare ed è indifferente quale turno: sarà il coordinamento ad assegnarti mattina, pomeriggio, giornata o notte. Scegli M, P, G o N solo se preferisci un turno preciso, «Vorrei riposo» se desideri il giorno libero, «Non disponibile» se proprio non puoi.</div>'+tools+h+legend+bar+'<div class="savebar"><button class="btn" id="saveAvail"'+(dirty()&&!busy?"":" disabled")+'>'+(busy?"Salvataggio…":"Salva disponibilità")+'</button><select id="fillPref" class="inline" style="width:auto"><option value="">Imposta i giorni non confermati…</option>'+PREFS.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("")+'</select>'+(dirty()?'<span class="muted">Modifiche non salvate</span>':"")+'</div></section>';
+ return '<section class="panel"><h2>Le tue disponibilità</h2><p class="muted">Tocca uno o più giorni, poi scegli la disponibilità. Ogni giorno parte da «Libero». I giorni confermati dal coordinamento sono bloccati.</p><div class="notice" style="background:#f3faf6;color:#146543"><b>Cosa significa «Libero»?</b> Sei disponibile a lavorare ed è indifferente quale turno: sarà il coordinamento ad assegnarti mattina, pomeriggio, giornata o notte. Scegli un turno preciso solo se preferisci quello, «Vorrei riposo» se desideri il giorno libero, «Non disponibile» se proprio non puoi.</div>'+palette+tools+h+legend+bar+'<div class="savebar"><button class="btn" id="saveAvail"'+(dirty()&&!busy?"":" disabled")+'>'+(busy?"Salvataggio…":"Salva disponibilità")+'</button><select id="fillPref" class="inline" style="width:auto"><option value="">Imposta i giorni non confermati…</option>'+PREFS.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("")+'</select>'+(dirty()?'<span class="muted">Modifiche non salvate</span>':"")+'</div></section>';
 }
 function scheduleView(){
  const y=cursor.getFullYear(),m=cursor.getMonth(),n=dim();
@@ -280,12 +285,15 @@ function bind(){
   cursor=new Date(cursor.getFullYear(),cursor.getMonth()+Number(b.dataset.month),1);note(null);await loadMonth();render();
  });
  document.querySelectorAll("[data-aday]").forEach(b=>b.onclick=()=>{const k=b.dataset.aday;if(locked(k))return;
-  if(rangeMode){if(!rangeStart){rangeStart=k}else{const [x,z]=[rangeStart,k].sort();for(let d=1;d<=dim();d++){const q=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(q>=x&&q<=z&&!locked(q))sel.add(q)}rangeStart=null;rangeMode=false}}
+  if(rangeMode){if(!rangeStart){rangeStart=k}else{const [x,z]=[rangeStart,k].sort();for(let d=1;d<=dim();d++){const q=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(q>=x&&q<=z&&!locked(q)){if(brush)avail[q]=brush;else sel.add(q)}}if(brush)tuk();rangeStart=null;rangeMode=false}}
+  else if(brush){avail[k]=brush;tuk()}
   else if(sel.has(k))sel.delete(k);else sel.add(k);
   const y=window.scrollY;render();window.scrollTo(0,y)});
  document.querySelectorAll("[data-apply]").forEach(b=>b.onclick=()=>{sel.forEach(k=>{avail[k]=b.dataset.apply});sel=new Set();const y=window.scrollY;render();window.scrollTo(0,y)});
  const sc=$("selClear");if(sc)sc.onclick=()=>{sel=new Set();render()};
- const sa=$("selAll");if(sa)sa.onclick=()=>{for(let d=1;d<=dim();d++){const q=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(!locked(q))sel.add(q)}render()};
+ const sa=$("selAll");if(sa)sa.onclick=()=>{for(let d=1;d<=dim();d++){const q=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(!locked(q)){if(brush)avail[q]=brush;else sel.add(q)}}if(brush)tuk();render()};
+ document.querySelectorAll("[data-brush]").forEach(b=>b.onclick=()=>{brush=brush===b.dataset.brush?null:b.dataset.brush;if(brush){sel=new Set();tuk()}const y=window.scrollY;render();window.scrollTo(0,y)});
+ const sb2=$("soundBtn");if(sb2)sb2.onclick=()=>{soundOn=!soundOn;try{localStorage.setItem("ns_sound",soundOn?"1":"0")}catch(_){}if(soundOn)tuk();const y=window.scrollY;render();window.scrollTo(0,y)};
  const rb=$("rangeBtn");if(rb)rb.onclick=()=>{rangeMode=!rangeMode;rangeStart=null;render()};
  const fill=$("fillPref");if(fill)fill.onchange=()=>{if(!fill.value)return;for(let d=1;d<=dim();d++){const k=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(!locked(k))avail[k]=fill.value}render()};
  const sv=$("saveAvail");if(sv)sv.onclick=saveAvail;

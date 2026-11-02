@@ -99,7 +99,7 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id),pad=n=>String(n).padStart(2,"0");
 const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const WD=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"],WORK=["M","P","G","N"];
-const PREF_TXT={ANY:"Libero",M:"Preferisce M",P:"Preferisce P",G:"Preferisce G",N:"Preferisce N",R:"Vorrebbe riposo",OFF:"Non disponibile"};
+const PREF_TXT={ANY:"Libero",M:"Mattina",P:"Pomeriggio",G:"Giornata",N:"Notte",R:"Vorrebbe riposo",OFF:"Non disponibile"};
 const PREF_SYM={ANY:"L",M:"M",P:"P",G:"G",N:"N",R:"Ri",OFF:"✕"};
 const PREF_CLS={ANY:"free",M:"M",P:"P",G:"G",N:"N",R:"rest",OFF:"unavailable"};
 let user=null,units=[],unit=null,roster=[],av={},as={},swapRequests=[],expiryRows=[],tab=(["home","req","plan","avail","staff","leave","swaps","expiries"].includes(new URLSearchParams(location.search).get("tab"))?new URLSearchParams(location.search).get("tab"):"home"),cursor=new Date(),msg=null,monthPub=false;
