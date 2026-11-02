@@ -7,7 +7,7 @@
   {id:"calendar",label:"Calendario",section:"calendarView",icon:svg('<rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/><circle cx="8" cy="14" r=".6"/><circle cx="12" cy="14" r=".6"/><circle cx="16" cy="14" r=".6"/><circle cx="8" cy="17.5" r=".6"/><circle cx="12" cy="17.5" r=".6"/>')},
   {id:"groups",label:"Gruppi",section:"groupsView",pref:"groups",icon:svg('<circle cx="9" cy="8" r="3.2"/><path d="M2.8 20v-1.5A5.5 5.5 0 0 1 8.3 13h1.4a5.5 5.5 0 0 1 5.5 5.5V20"/><path d="M16 4.9a3.2 3.2 0 0 1 0 6.2M18.5 13.4a5.5 5.5 0 0 1 2.7 5.1V20"/>')},
   {id:"ward",label:"Reparto",href:"reparto.html",pref:"ward",icon:svg('<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/>')},
-  {id:"coord",label:"Area coordinamento",short:"Coordina",switch:true,href:"coordinamento.html",coordOnly:true,icon:svg('<path d="M3 20V9l9-5 9 5v11"/><path d="M9 20v-6h6v6"/>')},
+  {id:"coord",label:"Area coordinamento",cur:"Utente",to:"Coordinamento",switch:true,href:"coordinamento.html",coordOnly:true,icon:svg('<path d="M3 20V9l9-5 9 5v11"/><path d="M9 20v-6h6v6"/>')},
   {id:"list",label:"Elenco turni",section:"listView",pref:"list_view",icon:svg('<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>')},
   {id:"sites",label:"Sedi e modelli",section:"sitesView",pref:"work_sites",icon:svg('<path d="M4 21V6.5L12 3l8 3.5V21M2.5 21h19"/><path d="M9 21v-4.5h6V21M8.5 9.5h1.5M14 9.5h1.5M8.5 13h1.5M14 13h1.5"/>')},
   {id:"tax",label:"Simulatore",section:"taxView",pref:"tax_simulator",notEmployee:true,icon:svg('<rect x="4.5" y="2.5" width="15" height="19" rx="3"/><path d="M8 7h8M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01"/>')},
@@ -47,7 +47,7 @@
   const activeId=o.customItems?o.active:page==="dashboard"?(items.find(i=>i.section===o.active)||{}).id:(PAGE_IDS[page]||null);
   const btn=it=>{
    const target=it.tab?'data-tab="'+esc(it.id)+'"':it.section?(page==="dashboard"?'data-section="'+it.section+'"':'data-href="dashboard.html?area=personale&section='+it.section+'"'):'data-href="'+it.href+'"';
-   return '<button type="button" '+target+' class="'+(it.switch?"area-switch ":"")+(it.id===activeId?"active":"")+'"'+(it.id===activeId?' aria-current="page"':"")+'>'+it.icon+(it.switch?'<span class="lbl-full">'+esc(it.label)+'</span><span class="lbl-short">'+esc(it.short||it.label)+'</span><i class="swap" aria-hidden="true">⇄</i>':'<span>'+esc(it.label)+'</span>')+(it.badge?'<em class="nbadge">'+esc(it.badge)+'</em>':"")+'</button>';
+   return '<button type="button" '+target+' class="'+(it.switch?"area-switch ":"")+(it.id===activeId&&!it.switch?"active":"")+'"'+(it.id===activeId&&!it.switch?' aria-current="page"':"")+(it.switch?' aria-label="Passa all’area '+esc(it.to)+'"':"")+'>'+it.icon+(it.switch?'<span class="seg cur">'+esc(it.cur)+'</span><span class="seg go"><i aria-hidden="true">⇄</i>'+esc(it.to)+'</span>':'<span>'+esc(it.label)+'</span>')+(it.badge?'<em class="nbadge">'+esc(it.badge)+'</em>':"")+'</button>';
   };
   const PRI=o.primary||PRIMARY;const main=items.length>PRI+1?items.slice(0,PRI):items,more=items.length>PRI+1?items.slice(PRI):[];
   nav.innerHTML='<div class="side-brand" role="link" tabindex="0" aria-label="Vai alla pagina iniziale"><img src="favicon-192.png" alt="" width="38" height="38"><span class="sb-name">NaNo<span>Shift</span></span></div>'
@@ -117,7 +117,7 @@
  }
 
  const COORD_TABS=[
-  {id:"personal",label:"Area utente",short:"Area utente",switch:true,href:"dashboard.html?area=personale",icon:svg('<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>')},
+  {id:"personal",label:"Area utente",cur:"Coordinamento",to:"Utente",switch:true,href:"dashboard.html?area=personale",icon:svg('<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>')},
   {id:"home",label:"Riepilogo",icon:svg('<rect x="3" y="3" width="8" height="9" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="12" width="8" height="9" rx="2"/><rect x="3" y="16" width="8" height="5" rx="2"/>')},
   {id:"req",label:"Richieste",icon:svg('<path d="M4 4h16v12H8l-4 4z"/><path d="M8 9h8M8 12h5"/>')},
   {id:"plan",label:"Turni",icon:svg('<rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M16 2.5v4M8 2.5v4M3 10h18M8 14h3M13 14h3M8 17.5h3"/>')},
