@@ -11,7 +11,7 @@
 <title>NaNo Shift · Reparto</title>
 <link rel="icon" type="image/png" sizes="512x512" href="favicon-512.png"><link rel="icon" type="image/x-icon" href="favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<script src="nav.js"></script>
+<script src="nav.js"></script><script src="planpdf.js" defer></script>
 <style>
 :root{--navy:#10284b;--blue:#2463eb;--pale:#edf3ff;--bg:#f5f7fc;--line:#dfe6f1;--muted:#68778f;--red:#b42318;--green:#13845b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--navy);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -69,7 +69,7 @@ html{overflow-x:hidden}body{min-width:0;overflow-x:hidden}.top{width:100%;paddin
 .abar{position:sticky;bottom:92px;z-index:15;background:#fff;border:1px solid #9bb8f4;border-radius:14px;box-shadow:0 12px 36px #10284b2e;padding:10px;margin:8px 0;display:none}
 .abar.show{display:block}.abar-t{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:8px}
 .linkbtn{border:0;background:transparent;color:var(--blue);font:inherit;font-weight:700;cursor:pointer}
-.hrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.helpbtn{width:32px;height:32px;border-radius:50%;border:1.5px solid #9bb8f4;background:#fff;color:#2463eb;font-weight:900;font-size:16px;padding:0}.helpbtn[aria-expanded=true]{background:#2463eb;color:#fff}.brushbox{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin:12px 0}.brush-t{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;font-size:14px}.abar-b.brush{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.chip.bchip{padding:14px 0;font-size:22px;font-weight:900;color:#fff;border:3px solid transparent;opacity:.55;transition:transform .1s}.chip.bchip.c-M{background:#c58a12}.chip.bchip.c-P{background:#3478d4}.chip.bchip.c-G{background:#13845b}.chip.bchip.c-N{background:#7754c8}.chip.bchip.c-OFF{background:#d92d20}.chip.bchip.on{opacity:1;transform:scale(1.07);border-color:#10284b;box-shadow:0 4px 12px #10284b40}.abar-b{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.abar-b .chip{padding:10px 2px;font-size:12px}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.helpbtn{width:32px;height:32px;border-radius:50%;border:1.5px solid #9bb8f4;background:#fff;color:#2463eb;font-weight:900;font-size:16px;padding:0}.helpbtn[aria-expanded=true]{background:#2463eb;color:#fff}dialog{border:0;border-radius:18px;width:min(420px,calc(100% - 24px));padding:20px;box-shadow:0 20px 80px #14294d33}dialog::backdrop{background:#0b1f3d77}.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}.opts button{padding:12px 4px;border-radius:11px;border:1px solid var(--line);background:#fff;font-weight:800}.opts button.on{border-color:var(--blue);background:var(--pale);color:var(--blue)}.brushbox{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin:12px 0}.brush-t{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;font-size:14px}.abar-b.brush{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.chip.bchip{padding:14px 0;font-size:22px;font-weight:900;color:#fff;border:3px solid transparent;opacity:.55;transition:transform .1s}.chip.bchip.c-M{background:#c58a12}.chip.bchip.c-P{background:#3478d4}.chip.bchip.c-G{background:#13845b}.chip.bchip.c-N{background:#7754c8}.chip.bchip.c-OFF{background:#d92d20}.chip.bchip.on{opacity:1;transform:scale(1.07);border-color:#10284b;box-shadow:0 4px 12px #10284b40}.abar-b{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.abar-b .chip{padding:10px 2px;font-size:12px}
 @media(min-width:1000px){.abar{bottom:14px}.acal{max-width:560px}}
 </style>
 <link rel="stylesheet" href="ui.css"><link rel="stylesheet" href="nav.css">
@@ -77,7 +77,7 @@ html{overflow-x:hidden}body{min-width:0;overflow-x:hidden}.top{width:100%;paddin
 <body>
 <nav class="side-nav" id="sideNav" aria-label="Navigazione"></nav>
 <header class="top"><div class="brand"><img class="logo-mark" src="favicon-192.png" alt=""><span class="brand-text"><span class="brand-name">NaNo<span class="brand-shift">Shift</span></span><small>Area reparto</small></span></div><div id="headerAccount"></div></header>
-<main class="wrap" id="app"><div class="panel">Caricamento…</div></main>
+<dialog id="pdfDlg"></dialog><main class="wrap" id="app"><div class="panel">Caricamento…</div></main>
 <script>
 const SUPABASE_URL="https://mmkdibdomjaxwqfryqcw.supabase.co";
 const SUPABASE_KEY="sb_publishable_QPArC4ARilfFLqxnNsV72A_UBzZN-5g";
@@ -175,11 +175,7 @@ function joinCard(){
  const pendingStructures=units.filter(m=>m.unit_role==="coordinator"&&m.status!=="active").map(m=>'<div class="item"><span><b>'+safe(m.name)+'</b></span><span class="muted">Struttura in attesa di approvazione Master</span></div>').join("");
  return '<section class="panel"><h2>Entra in un reparto</h2><p class="muted">Apri il link personale ricevuto dal coordinamento oppure inserisci qui il codice del reparto. Con il codice potrai indicare le disponibilità dopo la sua approvazione.</p><form id="joinForm" class="row"><div class="field"><label for="code">Codice reparto</label><input id="code" maxlength="8" autocapitalize="characters" autocomplete="off" required placeholder="Es. K7M2QX9A"></div><div class="field"><label for="joinRole">Il tuo ruolo</label><select id="joinRole"><option value="infermiere">Infermiere</option><option value="oss">OSS</option></select></div><button class="btn" type="submit">Invia richiesta</button></form>'+(pending?'<div style="margin-top:12px">'+pending+'</div>':"")+(pendingStructures?'<div style="margin-top:12px">'+pendingStructures+'</div>':"")+'<div style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px"><h2>Richiedi una nuova struttura</h2><p class="muted">Se sei il referente di una struttura, puoi inviare una richiesta di attivazione. Lo spazio e il ruolo di coordinatore saranno attivati solo dopo l’approvazione del Master.</p><form id="createUnitForm" class="row"><div class="field"><label for="newUnitName">Nome della struttura</label><input id="newUnitName" maxlength="80" minlength="2" required placeholder="Es. Casa di cura …"></div><button class="btn" type="submit">Invia richiesta di attivazione</button></form></div></section>';
 }
-let helpOpen=false,sel=new Set(),rangeMode=false,rangeStart=null,brush=null,soundOn=true;
-try{soundOn=localStorage.getItem("ns_sound")!=="0"}catch(_){}
-let _snd=null;
-function mkTuk(){const sr=22050,n=Math.floor(sr*.05),buf=new Uint8Array(44+n*2),dv=new DataView(buf.buffer);const w=(o,t)=>{for(let i=0;i<t.length;i++)dv.setUint8(o+i,t.charCodeAt(i))};w(0,"RIFF");dv.setUint32(4,36+n*2,true);w(8,"WAVEfmt ");dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,sr,true);dv.setUint32(28,sr*2,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);w(36,"data");dv.setUint32(40,n*2,true);let ph=0;for(let i=0;i<n;i++){const t=i/n,f=420-120*t;ph+=2*Math.PI*f/sr;const env=Math.min(1,i/40)*Math.pow(1-t,3);dv.setInt16(44+i*2,Math.round(Math.sin(ph)*env*9000),true)}let bin="";for(let i=0;i<buf.length;i++)bin+=String.fromCharCode(buf[i]);return "data:audio/wav;base64,"+btoa(bin)}
-function tuk(){if(!soundOn)return;try{if(!_snd){const u=mkTuk();_snd=[0,1,2].map(()=>{const a=new Audio(u);a.preload="auto";return a});_snd.i=0}const a=_snd[_snd.i++%_snd.length];a.currentTime=0;const p=a.play();if(p&&p.catch)p.catch(()=>{})}catch(_){}try{navigator.vibrate&&navigator.vibrate(8)}catch(_){}}
+let helpOpen=false,sel=new Set(),rangeMode=false,rangeStart=null,brush=null;
 const ORDER=["M","P","G","N","OFF"];
 const HRS={M:"07–14",P:"14–19",G:"07–19",N:"19–07"};
 function applyBrush(keys){const all=keys.length&&keys.every(k=>avail[k]===brush);keys.forEach(k=>{avail[k]=all?"ANY":brush});return all}
@@ -197,7 +193,7 @@ function availView(){
  h+='</div>';
  const legend='<div class="alegend">'+ORDER.map(v=>PREFS.find(p=>p[0]===v)).map(([v,l,c])=>'<span><i class="ac '+c+' set"></i>'+SYM[v]+' '+l+'</span>').join("")+'<span><b style="color:var(--green)">✓</b> confermata (bloccata)</span></div>';
  const bar=brush?'':'<div class="abar'+(sel.size?" show":"")+'" role="toolbar" aria-label="Imposta i giorni selezionati"><div class="abar-t"><b>'+sel.size+'</b> '+(sel.size===1?"giorno selezionato":"giorni selezionati")+'<button type="button" class="linkbtn" id="selClear">Deseleziona</button></div><div class="abar-b">'+ORDER.map(v=>PREFS.find(p=>p[0]===v)).map(([v,l,c])=>'<button type="button" class="chip '+c+'" data-apply="'+v+'">'+l+'</button>').join("")+'</div></div>';
- const palette='<div class="brushbox"><div class="brush-t"><b>1. Scegli il turno</b><button type="button" class="linkbtn" id="soundBtn" aria-pressed="'+soundOn+'">'+(soundOn?"🔊 Suono attivo":"🔇 Suono spento")+'</button></div><div class="abar-b brush">'+ORDER.map(v=>PREFS.find(p=>p[0]===v)).map(([v,l,c])=>'<button type="button" class="chip bchip c-'+v+(brush===v?" on":"")+'" data-brush="'+v+'" aria-label="'+l+(HRS[v]?' '+HRS[v]:'')+'" aria-pressed="'+(brush===v)+'">'+SYM[v]+'</button>').join("")+'</div><p class="muted" style="margin:8px 0 0;font-size:13px">'+(brush?'<b>'+PREFS.find(p=>p[0]===brush)[1]+(HRS[brush]?' · '+HRS[brush].replace("–",":00–")+':00':' · a casa')+'</b> — tocca i giorni da segnare; ritoccando un giorno lo togli. Tocca di nuovo il turno scelto per smettere.':'<b>M</b> mattina · <b>P</b> pomeriggio · <b>G</b> giornata · <b>N</b> notte · <b>L</b> libero (a casa). Poi tocca i giorni, oppure usa «Seleziona tutto il mese» o un intervallo.')+'</p></div>';
+ const palette='<div class="brushbox"><div class="brush-t"><b>1. Scegli il turno</b></div><div class="abar-b brush">'+ORDER.map(v=>PREFS.find(p=>p[0]===v)).map(([v,l,c])=>'<button type="button" class="chip bchip c-'+v+(brush===v?" on":"")+'" data-brush="'+v+'" aria-label="'+l+(HRS[v]?' '+HRS[v]:'')+'" aria-pressed="'+(brush===v)+'">'+SYM[v]+'</button>').join("")+'</div><p class="muted" style="margin:8px 0 0;font-size:13px">'+(brush?'<b>'+PREFS.find(p=>p[0]===brush)[1]+(HRS[brush]?' · '+HRS[brush].replace("–",":00–")+':00':' · a casa')+'</b> — tocca i giorni da segnare; ritoccando un giorno lo togli. Tocca di nuovo il turno scelto per smettere.':'<b>M</b> mattina · <b>P</b> pomeriggio · <b>G</b> giornata · <b>N</b> notte · <b>L</b> libero (a casa). Poi tocca i giorni, oppure usa «Seleziona tutto il mese» o un intervallo.')+'</p></div>';
  const tools='<div class="atools"><button type="button" class="btn small secondary'+(rangeMode?" on":"")+'" id="rangeBtn">'+(rangeMode?(rangeStart?"Tocca l'ultimo giorno":"Tocca il primo giorno"):"Seleziona un intervallo")+'</button><button type="button" class="btn small secondary" id="selAll">Seleziona tutto il mese</button></div>';
  return '<section class="panel"><div class="hrow"><h2 style="margin:0">Le tue disponibilità</h2><button type="button" class="helpbtn" id="helpBtn" aria-expanded="'+helpOpen+'" aria-label="Come funziona">?</button></div><p class="muted">Scegli il turno, poi tocca i giorni. I giorni confermati dal coordinamento sono bloccati.</p>'+(helpOpen?'<div class="notice" style="background:#f3faf6;color:#146543"><b>Come funziona:</b> scegli un turno e tocca i giorni in cui sei disponibile. Il coordinamento conferma o ti assegna un altro dei turni indicati. L = stai a casa. Giorni vuoti = non indicati.</div>':'')+palette+tools+h+legend+bar+'<div class="savebar"><button class="btn" id="saveAvail"'+(dirty()&&!busy?"":" disabled")+'>'+(busy?"Salvataggio…":"Salva disponibilità")+'</button><select id="fillPref" class="inline" style="width:auto"><option value="">Imposta i giorni non confermati…</option>'+ORDER.map(v=>PREFS.find(p=>p[0]===v)).map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("")+'</select>'+(dirty()?'<span class="muted">Modifiche non salvate</span>':"")+'</div></section>';
 }
@@ -220,7 +216,44 @@ function scheduleView(){
   grid+='<div class="mc'+(k===today?" today":"")+(wd===0||wd===6?" we":"")+(c?" has":"")+'"><span class="dn">'+d+'</span>'+(c?'<span class="pill '+c+'" title="'+TXT[c]+'">'+c+(mineBy2[k]||"")+'</span><span class="tm">'+(c==="R"?"Riposo":SHIFT[c][0].slice(0,2)+"–"+SHIFT[c][1].slice(0,2))+'</span>':"")+'</div>'}
  const chips=["M","P","G","N","R"].filter(c=>cnt[c]).map(c=>'<span class="sumchip"><span class="pill '+c+'">'+c+'</span> '+cnt[c]+' '+TXT[c].toLowerCase()+'</span>').join("");
  const list='<div class="mysum"><div><b>'+worked+'</b><span>giorni di lavoro</span></div><div><b>'+hours+' h</b><span>ore programmate</span></div><div><b>'+(next?new Date(next.day+"T12:00:00").toLocaleDateString("it-IT",{weekday:"short",day:"numeric",month:"short"})+" · "+next.code:"—")+'</b><span>prossimo turno</span></div></div>'+(mine.length?'<div class="sumchips">'+chips+'</div><div class="mgrid" role="grid" aria-label="I tuoi turni del mese">'+grid+'</div>':'<p class="muted">Nessun turno assegnato a te questo mese.</p>');
- return '<section class="panel"><h2>I tuoi turni</h2>'+list+(mine.length?'<div class="savebar"><button class="btn" id="importShifts">Importa nel mio calendario</button> <button class="btn danger" id="removeImportedShifts">Rimuovi turni importati</button></div><p class="muted">Puoi rimuovere dal calendario personale solo i turni importati da questo reparto; gli altri turni resteranno invariati.</p>':"")+'</section><section class="panel"><h2>Turni del reparto</h2><div class="scroll"><table>'+head+body+'</table></div></section>';
+ return '<section class="panel"><h2>I tuoi turni</h2>'+list+(mine.length?'<div class="savebar"><button class="btn" id="importShifts">Importa nel mio calendario</button> <button class="btn danger" id="removeImportedShifts">Rimuovi turni importati</button> <button class="btn secondary" id="pdfMine">Stampa / PDF dei miei turni</button></div><p class="muted">Puoi rimuovere dal calendario personale solo i turni importati da questo reparto; gli altri turni resteranno invariati.</p>':"")+'</section><section class="panel"><div class="hrow"><h2 style="margin:0">Turni del reparto</h2><button type="button" class="btn secondary small" id="pdfWard">Stampa / PDF</button></div><div class="scroll"><table>'+head+body+'</table></div></section>';
+}
+const SH_H={M:7,P:5,G:12,N:12,R:0},SH_N={M:"Mattina",P:"Pomeriggio",G:"Giornata",N:"Notte",R:"Riposo"};
+function buildWardPdf(orient){
+ const y=cursor.getFullYear(),m=cursor.getMonth(),n=dim(),title=cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"});
+ const people=[...new Map(schedule.map(r=>[r.user_id,r.display_name])).entries()].sort((a,b)=>String(a[1]).localeCompare(String(b[1]),"it"));
+ const by={};schedule.forEach(r=>{by[r.user_id+"|"+r.day]=r});
+ const days=Array.from({length:n},(_,i)=>{const wd=new Date(y,m,i+1).getDay();return {d:String(i+1),wd:WD[wd].slice(0,2),k:ymd(y,m,i+1),we:wd===0||wd===6}});
+ const rows=people.map(([id,name])=>{let h=0;const cells=days.map(x=>{const z=by[id+"|"+x.k];if(!z)return "";h+=(SH_H[z.code]||0)+(SH_H[z.code2]||0);return z.code+(z.code2||"")});return {name,sub:"",cells,total:String(Math.round(h*10)/10)}});
+ const foot=["M","P","G","N"].map(c=>({label:SH_N[c],cells:days.map(x=>{const cnt=people.filter(([id])=>{const z=by[id+"|"+x.k];return z&&(z.code===c||z.code2===c)}).length;return {v:cnt?String(cnt):"-",low:false}})}));
+ const legend=["M","P","G","N","R"].map(c=>({c,t:c+" "+SH_N[c]}));
+ const blob=NanoPdf.plan({title:unit.name,subtitle:"Turni di "+title,days,rows,foot,legend,stamp:"Stampato il "+new Date().toLocaleDateString("it-IT"),status:"Calendario pubblicato"},orient);
+ return {blob,name:"turni-reparto-"+y+"-"+pad(m+1)+(orient==="p"?"-verticale":"-orizzontale")+".pdf",title:unit.name+" - "+title};
+}
+function buildMinePdf(orient){
+ const y=cursor.getFullYear(),m=cursor.getMonth(),days={};let tot=0,cnt=0;
+ schedule.filter(r=>r.user_id===user.id).forEach(r=>{const d=Number(r.day.slice(8));days[d]={code:r.code,time:r.code==="R"?"Riposo":SHIFT[r.code]?SHIFT[r.code][0]+"-"+SHIFT[r.code][1]:""};tot+=(SH_H[r.code]||0)+(SH_H[r.code2]||0);if(r.code!=="R")cnt++});
+ const mn=cursor.toLocaleDateString("it-IT",{month:"long",year:"numeric"});
+ const blob=NanoPdf.month({title:"I miei turni",subtitle:mn.charAt(0).toUpperCase()+mn.slice(1)+" - "+unit.name,year:y,month:m,days,legend:["M","P","G","N","R"].map(c=>({c,t:c+" "+SH_N[c]})),summary:cnt+" turni - "+Math.round(tot*10)/10+" ore",stamp:"Stampato il "+new Date().toLocaleDateString("it-IT")},orient);
+ return {blob,name:"miei-turni-"+y+"-"+pad(m+1)+(orient==="p"?"-verticale":"-orizzontale")+".pdf",title:"I miei turni - "+mn};
+}
+function pdfDialog(builder){
+ if(!schedule.length){alert("Non ci sono turni da esportare.");return}
+ if(!window.NanoPdf){alert("Il generatore PDF non è ancora caricato: riprova tra un istante.");return}
+ const dlg=$("pdfDlg");
+ dlg.innerHTML='<h2 style="margin:0">Stampa o esporta in PDF</h2><p class="muted" style="margin:6px 0 12px">Scegli come vuoi il foglio, poi cosa farne.</p><div class="opts"><button type="button" class="on" data-or="l">Orizzontale<br><small>giorni in colonna</small></button><button type="button" data-or="p">Verticale<br><small>giorni in riga</small></button></div><div style="display:grid;gap:8px"><button class="btn" data-act="view">Visualizza</button><button class="btn secondary" data-act="down">Scarica</button>'+(navigator.canShare?'<button class="btn secondary" data-act="share">Condividi o stampa</button>':'')+'<button class="btn secondary" id="pdfClose">Annulla</button></div>';
+ let orient="l";
+ dlg.querySelectorAll("[data-or]").forEach(b=>b.onclick=()=>{orient=b.dataset.or;dlg.querySelectorAll("[data-or]").forEach(x=>x.classList.toggle("on",x===b))});
+ dlg.querySelectorAll("[data-act]").forEach(b=>b.onclick=async()=>{
+  const act=b.dataset.act,w=act==="view"?window.open("","_blank"):null;
+  const {blob,name,title}=builder(orient),url=URL.createObjectURL(blob);
+  if(act==="share"){const file=new File([blob],name,{type:"application/pdf"});try{if(navigator.canShare({files:[file]}))await navigator.share({files:[file],title})}catch(e){}}
+  else if(act==="view"){if(w)w.location.href=url;else location.href=url}
+  else{const el=document.createElement("a");el.href=url;el.download=name;document.body.appendChild(el);el.click();el.remove()}
+  setTimeout(()=>URL.revokeObjectURL(url),60000);dlg.close();
+ });
+ $("pdfClose").onclick=()=>dlg.close();
+ dlg.showModal();
 }
 function whatsappUrl(phone){const raw=String(phone||"").trim();if(!raw)return "";let n=raw.replace(/[^0-9]/g,"");if(!n)return "";if(raw.startsWith("00"))n=n.slice(2);else if(!raw.startsWith("+")&&!(n.startsWith("39")&&n.length>=11))n="39"+n;return "https://wa.me/"+n}
 function contactsView(){return '<section class="panel"><h2>Contatta i colleghi</h2><p class="muted">Il pulsante WhatsApp compare quando il collega ha inserito il numero nel proprio profilo.</p>'+rosterContacts.filter(m=>m.status==="active"&&m.user_id!==user.id).map(m=>{const url=whatsappUrl(m.phone);return '<div class="item"><span><b>'+safe(m.display_name)+'</b> <small class="muted">'+(m.staff_role==="oss"?"OSS":"Infermiere")+'</small></span>'+(url?'<a class="btn secondary" target="_blank" rel="noopener" href="'+url+'" aria-label="Contatta '+safe(m.display_name)+' su WhatsApp"><svg viewBox="0 0 24 24" role="img" aria-label="WhatsApp" width="17" height="17" style="vertical-align:-3px;margin-right:6px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M20.2 11.7a8.2 8.2 0 0 1-12.1 7.2L3 20l1.1-4.8a8.2 8.2 0 1 1 16.1-3.5Z"/><path d="M8.4 7.8c.3-.6.7-.6 1-.6.2 0 .4 0 .6.5l.8 1.8c.1.3.1.5-.1.7l-.6.7c-.2.2-.2.4 0 .7.6 1 1.5 1.8 2.6 2.3.3.1.5.1.7-.1l.8-1c.2-.2.4-.2.7-.1l1.7.8c.3.1.5.3.5.5 0 .4-.2 1.1-.7 1.5-.5.4-1.2.6-1.8.4-1.2-.3-2.6-1-3.9-2.2-1.1-1-2-2.3-2.3-3.4-.2-.8-.1-1.7.3-2.5Z"/></svg>WhatsApp</a>':'<span class="muted">Numero non inserito</span>')+'</div>'}).join("")+'</section>'}
@@ -288,19 +321,19 @@ function bind(){
   cursor=new Date(cursor.getFullYear(),cursor.getMonth()+Number(b.dataset.month),1);note(null);await loadMonth();render();
  });
  document.querySelectorAll("[data-aday]").forEach(b=>b.onclick=()=>{const k=b.dataset.aday;if(locked(k))return;
-  if(rangeMode){if(!rangeStart){rangeStart=k}else{const [x,z]=[rangeStart,k].sort();const bk=[];for(let d=1;d<=dim();d++){const q=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(q>=x&&q<=z&&!locked(q)){if(brush)bk.push(q);else sel.add(q)}}if(brush){applyBrush(bk);tuk()}rangeStart=null;rangeMode=false}}
-  else if(brush){applyBrush([k]);tuk()}
+  if(rangeMode){if(!rangeStart){rangeStart=k}else{const [x,z]=[rangeStart,k].sort();const bk=[];for(let d=1;d<=dim();d++){const q=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(q>=x&&q<=z&&!locked(q)){if(brush)bk.push(q);else sel.add(q)}}if(brush){applyBrush(bk)}rangeStart=null;rangeMode=false}}
+  else if(brush){applyBrush([k])}
   else if(sel.has(k))sel.delete(k);else sel.add(k);
   const y=window.scrollY;render();window.scrollTo(0,y)});
  document.querySelectorAll("[data-apply]").forEach(b=>b.onclick=()=>{sel.forEach(k=>{avail[k]=b.dataset.apply});sel=new Set();const y=window.scrollY;render();window.scrollTo(0,y)});
  const sc=$("selClear");if(sc)sc.onclick=()=>{sel=new Set();render()};
- const sa=$("selAll");if(sa)sa.onclick=()=>{const bk=[];for(let d=1;d<=dim();d++){const q=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(!locked(q)){if(brush)bk.push(q);else sel.add(q)}}if(brush){applyBrush(bk);tuk()}render()};
+ const sa=$("selAll");if(sa)sa.onclick=()=>{const bk=[];for(let d=1;d<=dim();d++){const q=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(!locked(q)){if(brush)bk.push(q);else sel.add(q)}}if(brush){applyBrush(bk)}render()};
  const hb=$("helpBtn");if(hb)hb.onclick=()=>{helpOpen=!helpOpen;const y=window.scrollY;render();window.scrollTo(0,y)};
- document.querySelectorAll("[data-brush]").forEach(b=>b.onclick=()=>{brush=brush===b.dataset.brush?null:b.dataset.brush;if(brush){sel=new Set();tuk()}const y=window.scrollY;render();window.scrollTo(0,y)});
- const sb2=$("soundBtn");if(sb2)sb2.onclick=()=>{soundOn=!soundOn;try{localStorage.setItem("ns_sound",soundOn?"1":"0")}catch(_){}if(soundOn)tuk();const y=window.scrollY;render();window.scrollTo(0,y)};
+ document.querySelectorAll("[data-brush]").forEach(b=>b.onclick=()=>{brush=brush===b.dataset.brush?null:b.dataset.brush;if(brush){sel=new Set()}const y=window.scrollY;render();window.scrollTo(0,y)});
  const rb=$("rangeBtn");if(rb)rb.onclick=()=>{rangeMode=!rangeMode;rangeStart=null;render()};
  const fill=$("fillPref");if(fill)fill.onchange=()=>{if(!fill.value)return;for(let d=1;d<=dim();d++){const k=ymd(cursor.getFullYear(),cursor.getMonth(),d);if(!locked(k))avail[k]=fill.value}render()};
  const sv=$("saveAvail");if(sv)sv.onclick=saveAvail;
+ const pm=$("pdfMine");if(pm)pm.onclick=()=>pdfDialog(buildMinePdf);const pw=$("pdfWard");if(pw)pw.onclick=()=>pdfDialog(buildWardPdf);
  const im=$("importShifts");if(im)im.onclick=importShifts;
 
  const swapTarget=$("swapTarget");if(swapTarget)swapTarget.onchange=()=>{const options=schedule.filter(s=>s.user_id===swapTarget.value);$("swapTargetDate").innerHTML="<option value=''>Scegli data</option>"+options.map(s=>"<option value='"+s.day+"'>"+s.day+" · "+s.code+"</option>").join("")};
