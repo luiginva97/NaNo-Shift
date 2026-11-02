@@ -74,11 +74,19 @@ Deno.serve(async (req: Request) => {
     ]);
     if (pErr || uErr) return json({ error: "Impossibile caricare l'elenco account" }, 500);
     const authById = new Map((users?.users || []).map((u) => [u.id, u]));
+    const { data: mem } = await admin.from("unit_members").select("user_id,unit_role,status,units(name)").eq("status", "active");
+    const unitsByUser = new Map<string, { name: string; role: string }[]>();
+    for (const m of (mem || []) as any[]) {
+      const arr = unitsByUser.get(m.user_id) || [];
+      arr.push({ name: m.units?.name || "Reparto", role: m.unit_role });
+      unitsByUser.set(m.user_id, arr);
+    }
     return json({
       users: (profiles || []).map((p) => {
         const a = authById.get(p.id);
         return { id: p.id, email: a?.email || null, role: p.role, created_at: p.created_at,
-          last_sign_in_at: a?.last_sign_in_at || null, email_confirmed: !!a?.email_confirmed_at };
+          last_sign_in_at: a?.last_sign_in_at || null, email_confirmed: !!a?.email_confirmed_at,
+          units: unitsByUser.get(p.id) || [] };
       })
     });
   }
@@ -112,6 +120,41 @@ Deno.serve(async (req: Request) => {
         ...(by.get(u.id) || { active: 0, pending: 0, coordinators: 0 }),
       })),
     });
+  }
+
+  if (action === "unit_people") {
+    // Solo chi fa parte del reparto e il ruolo: nessun turno, disponibilità o documento.
+    const unitId = String(body.unit_id || "");
+    if (!unitId) return json({ error: "Reparto non specificato" }, 400);
+    const { data: members, error: mErr } = await admin.from("unit_members").select("user_id,unit_role,status").eq("unit_id", unitId).in("status", ["active", "pending"]);
+    if (mErr) return json({ error: "Impossibile leggere il personale del reparto" }, 500);
+    const ids = (members || []).map((m) => m.user_id);
+    const { data: profs } = ids.length ? await admin.from("profiles").select("id,display_name,first_name,last_name").in("id", ids) : { data: [] };
+    const { data: users } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const pById = new Map((profs || []).map((p) => [p.id, p]));
+    const aById = new Map((users?.users || []).map((u) => [u.id, u]));
+    return json({
+      people: (members || []).map((m) => {
+        const p = pById.get(m.user_id) as any; const a = aById.get(m.user_id);
+        const name = (p?.display_name || [p?.first_name, p?.last_name].filter(Boolean).join(" ") || "").trim();
+        return { user_id: m.user_id, name: name || null, email: a?.email || null, unit_role: m.unit_role, status: m.status,
+          last_sign_in_at: a?.last_sign_in_at || null };
+      }).sort((x, y) => (x.unit_role === "coordinator" ? 0 : 1) - (y.unit_role === "coordinator" ? 0 : 1) || String(x.name || x.email).localeCompare(String(y.name || y.email))),
+    });
+  }
+
+  if (action === "set_unit_role") {
+    const unitId = String(body.unit_id || ""); const target = String(body.user_id || ""); const role = String(body.role || "");
+    if (!unitId || !target || !["coordinator", "nurse"].includes(role)) return json({ error: "Richiesta non valida" }, 400);
+    const { data: m } = await admin.from("unit_members").select("unit_role,status").eq("unit_id", unitId).eq("user_id", target).maybeSingle();
+    if (!m || m.status !== "active") return json({ error: "La persona non fa parte del reparto" }, 409);
+    if (role === "nurse") {
+      const { count } = await admin.from("unit_members").select("user_id", { count: "exact", head: true }).eq("unit_id", unitId).eq("unit_role", "coordinator").eq("status", "active");
+      if (m.unit_role === "coordinator" && (count || 0) <= 1) return json({ error: "Il reparto deve avere almeno un coordinatore" }, 409);
+    }
+    const { error } = await admin.from("unit_members").update({ unit_role: role }).eq("unit_id", unitId).eq("user_id", target);
+    if (error) return json({ error: "Modifica ruolo non riuscita" }, 500);
+    return json({ success: true });
   }
 
   if (action === "review_unit") {
