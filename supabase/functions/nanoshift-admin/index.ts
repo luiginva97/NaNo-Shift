@@ -65,6 +65,50 @@ Deno.serve(async (req: Request) => {
     return json({ cvs });
   }
 
+  if (action === "unit_staff_documents") {
+    const unitId = String(body.unit_id || "");
+    if (isMaster) return json({ error: "Il Master non può consultare i documenti delle strutture" }, 403);
+    if (!unitId) return json({ error: "Reparto non specificato" }, 400);
+    const { data: coord } = await admin.from("unit_members").select("unit_id").eq("unit_id", unitId).eq("user_id", user.id).eq("unit_role", "coordinator").eq("status", "active").maybeSingle();
+    const { data: unit } = await admin.from("units").select("approval_status").eq("id", unitId).maybeSingle();
+    if (!coord || unit?.approval_status !== "approved") return json({ error: "Accesso riservato al coordinamento attivo del reparto" }, 403);
+    const { data: members, error: memberError } = await admin.from("unit_members").select("user_id,unit_role,staff_role").eq("unit_id", unitId).eq("status", "active");
+    if (memberError) return json({ error: "Impossibile leggere il personale del reparto" }, 500);
+    const ids = (members || []).map((m) => m.user_id);
+    if (!ids.length) return json({ people: [] });
+    const { data: profs, error: pErr } = await admin.from("profiles").select("id,display_name,first_name,last_name,tax_code,employee_number,order_registration_number,blsd_expires_on,order_expires_on,fire_safety_expires_on,id_doc_type,id_doc_number,id_doc_issued_by,id_doc_issued_on,id_doc_expires_on,docs_visible_to_coordinators").in("id", ids);
+    if (pErr) return json({ error: "Impossibile caricare i dati del personale" }, 500);
+    const sharedIds = (profs || []).filter((p) => p.docs_visible_to_coordinators !== false).map((p) => p.id);
+    const { data: docs } = sharedIds.length
+      ? await admin.from("professional_documents").select("id,user_id,document_type,other_label,file_path,file_name,created_at").in("user_id", sharedIds).order("created_at", { ascending: false })
+      : { data: [] };
+    const paths = (docs || []).map((d) => d.file_path);
+    const urlByPath = new Map<string, string>();
+    if (paths.length) {
+      const { data: signed } = await admin.storage.from("professional-documents").createSignedUrls(paths, 300);
+      for (const x of signed || []) if (x.path && x.signedUrl) urlByPath.set(x.path, x.signedUrl);
+    }
+    const pById = new Map((profs || []).map((p) => [p.id, p]));
+    const people = (members || []).map((m) => {
+      const p = pById.get(m.user_id) as any;
+      const name = (p?.display_name || [p?.first_name, p?.last_name].filter(Boolean).join(" ") || "Utente").trim();
+      const shared = !!p && p.docs_visible_to_coordinators !== false;
+      return {
+        user_id: m.user_id, name, staff_role: m.staff_role, unit_role: m.unit_role, shared,
+        data: shared ? {
+          tax_code: p.tax_code, employee_number: p.employee_number, order_registration_number: p.order_registration_number,
+          blsd_expires_on: p.blsd_expires_on, order_expires_on: p.order_expires_on, fire_safety_expires_on: p.fire_safety_expires_on,
+          id_doc_type: p.id_doc_type, id_doc_number: p.id_doc_number, id_doc_issued_by: p.id_doc_issued_by,
+          id_doc_issued_on: p.id_doc_issued_on, id_doc_expires_on: p.id_doc_expires_on,
+        } : null,
+        docs: shared ? (docs || []).filter((d) => d.user_id === m.user_id).map((d) => ({
+          id: d.id, type: d.document_type, label: d.other_label, name: d.file_name, created_at: d.created_at, url: urlByPath.get(d.file_path) || null,
+        })) : [],
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name, "it"));
+    return json({ people });
+  }
+
   if (!isMaster) return json({ error: "Operazione riservata al Master" }, 403);
 
   if (action === "list_users") {

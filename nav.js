@@ -127,7 +127,7 @@
   {id:"leave",label:"Ferie e assenze",icon:svg('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>')},
   {id:"swaps",label:"Cambi turno",icon:svg('<path d="M4 8h14l-3-3M20 16H6l3 3"/>')},
   {id:"expiries",label:"Scadenze",icon:svg('<circle cx="12" cy="13" r="8"/><path d="M12 8.5V13l3 2M9 2.5h6"/>')},
-  {id:"cvs",label:"CV condivisi",href:"cv-condivisi.html",icon:svg('<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6.5 16c.5-1.5 1.5-2 2.5-2s2 .5 2.5 2M14 10h4M14 14h4"/>')}
+  {id:"cvs",label:"Documenti personale",href:"cv-condivisi.html",icon:svg('<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6.5 16c.5-1.5 1.5-2 2.5-2s2 .5 2.5 2M14 10h4M14 14h4"/>')}
  ].map(i=>i.href?i:{...i,tab:true});
  const MASTER_TABS=[
   {id:"overview",label:"Panoramica",tab:true,icon:svg('<rect x="3" y="3" width="8" height="9" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="12" width="8" height="9" rx="2"/><rect x="3" y="16" width="8" height="5" rx="2"/>')},
