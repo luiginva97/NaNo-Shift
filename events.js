@@ -71,14 +71,14 @@ function openEv(e,date){
   sv.disabled=true;
   const r=e?await sb.from("personal_commitments").update(row).eq("id",e.id).eq("user_id",user.id):await sb.from("personal_commitments").insert({...row,user_id:user.id,source:"nanoshift"});
   if(r.error){err("Non salvato: "+r.error.message);sv.disabled=false;return}
-  d.close();await loadEvents();drawCalendar();
+  d.close();await loadEvents();drawCalendar();window.NaNoGoogleKick&&window.NaNoGoogleKick();
  };
  const del=document.getElementById("evDel");
  if(del)del.onclick=async()=>{
   if(!confirm(ro?"Nascondere questo evento dal calendario?":"Eliminare questo evento?"))return;
-  const r=ro?await sb.from("personal_commitments").update({deleted_at:new Date().toISOString()}).eq("id",e.id).eq("user_id",user.id):await sb.from("personal_commitments").delete().eq("id",e.id).eq("user_id",user.id);
+  const r=await sb.from("personal_commitments").update({deleted_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",e.id).eq("user_id",user.id);
   if(r.error){err("Non riuscito: "+r.error.message);return}
-  d.close();await loadEvents();drawCalendar();
+  d.close();await loadEvents();drawCalendar();window.NaNoGoogleKick&&window.NaNoGoogleKick();
  };
  d.showModal();
 }
@@ -118,71 +118,53 @@ showDayDialog=function(date){
  document.getElementById("dayAddEv").onclick=()=>{document.getElementById("dayDialog").close();openEv(null,date)};
 };
 
-// --- Google Calendar: turni + eventi (invio) e importazione degli eventi di Google ---
-syncGoogleCalendar=async function(){
- const button=document.getElementById("googleSync"),status=document.getElementById("status");
- const say=t=>{if(status)status.textContent=t};
- if(selectedCalendar!=="self"){say("Seleziona “Il mio calendario” per sincronizzare.");return}
- if(!user||!shifts){say("Calendario non ancora caricato.");return}
- const y=cursor.getFullYear(),m=cursor.getMonth(),month=y+"-"+p2(m+1);
- const first=new Date(y,m,1),next=new Date(y,m+1,1);
- const monthShifts=shifts.filter(s=>s.user_id===user.id&&s.shift_date.startsWith(month));
- const monthEvents=events.filter(e=>e.source==="nanoshift"&&new Date(e.starts_at)<next&&new Date(e.ends_at)>first);
- if(button){button.disabled=true;const sp=button.querySelector("span");if(sp)sp.textContent="Sincronizzazione…"}
- say("Collegamento a Google Calendar…");
+// --- Google Calendar: sincronizzazione automatica bidirezionale (server) ---
+let gState=null,gTimer=null,gBusy=false;
+const gcall=async(action)=>{const r=await sb.functions.invoke("nanoshift-google",{body:{action}});if(r.error){let m=r.error.message;try{const j=await r.error.context.json();if(j&&j.error)m=j.error}catch(_){}throw new Error(m)}return r.data||{}};
+const gLabel=()=>{const sp=document.querySelector("#googleSync span");if(!sp)return;sp.textContent=gBusy?"Sincronizzazione…":(gState&&gState.connected?"Google collegato · Sincronizza":"Collega Google Calendar")};
+async function gSync(silent){
+ if(gBusy||!gState||!gState.connected)return;
+ const status=document.getElementById("status");gBusy=true;gLabel();
  try{
-  const token=await requestGoogleAccessToken();
-  const listAll=async extra=>{const q=new URLSearchParams({timeMin:first.toISOString(),timeMax:next.toISOString(),singleEvents:"true",maxResults:"2500",...extra});let pt=null,out=[];do{if(pt)q.set("pageToken",pt);const page=await googleCalendarRequest("/calendars/primary/events?"+q.toString(),token);out.push(...(page.items||[]));pt=page.nextPageToken||null}while(pt);return out};
-  const mine=await listAll({privateExtendedProperty:"nanoshiftSource=NaNoShift"});
-  const byShift=new Map(mine.filter(e=>e.extendedProperties?.private?.nanoshiftShiftId).map(e=>[e.extendedProperties.private.nanoshiftShiftId,e]));
-  const byEv=new Map(mine.filter(e=>e.extendedProperties?.private?.nanoshiftEventId).map(e=>[e.extendedProperties.private.nanoshiftEventId,e]));
-  const activeShift=new Set(monthShifts.map(s=>String(s.id))),activeEv=new Set(monthEvents.map(e=>e.id));
-  let created=0,updated=0,deleted=0;
-  for(const shift of monthShifts){
-   const id=String(shift.id),label=types[shift.code]?.label||"Turno";
-   const event={summary:(shift.code||"")+" · "+label+" — NaNoShift",extendedProperties:{private:{nanoshiftSource:"NaNoShift",nanoshiftShiftId:id}}};
-   if(shift.code==="R"){const end=new Date(shift.shift_date+"T12:00:00");end.setDate(end.getDate()+1);event.start={date:shift.shift_date};event.end={date:fmtDate(end)}}
-   else{event.start={dateTime:shift.shift_date+"T"+shift.start_time.slice(0,5)+":00",timeZone:TZ};event.end={dateTime:shiftEndDate(shift)+"T"+shift.end_time.slice(0,5)+":00",timeZone:TZ}}
-   const prior=byShift.get(id);
-   if(prior){await googleCalendarRequest("/calendars/primary/events/"+encodeURIComponent(prior.id),token,{method:"PATCH",body:JSON.stringify(event)});updated++}
-   else{await googleCalendarRequest("/calendars/primary/events",token,{method:"POST",body:JSON.stringify({...event,id:"nanoshift"+id.replace(/-/g,"").toLowerCase()})});created++}
+  const r=await gcall("sync");await loadEvents();drawCalendar();
+  gState.last_sync_at=new Date().toISOString();gState.last_error=null;
+  if(!silent&&status)status.textContent="Google Calendar aggiornato ("+(r.pushed||0)+" inviati, "+(r.pulled||0)+" ricevuti, "+(r.deleted||0)+" rimossi).";
+ }catch(e){if(status)status.textContent="Sincronizzazione Google non riuscita: "+(e.message||"errore");gState.last_error=e.message}
+ finally{gBusy=false;gLabel()}
+}
+// dopo ogni modifica/aggiunta di eventi: sincronizza (con breve attesa per raggruppare i salvataggi)
+window.NaNoGoogleKick=()=>{if(!gState||!gState.connected)return;clearTimeout(gTimer);gTimer=setTimeout(()=>gSync(true),1500)};
+async function gInit(){
+ try{gState=await gcall("status")}catch(_){gState=null}
+ gLabel();
+ const q=new URLSearchParams(location.search),st=q.get("google");
+ const status=document.getElementById("status");
+ if(st){
+  history.replaceState(null,"",location.pathname+"?area=personale");
+  if(status)status.textContent=st==="collegato"?"Google Calendar collegato: sincronizzo…":st==="annullato"?"Collegamento a Google annullato.":"Collegamento a Google non riuscito. Riprova.";
+  if(st==="collegato"){try{gState=await gcall("status")}catch(_){}await gSync(false);return}
+ }
+ // all'apertura: aggiorna se l'ultima sincronizzazione ha più di 10 minuti
+ if(gState&&gState.connected&&(!gState.last_sync_at||Date.now()-new Date(gState.last_sync_at).getTime()>600000))gSync(true);
+}
+syncGoogleCalendar=async function(){
+ const status=document.getElementById("status");
+ if(selectedCalendar!=="self"){if(status)status.textContent="Seleziona “Il mio calendario” per sincronizzare.";return}
+ try{
+  if(!gState)gState=await gcall("status");
+  if(!gState.connected){
+   if(!gState.configured){if(status)status.textContent="Il collegamento a Google non è ancora attivo sul server.";return}
+   if(status)status.textContent="Apro Google per il consenso…";
+   const r=await gcall("connect_url");if(r.url)location.href=r.url;return;
   }
-  for(const e of monthEvents){
-   const body={summary:e.title,description:e.description||undefined,location:e.location||undefined,extendedProperties:{private:{nanoshiftSource:"NaNoShift",nanoshiftEventId:e.id}}};
-   const s=new Date(e.starts_at),en=new Date(e.ends_at);
-   if(e.all_day){body.start={date:dkey(s)};body.end={date:dkey(en)}}
-   else{body.start={dateTime:s.toISOString()};body.end={dateTime:en.toISOString()}}
-   const prior=byEv.get(e.id);
-   if(prior){await googleCalendarRequest("/calendars/primary/events/"+encodeURIComponent(prior.id),token,{method:"PATCH",body:JSON.stringify(body)});updated++}
-   else{await googleCalendarRequest("/calendars/primary/events",token,{method:"POST",body:JSON.stringify({...body,id:"nanoshiftev"+e.id.replace(/-/g,"").toLowerCase()})});created++}
-  }
-  for(const g of mine){
-   const sid=g.extendedProperties?.private?.nanoshiftShiftId,eid=g.extendedProperties?.private?.nanoshiftEventId;
-   if((sid&&!activeShift.has(sid))||(eid&&!activeEv.has(eid))){await googleCalendarRequest("/calendars/primary/events/"+encodeURIComponent(g.id),token,{method:"DELETE"}).catch(()=>null);deleted++}
-  }
-  // importa gli eventi creati direttamente su Google (non quelli di NaNoShift)
-  const all=await listAll({});
-  const foreign=all.filter(g=>g.status!=="cancelled"&&!g.extendedProperties?.private?.nanoshiftSource&&g.id);
-  let imported=0,refreshed=0;
-  if(foreign.length){
-   const ids=foreign.map(g=>g.id);
-   const {data:have}=await sb.from("personal_commitments").select("id,google_event_id,google_etag,deleted_at").eq("user_id",user.id).eq("source","google").in("google_event_id",ids);
-   const haveBy=new Map((have||[]).map(r=>[r.google_event_id,r]));
-   const toIns=[];
-   for(const g of foreign){
-    const allDay=!!g.start?.date;
-    const st=allDay?dayStart(g.start.date):new Date(g.start?.dateTime),en=allDay?dayStart(g.end?.date||g.start.date):new Date(g.end?.dateTime);
-    if(isNaN(st)||isNaN(en)||!(en>st))continue;
-    const row={title:String(g.summary||"(Senza titolo)").slice(0,200),description:g.description?String(g.description).slice(0,1000):null,location:g.location?String(g.location).slice(0,200):null,starts_at:st.toISOString(),ends_at:en.toISOString(),all_day:allDay,google_etag:g.etag||null,google_updated_at:g.updated||null,updated_at:new Date().toISOString()};
-    const prev=haveBy.get(g.id);
-    if(!prev)toIns.push({...row,user_id:user.id,source:"google",google_calendar_id:"primary",google_event_id:g.id});
-    else if(!prev.deleted_at&&prev.google_etag!==g.etag){const r=await sb.from("personal_commitments").update(row).eq("id",prev.id).eq("user_id",user.id);if(!r.error)refreshed++}
-   }
-   if(toIns.length){const r=await sb.from("personal_commitments").insert(toIns);if(r.error)throw new Error("Importazione eventi: "+r.error.message);imported=toIns.length}
-  }
-  await loadEvents();drawCalendar();
-  say("Google Calendar aggiornato: "+created+" inviati, "+updated+" aggiornati"+(deleted?", "+deleted+" rimossi":"")+". Importati da Google: "+imported+(refreshed?" (+"+refreshed+" aggiornati)":"")+".");
- }catch(error){say("Sincronizzazione non completata: "+(error?.message||"errore sconosciuto"))}
- finally{if(button){button.disabled=selectedCalendar!=="self";const sp=button.querySelector("span");if(sp)sp.textContent="Sincronizza con Google"}}
+  await gSync(false);
+ }catch(e){if(status)status.textContent="Google Calendar: "+(e.message||"errore")}
 };
+function gDisconnectLink(){
+ const status=document.getElementById("status");if(!status||document.getElementById("gOff")||!gState||!gState.connected)return;
+ status.insertAdjacentHTML("afterend",'<div class="muted" id="gOff" style="font-size:.85rem">Sincronizzazione automatica con Google'+(gState.email?" ("+esc(gState.email)+")":"")+' attiva: ad ogni modifica e 3 volte al giorno. <button type="button" class="btn secondary" id="gOffBtn" style="padding:2px 10px;min-height:0">Scollega</button></div>');
+ document.getElementById("gOffBtn").onclick=async()=>{if(!confirm("Scollegare Google Calendar? Gli eventi già presenti restano dove sono."))return;try{await gcall("disconnect");gState={configured:true,connected:false};document.getElementById("gOff").remove();gLabel()}catch(e){alert(e.message)}};
+}
+const _dec=decorate;decorate=function(){_dec();gLabel();gDisconnectLink()};
+document.addEventListener("DOMContentLoaded",()=>setTimeout(gInit,800));
 })();
