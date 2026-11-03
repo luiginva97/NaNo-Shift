@@ -114,3 +114,6 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
 .shift.ghost{opacity:.55;border:1.5px dashed currentColor;background-image:repeating-linear-gradient(135deg,transparent 0 6px,#ffffff80 6px 8px);cursor:pointer}
 .ward-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:10px 12px;border:1px dashed #9db6e6;border-radius:12px;background:#f3f7ff;font-size:14px}
 #googleSync{display:inline-flex;align-items:center;gap:8px}.gicon{width:18px;height:18px;flex:none}
+
+.btn{text-align:center}
+@media(max-width:700px){.cal-controls .btn,.cal-controls .tools>summary{display:flex;align-items:center;justify-content:center;text-align:center;gap:8px;width:100%}.cal-controls .tools{width:100%}}
